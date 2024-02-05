@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import polars as pl
 import pyfaidx
+from scipy.stats import wilcoxon
 
 class ElementsDataset(Dataset):
     _bed_schema = ["chr", "start", "end"]
@@ -141,6 +142,34 @@ class ElementsDataset(Dataset):
             ctrl = ctrl[::-1,::-1].copy()
 
         return torch.from_numpy(seq), torch.from_numpy(ctrl)
+
+
+def evaluate(dataset, model_callback, batch_size):
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+    diffs_lst = []
+    corrects_lst = []
+
+    for seqs, ctrls in dataloader:
+        seq_scores = model_callback(seqs)
+        ctrl_scores = model_callback(ctrls)
+
+        diff_batch = seq_scores - ctrl_scores
+        correct_batch = diff_batch > 0
+
+        diffs_lst.append(diff_batch)
+        corrects_lst.append(correct_batch)
+
+    diffs = np.concatenate(diffs_lst)
+    corrects = np.concatenate(corrects_lst)
+
+    acc = corrects.mean()
+
+    wilcox = wilcoxon(diffs, alternative="greater")
+    pval = wilcox.pvalue
+    signed_rank_sum = wilcox.statistic
+
+    return acc, pval, signed_rank_sum
 
 
 if __name__ == "__main__":
