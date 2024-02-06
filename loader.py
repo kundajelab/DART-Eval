@@ -144,6 +144,19 @@ class ElementsDataset(Dataset):
         return torch.from_numpy(seq), torch.from_numpy(ctrl)
 
 
+def pseudo_ll(seqs, starts, end, ll_fn, mask_token):
+    lls = torch.zeros(seqs.shape[:2], dtype=seqs.dtype, device=seqs.device)
+    for i in range(seqs.shape[1]):
+        mask = (i >= starts) & (i < end)
+        masked_seqs = seqs.clone()
+        masked_seqs[:,i,:] = mask_token
+        lls[:,i] = ll_fn(masked_seqs) * mask
+
+    pll = lls.sum(dim=1).numpy(force=True)
+
+    return pll
+
+
 def evaluate(dataset, model_callback, batch_size):
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
