@@ -8,46 +8,68 @@ import pyfaidx
 from scipy.stats import wilcoxon
 
 class ElementsDataset(Dataset):
-    _bed_schema = ["chr", "start", "end"]
-    _bed_dtypes = [pl.Utf8, pl.UInt32, pl.UInt32]
+    # _bed_schema = ["chr", "start", "end"]
+    # _bed_dtypes = [pl.Utf8, pl.UInt32, pl.UInt32]
+
+    _elements_dtypes = {
+        "chr": pl.Utf8,
+        "input_start": pl.UInt32,
+        "input_end": pl.UInt32,
+        "ccre_start": pl.UInt32,
+        "ccre_end": pl.UInt32,
+        "ccre_relative_start": pl.UInt32,
+        "ccre_relative_end": pl.UInt32,
+        "reverse_complement": pl.Boolean
+    }
 
     _seq_alphabet = np.array(["A","C","G","T"], dtype="S1")
     _seq_tokens = np.array([0, 1, 2, 3], dtype=np.int8)
 
     _seed_upper = 2**128
 
-    def __init__(self, genome_fa, elements_bed, chroms, window, 
-                 reverse_complement, max_jitter, seed):
+    def __init__(self, genome_fa, elements_tsv, chroms, seed):
         super().__init__()
 
-        if window % 2 != 0:
-            raise ValueError(f"Window size {window} must be even.")
+        # if window % 2 != 0:
+        #     raise ValueError(f"Window size {window} must be even.")
 
-        self.window = window
-        self.max_jitter = max_jitter
-        self.reverse_complement = reverse_complement
+        # self.window = window
+        # self.max_jitter = max_jitter
+        # self.reverse_complement = reverse_complement
         self.seed = seed
 
-        self.elements_df = self._load_bed(elements_bed, chroms)
+        # self.elements_df = self._load_bed(elements_bed, chroms)
+        self.elements_df = self._load_elements(elements_tsv, chroms)
 
         self.genome_fa = genome_fa
         fa = pyfaidx.Fasta(self.genome_fa) # Build index if needed
         fa.close()
 
     @classmethod
-    def _load_bed(cls, bed_file, chroms):
-        df = (
-            pl.scan_csv(bed_file, has_header=False, separator="\t", quote_char=None,
-                        new_columns=cls._bed_schema, dtypes=cls._bed_dtypes)
-            .select(cls._bed_schema)
-        )
-
+    def _load_elements(cls, elements_file, chroms):
+        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+        
         if chroms is not None:
             df = df.filter(pl.col("chr").is_in(chroms))
 
         df = df.collect()
 
         return df
+    
+    # @classmethod
+    # def _load_bed(cls, bed_file, chroms):
+    #     df = (
+    #         pl.scan_csv(bed_file, has_header=False, separator="\t", quote_char=None,
+    #                     new_columns=cls._bed_schema, dtypes=cls._bed_dtypes)
+    #         .select(cls._bed_schema)
+    #     )
+
+    #     if chroms is not None:
+    #         df = df.filter(pl.col("chr").is_in(chroms))
+
+    #     df = df.collect()
+
+    #     return df
 
     @classmethod
     def _one_hot_encode(cls, sequence):
@@ -98,19 +120,21 @@ class ElementsDataset(Dataset):
         return self.elements_df.height
     
     def __getitem__(self, idx):
-        chrom, elem_start, elem_end = self.elements_df.row(idx)
-        center = elem_start + (elem_end - elem_start) // 2
-        start = center - self.window // 2
-        end = start + self.window
+        # chrom, elem_start, elem_end = self.elements_df.row(idx)
+        # center = elem_start + (elem_end - elem_start) // 2
+        # start = center - self.window // 2
+        # end = start + self.window
+
+        chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df[idx]
 
         item_seed = hash((self.seed, chrom, elem_start, elem_end),) % self._seed_upper
         # print(sys.getsizeof(item_seed)) ####
         rng = np.random.default_rng(item_seed)
 
-        # Jitter the region
-        jitter = rng.integers(-self.max_jitter, self.max_jitter, endpoint=True)
-        start += jitter
-        end += jitter
+        # # Jitter the region
+        # jitter = rng.integers(-self.max_jitter, self.max_jitter, endpoint=True)
+        # start += jitter
+        # end += jitter
 
         # Extract the sequence
         seq = np.zeros((self.window, 4), dtype=np.int8)
@@ -137,7 +161,8 @@ class ElementsDataset(Dataset):
         ctrl[e_a:e_b,:] = shuf
         
         # Reverse complement augment
-        if self.reverse_complement and rng.choice([True, False]):
+        # if self.reverse_complement and rng.choice([True, False]):
+        if rc:
             seq = seq[::-1,::-1].copy()
             ctrl = ctrl[::-1,::-1].copy()
 
@@ -185,20 +210,20 @@ def evaluate(dataset, model_callback, batch_size):
     return acc, pval, signed_rank_sum
 
 
-if __name__ == "__main__":
-    genome_fa = sys.argv[1]
-    elements_bed = sys.argv[2]
-    chroms = None
-    window = 200
-    reverse_complement = True
-    max_jitter = 100
-    seed = 42
+# if __name__ == "__main__":
+#     genome_fa = sys.argv[1]
+#     elements_bed = sys.argv[2]
+#     chroms = None
+#     window = 200
+#     reverse_complement = True
+#     max_jitter = 100
+#     seed = 42
 
-    dataset = ElementsDataset(genome_fa, elements_bed, chroms, window, reverse_complement, max_jitter, seed)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+#     dataset = ElementsDataset(genome_fa, elements_bed, chroms, window, reverse_complement, max_jitter, seed)
+#     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    for i, (seq, ctrl) in enumerate(dataloader):
-        print(f"Sequence {i}:\n{seq}")
-        print(f"Control {i}:\n{ctrl}")
-        if i >= 2:
-            break
+#     for i, (seq, ctrl) in enumerate(dataloader):
+#         print(f"Sequence {i}:\n{seq}")
+#         print(f"Control {i}:\n{ctrl}")
+#         if i >= 2:
+#             break
