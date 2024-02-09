@@ -17,8 +17,10 @@ class NTEvaluator(components.MaskedLogPerplexityEvaluator):
         self.model = AutoModelForMaskedLM.from_pretrained(self.model_name, trust_remote_code=True)
         self.model.to(device)
         # print(self.model) ####
-        
-        self.mask_token = self.tokenizer.mask_token_id
+
+    @property
+    def mask_token(self):
+        return self.tokenizer.mask_token_id
 
     def tokenize(self, seqs):
         seqs_str = components.onehot_to_chars(seqs)
