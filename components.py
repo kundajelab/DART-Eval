@@ -230,6 +230,11 @@ class Evaluator(metaclass=ABCMeta):
 
 
 class MaskedLogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def mask_token(self):
+        pass
+
     def score(self, tokens, starts, ends, attention_mask):
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
