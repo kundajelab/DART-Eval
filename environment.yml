@@ -1,0 +1,17 @@
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - pytorch::pytorch=2.2.0
+  - pytorch::pytorch-cuda=12.1
+  - conda-forge::python=3.10
+  - conda-forge::numpy=1.26.3
+  - conda-forge::scipy=1.12.0
+  - conda-forge::polars=0.19.12
+  - conda-forge::pandas=2.2.0
+  - conda-forge::transformers=4.37.1
+  - conda-forge::tqdm=4.66.1
+  - bioconda::pyfaidx=0.7.2.1
