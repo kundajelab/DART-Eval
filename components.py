@@ -1,4 +1,5 @@
-import sys
+from abc import ABC, abstractmethod
+import time
 
 import numpy as np
 import torch
@@ -6,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import polars as pl
 import pyfaidx
 from scipy.stats import wilcoxon
+from tqdm import tqdm
 
 class ElementsDataset(Dataset):
     # _bed_schema = ["chr", "start", "end"]
@@ -125,7 +127,7 @@ class ElementsDataset(Dataset):
         # start = center - self.window // 2
         # end = start + self.window
 
-        chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df[idx]
+        chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df.row(idx)
 
         item_seed = hash((self.seed, chrom, elem_start, elem_end),) % self._seed_upper
         # print(sys.getsizeof(item_seed)) ####
@@ -137,7 +139,8 @@ class ElementsDataset(Dataset):
         # end += jitter
 
         # Extract the sequence
-        seq = np.zeros((self.window, 4), dtype=np.int8)
+        window = end - start
+        seq = np.zeros((window, 4), dtype=np.int8)
 
         fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
 
@@ -169,45 +172,115 @@ class ElementsDataset(Dataset):
         return torch.from_numpy(seq), torch.from_numpy(ctrl)
 
 
-def log_perplexity(seqs, starts, end, ll_fn, mask_token):
-    lls = torch.zeros(seqs.shape[:2], device=seqs.device)
-    for i in range(seqs.shape[1]):
-        mask = (i >= starts) & (i < end)
-        masked_seqs = seqs.clone()
-        masked_seqs[:,i,:] = mask_token
-        lls[:,i] = ll_fn(masked_seqs)[:,i] * mask
+def onehot_to_chars(onehot):
+    alphabet = np.array(["A","C","G","T"], dtype="S1")
+    chararray = alphabet[np.argmax(onehot, axis=2)]
+    strings = [b"".join(row).decode() for row in chararray]
 
-    lp = lls.sum(dim=1).numpy(force=True)
-
-    return lp
+    return strings
 
 
-def evaluate(dataset, model_callback, batch_size):
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+class LogPerplexityEvaluator(ABC):
+    @abstractmethod
+    def __init__(self, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device):
+        self.dataset = ElementsDataset(genome_fa, elements_tsv, chroms, seed)
+        self.dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-    diffs_lst = []
-    corrects_lst = []
+        self.device = device
 
-    for seqs, ctrls in dataloader:
-        seq_scores = model_callback(seqs)
-        ctrl_scores = model_callback(ctrls)
+    @abstractmethod
+    def tokenize(self, seqs):
+        pass
 
-        diff_batch = seq_scores - ctrl_scores
-        correct_batch = diff_batch > 0
+    @abstractmethod
+    def model_fwd(self, tokens, attention_mask):
+        pass
 
-        diffs_lst.append(diff_batch)
-        corrects_lst.append(correct_batch)
+    def log_perplexity(self, tokens, starts, ends, attention_mask):
+        tokens = tokens.to(device=self.device)
+        attention_mask = attention_mask.to(device=self.device)
+        lls = torch.zeros(tokens.shape[:2], device=self.device)
+        for i in range(tokens.shape[1]):
+            # a = time.time() ####
+            clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
+            masked_tokens = tokens.clone()
+            masked_tokens[:,i,...] = self.mask_token
+            lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
+            # print(time.time() - a) ####
 
-    diffs = np.concatenate(diffs_lst)
-    corrects = np.concatenate(corrects_lst)
+        lp = lls.sum(dim=1).numpy(force=True)
 
-    acc = corrects.mean()
+        return lp
+    
+    def evaluate(self, progress_bar=False):
+        diffs_lst = []
+        corrects_lst = []
 
-    wilcox = wilcoxon(diffs, alternative="greater")
-    pval = wilcox.pvalue
-    signed_rank_sum = wilcox.statistic
+        for seqs, ctrls in tqdm(self.dataloader, disable=(not progress_bar)):
+            seq_tokens, seq_starts, seq_ends, seq_attention_mask = self.tokenize(seqs)
+            ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask = self.tokenize(ctrls)
 
-    return acc, pval, signed_rank_sum
+            seq_scores = self.log_perplexity(seq_tokens, seq_starts, seq_ends, seq_attention_mask)
+            ctrl_scores = self.log_perplexity(ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask)
+
+            diff_batch = seq_scores - ctrl_scores
+            correct_batch = diff_batch > 0
+
+            diffs_lst.append(diff_batch)
+            corrects_lst.append(correct_batch)
+
+        diffs = np.concatenate(diffs_lst)
+        corrects = np.concatenate(corrects_lst)
+
+        acc = corrects.mean()
+
+        wilcox = wilcoxon(diffs, alternative="greater")
+        pval = wilcox.pvalue
+        signed_rank_sum = wilcox.statistic
+
+        return acc, pval, signed_rank_sum
+
+
+
+# def log_perplexity(seqs, starts, end, ll_fn, mask_token):
+#     lls = torch.zeros(seqs.shape[:2], device=seqs.device)
+#     for i in range(seqs.shape[1]):
+#         mask = ((i >= starts) & (i < end)).to(device=seqs.device)
+#         masked_seqs = seqs.clone()
+#         masked_seqs[:,i,...] = mask_token
+#         lls[:,i] = ll_fn(masked_seqs)[:,i] * mask
+
+#     lp = lls.sum(dim=1).numpy(force=True)
+
+#     return lp
+
+
+# def evaluate(dataset, model_callback, batch_size, num_workers):
+#     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+#     diffs_lst = []
+#     corrects_lst = []
+
+#     for seqs, ctrls in dataloader:
+#         seq_scores = model_callback(seqs)
+#         ctrl_scores = model_callback(ctrls)
+
+#         diff_batch = seq_scores - ctrl_scores
+#         correct_batch = diff_batch > 0
+
+#         diffs_lst.append(diff_batch)
+#         corrects_lst.append(correct_batch)
+
+#     diffs = np.concatenate(diffs_lst)
+#     corrects = np.concatenate(corrects_lst)
+
+#     acc = corrects.mean()
+
+#     wilcox = wilcoxon(diffs, alternative="greater")
+#     pval = wilcox.pvalue
+#     signed_rank_sum = wilcox.statistic
+
+#     return acc, pval, signed_rank_sum
 
 
 # if __name__ == "__main__":
