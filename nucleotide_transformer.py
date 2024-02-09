@@ -9,7 +9,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM
 import components
 
 
-class NTEvaluator(components.LogPerplexityEvaluator):
+class NTEvaluator(components.MaskedLogPerplexityEvaluator):
     def __init__(self, model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device):
         super().__init__(genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
         self.model_name = f"InstaDeepAI/{model_name}"
