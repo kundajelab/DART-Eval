@@ -13,10 +13,10 @@ class NTEvaluator(components.LogPerplexityEvaluator):
     def __init__(self, model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device):
         super().__init__(genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
         self.model_name = f"InstaDeepAI/{model_name}"
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModelForMaskedLM.from_pretrained(self.model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
+        self.model = AutoModelForMaskedLM.from_pretrained(self.model_name, trust_remote_code=True)
         self.model.to(device)
-        print(self.model) ####
+        # print(self.model) ####
         
         self.mask_token = self.tokenizer.mask_token_id
 
@@ -56,11 +56,13 @@ class NTEvaluator(components.LogPerplexityEvaluator):
 
 
 if __name__ == "__main__":
-    model_name = "nucleotide-transformer-500m-human-ref"
+    # model_name = "nucleotide-transformer-500m-human-ref"
+    model_name = "nucleotide-transformer-v2-500m-multi-species"
     genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions.bed"
+    # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions.bed"
+    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
     chroms = ["chr22"]
-    batch_size = 256
+    batch_size = 1024
     num_workers = 4
     seed = 0
     device = "cuda"

@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 import time
 
 import numpy as np
@@ -180,7 +180,7 @@ def onehot_to_chars(onehot):
     return strings
 
 
-class LogPerplexityEvaluator(ABC):
+class Evaluator(metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device):
         self.dataset = ElementsDataset(genome_fa, elements_tsv, chroms, seed)
@@ -196,21 +196,9 @@ class LogPerplexityEvaluator(ABC):
     def model_fwd(self, tokens, attention_mask):
         pass
 
-    def log_perplexity(self, tokens, starts, ends, attention_mask):
-        tokens = tokens.to(device=self.device)
-        attention_mask = attention_mask.to(device=self.device)
-        lls = torch.zeros(tokens.shape[:2], device=self.device)
-        for i in range(tokens.shape[1]):
-            # a = time.time() ####
-            clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
-            masked_tokens = tokens.clone()
-            masked_tokens[:,i,...] = self.mask_token
-            lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
-            # print(time.time() - a) ####
-
-        lp = lls.sum(dim=1).numpy(force=True)
-
-        return lp
+    @abstractmethod
+    def score(self, tokens, starts, ends, attention_mask):
+        pass
     
     def evaluate(self, progress_bar=False):
         diffs_lst = []
@@ -220,8 +208,8 @@ class LogPerplexityEvaluator(ABC):
             seq_tokens, seq_starts, seq_ends, seq_attention_mask = self.tokenize(seqs)
             ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask = self.tokenize(ctrls)
 
-            seq_scores = self.log_perplexity(seq_tokens, seq_starts, seq_ends, seq_attention_mask)
-            ctrl_scores = self.log_perplexity(ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask)
+            seq_scores = self.score(seq_tokens, seq_starts, seq_ends, seq_attention_mask)
+            ctrl_scores = self.score(ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask)
 
             diff_batch = seq_scores - ctrl_scores
             correct_batch = diff_batch > 0
@@ -241,62 +229,21 @@ class LogPerplexityEvaluator(ABC):
         return acc, pval, signed_rank_sum
 
 
+class LogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
+    def score(self, tokens, starts, ends, attention_mask):
+        tokens = tokens.to(device=self.device)
+        attention_mask = attention_mask.to(device=self.device)
+        lls = torch.zeros(tokens.shape[:2], device=self.device)
+        for i in range(tokens.shape[1]):
+            clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
+            masked_tokens = tokens.clone()
+            masked_tokens[:,i,...] = self.mask_token
+            lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
 
-# def log_perplexity(seqs, starts, end, ll_fn, mask_token):
-#     lls = torch.zeros(seqs.shape[:2], device=seqs.device)
-#     for i in range(seqs.shape[1]):
-#         mask = ((i >= starts) & (i < end)).to(device=seqs.device)
-#         masked_seqs = seqs.clone()
-#         masked_seqs[:,i,...] = mask_token
-#         lls[:,i] = ll_fn(masked_seqs)[:,i] * mask
+        lp = lls.sum(dim=1).numpy(force=True)
 
-#     lp = lls.sum(dim=1).numpy(force=True)
-
-#     return lp
-
-
-# def evaluate(dataset, model_callback, batch_size, num_workers):
-#     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-
-#     diffs_lst = []
-#     corrects_lst = []
-
-#     for seqs, ctrls in dataloader:
-#         seq_scores = model_callback(seqs)
-#         ctrl_scores = model_callback(ctrls)
-
-#         diff_batch = seq_scores - ctrl_scores
-#         correct_batch = diff_batch > 0
-
-#         diffs_lst.append(diff_batch)
-#         corrects_lst.append(correct_batch)
-
-#     diffs = np.concatenate(diffs_lst)
-#     corrects = np.concatenate(corrects_lst)
-
-#     acc = corrects.mean()
-
-#     wilcox = wilcoxon(diffs, alternative="greater")
-#     pval = wilcox.pvalue
-#     signed_rank_sum = wilcox.statistic
-
-#     return acc, pval, signed_rank_sum
+        return lp
+    
 
 
-# if __name__ == "__main__":
-#     genome_fa = sys.argv[1]
-#     elements_bed = sys.argv[2]
-#     chroms = None
-#     window = 200
-#     reverse_complement = True
-#     max_jitter = 100
-#     seed = 42
 
-#     dataset = ElementsDataset(genome_fa, elements_bed, chroms, window, reverse_complement, max_jitter, seed)
-#     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-
-#     for i, (seq, ctrl) in enumerate(dataloader):
-#         print(f"Sequence {i}:\n{seq}")
-#         print(f"Control {i}:\n{ctrl}")
-#         if i >= 2:
-#             break
