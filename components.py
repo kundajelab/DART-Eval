@@ -229,7 +229,7 @@ class Evaluator(metaclass=ABCMeta):
         return acc, pval, signed_rank_sum
 
 
-class LogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
+class MaskedLogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
     def score(self, tokens, starts, ends, attention_mask):
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
