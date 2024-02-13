@@ -253,7 +253,7 @@ class CausalLogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
 	def score(self, tokens, starts, ends, attention_mask):
 		tokens = tokens.to(device=self.device)
 		lls = self.model_fwd(tokens)
-		clip_mask = torch.tensor([[(i >= s) and (i <= e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
+		clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
 								 dtype=torch.float).to(device=self.device)
 
 		lp = (lls * clip_mask).sum(1).numpy(force=True)

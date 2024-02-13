@@ -20,7 +20,7 @@ class MistralEvaluator(components.CausalLogPerplexityEvaluator):
 		seqs_str = components.onehot_to_chars(seqs)
 		encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
 		tokens = encoded["input_ids"]
-		starts, ends = torch.where(tokens == 1)[1] + 1, torch.where(tokens == 2)[1] - 1
+		starts, ends = torch.where(tokens == 1)[1] + 1, torch.where(tokens == 2)[1]
 		return tokens, starts, ends, encoded["attention_mask"] 
 
 
