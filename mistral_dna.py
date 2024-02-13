@@ -27,7 +27,7 @@ class MistralEvaluator(components.CausalLogPerplexityEvaluator):
 	def model_fwd(self, tokens):
 		with torch.no_grad():
 			logits = self.model(tokens)["logits"]
-			return F.cross_entropy(logits.swapaxes(1, 2), tokens, reduction="none")
+			return -F.cross_entropy(logits.swapaxes(1, 2), tokens, reduction="none")
 
 
 

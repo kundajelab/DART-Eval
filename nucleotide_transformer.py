@@ -46,7 +46,7 @@ class NTEvaluator(components.MaskedLogPerplexityEvaluator):
                 encoder_attention_mask=attention_mask
             )
             logits = torch_outs.logits.swapaxes(1, 2)
-            lls = F.cross_entropy(logits, tokens, reduction="none")
+            lls = -F.cross_entropy(logits, tokens, reduction="none")
         # print(lls) ####
         # torch.cuda.synchronize() ####
         # print(time.perf_counter() - a) ####
@@ -66,6 +66,7 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
     chroms = ["chr22"]
     batch_size = 1024
+    # batch_size = 1 ####
     num_workers = 4
     seed = 0
     device = "cuda"
