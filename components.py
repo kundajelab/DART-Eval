@@ -225,8 +225,9 @@ class Evaluator(metaclass=ABCMeta):
 		wilcox = wilcoxon(diffs, alternative="greater")
 		pval = wilcox.pvalue
 		signed_rank_sum = wilcox.statistic
+		mean_diff = diffs.mean()
 
-		return acc, pval, signed_rank_sum
+		return acc, pval, signed_rank_sum, mean_diff
 
 
 class MaskedLogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
