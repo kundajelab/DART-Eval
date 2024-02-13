@@ -60,7 +60,8 @@ class NTEvaluator(components.MaskedLogPerplexityEvaluator):
 if __name__ == "__main__":
     # model_name = "nucleotide-transformer-500m-human-ref"
     model_name = "nucleotide-transformer-v2-500m-multi-species"
-    genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions.bed"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
     chroms = ["chr22"]
