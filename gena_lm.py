@@ -36,7 +36,7 @@ class GenaLMEvaluator(components.MaskedLogPerplexityEvaluator):
 				attention_mask=attention_mask,
 			)
 			logits = torch_outs["prediction_logits"].swapaxes(1, 2)
-			lls = F.cross_entropy(logits, tokens, reduction="none")
+			lls = -F.cross_entropy(logits, tokens, reduction="none")
 		return lls
 
 
