@@ -38,7 +38,7 @@ class DNABERT2Evaluator(components.MaskedLogPerplexityEvaluator):
 				encoder_attention_mask = attention_mask
 			)
 			logits = torch_outs.logits.swapaxes(1, 2)
-			lls = F.cross_entropy(logits, tokens, reduction="none")
+			lls = -F.cross_entropy(logits, tokens, reduction="none")
 		return lls
 
 
