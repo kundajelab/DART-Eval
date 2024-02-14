@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-import time
+import hashlib
 
 import numpy as np
 import torch
@@ -129,8 +129,13 @@ class ElementsDataset(Dataset):
 
 		chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df.row(idx)
 
-		item_seed = hash((self.seed, chrom, elem_start, elem_end),) % self._seed_upper
+		item_bytes = (self.seed, chrom, elem_start, elem_end).__repr__().encode('utf-8')
+		item_seed = int(hashlib.sha256(item_bytes).hexdigest(), 16) % self._seed_upper
+		
+		# item_seed = hash((self.seed, chrom, elem_start, elem_end),) % self._seed_upper
+
 		# print(sys.getsizeof(item_seed)) ####
+		# print(self.seed, chrom, elem_start, elem_end, item_seed) ####
 		rng = np.random.default_rng(item_seed)
 
 		# # Jitter the region
@@ -201,6 +206,7 @@ class Evaluator(metaclass=ABCMeta):
 		pass
 	
 	def evaluate(self, progress_bar=False):
+		metrics = {}
 		diffs_lst = []
 		corrects_lst = []
 
@@ -220,14 +226,19 @@ class Evaluator(metaclass=ABCMeta):
 		diffs = np.concatenate(diffs_lst)
 		corrects = np.concatenate(corrects_lst)
 
-		acc = corrects.mean()
+		metrics["acc"] = corrects.mean()
 
 		wilcox = wilcoxon(diffs, alternative="greater")
-		pval = wilcox.pvalue
-		signed_rank_sum = wilcox.statistic
-		mean_diff = diffs.mean()
+		metrics["pval"] = wilcox.pvalue
+		metrics["signed_rank_sum"] = wilcox.statistic
+		metrics["mean_diff"] = diffs.mean()
+		metrics["q05_diff"] = np.percentile(diffs, 5)
+		metrics["q25_diff"] = np.percentile(diffs, 25)
+		metrics["median_diff"] = np.median(diffs)
+		metrics["q75_diff"] = np.percentile(diffs, 75)
+		metrics["q95_diff"] = np.percentile(diffs, 95)
 
-		return acc, pval, signed_rank_sum, mean_diff
+		return metrics
 
 
 class MaskedLogPerplexityEvaluator(Evaluator, metaclass=ABCMeta):
