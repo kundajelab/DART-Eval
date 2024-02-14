@@ -21,6 +21,7 @@ class MistralEvaluator(components.CausalLogPerplexityEvaluator):
 		encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
 		tokens = encoded["input_ids"]
 		starts, ends = torch.where(tokens == 1)[1] + 1, torch.where(tokens == 2)[1]
+		# print(torch.mean(tokens.float())) ####
 		return tokens, starts, ends, encoded["attention_mask"] 
 
 
@@ -34,18 +35,17 @@ def main():
 	genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 	elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
 	chroms = ["chr22"]
-	batch_size = 1024
+	batch_size = 2048
+	# batch_size = 1 ####
 	num_workers = 4
 	seed = 0
 	device = "cuda"
 	
 	evaluator = MistralEvaluator(model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
-	acc, pval, signed_rank_sum, mean_diff = evaluator.evaluate(progress_bar=True)
+	metrics = evaluator.evaluate(progress_bar=True)
 
-	print(f"Accuracy: {acc}")
-	print(f"P-value: {pval}")
-	print(f"Signed Rank Sum: {signed_rank_sum}")
-	print(f"Mean Score Difference: {mean_diff}")
+	for k, v in metrics.items():
+		print(f"{k}: {v}")
 
 
 if __name__ == "__main__":

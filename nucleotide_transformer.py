@@ -29,6 +29,7 @@ class NTEvaluator(components.MaskedLogPerplexityEvaluator):
         attention_mask = encoded["attention_mask"]
         starts = 1
         ends = attention_mask.sum(dim=1) - 1
+        # print(tokens.mean()) ####
 
         return tokens, starts, ends, attention_mask
     
