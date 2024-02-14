@@ -27,7 +27,7 @@ class HDEvaluator(components.CausalLogPerplexityEvaluator):
         tokens = encoded["input_ids"]
         attention_mask = encoded["attention_mask"]
         starts = torch.tensor([0]*tokens.shape[0])
-        ends = torch.where(tokens == 1)[1]-1
+        ends = torch.where(tokens == 1)[1]
         return tokens, starts, ends, attention_mask
     
     def model_fwd(self, tokens):

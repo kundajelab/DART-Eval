@@ -29,10 +29,6 @@ class MistralEvaluator(components.CausalLogPerplexityEvaluator):
 			logits = self.model(tokens)["logits"]
 			return -F.cross_entropy(logits.swapaxes(1, 2), tokens, reduction="none")
 
-
-
-
-
 def main():
 	model_name = "Mistral-DNA-v0.1"
 	genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
