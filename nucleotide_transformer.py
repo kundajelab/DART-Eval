@@ -73,9 +73,7 @@ if __name__ == "__main__":
     device = "cuda"
     
     evaluator = NTEvaluator(model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
-    acc, pval, signed_rank_sum, mean_diff = evaluator.evaluate(progress_bar=True)
-
-    print(f"Accuracy: {acc}")
-    print(f"P-value: {pval}")
-    print(f"Signed Rank Sum: {signed_rank_sum}")
-    print(f"Mean Score Difference: {mean_diff}")
+    metrics = evaluator.evaluate(progress_bar=True)
+    
+    for k, v in metrics.items():
+        print(f"{k}: {v}")
