@@ -24,7 +24,7 @@ class GenaLMEvaluator(components.MaskedLogPerplexityEvaluator):
 
 	def tokenize(self, seqs):
 		seqs_str = components.onehot_to_chars(seqs)
-		encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, pad_to_multiple_of=64)
+		encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding='max_length', max_length=128)
 		tokens = encoded["input_ids"]
 		starts, ends = torch.where(tokens == 1)[1] + 1, torch.where(tokens == 2)[1]
 		return tokens, starts, ends, encoded["attention_mask"] 
@@ -42,17 +42,19 @@ class GenaLMEvaluator(components.MaskedLogPerplexityEvaluator):
 
 
 if __name__ == "__main__":
-	model_name = "gena-lm-bert-base"
+	# model_name = "gena-lm-bert-base"
+	model_name = "gena-lm-bigbird-base-sparse"
 	# genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 	genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 	elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
 	chroms = ["chr22"]
-	batch_size = 500
+	batch_size = 1024
 	num_workers = 4
 	seed = 0
 	device = "cuda"
 	
 	evaluator = GenaLMEvaluator(model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
+
 	metrics = evaluator.evaluate(progress_bar=True)
 
 	for k, v in metrics.items():
