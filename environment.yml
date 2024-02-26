@@ -15,4 +15,6 @@ dependencies:
   - conda-forge::transformers=4.37.1
   - conda-forge::tqdm=4.66.1
   - conda-forge::deepspeed=0.13.1
+  - conda-forge::h5py=3.10.0
   - bioconda::pyfaidx=0.7.2.1
+  - bioconda::ncls=0.0.68
