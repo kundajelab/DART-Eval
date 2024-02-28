@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     batch_size = 2048
     num_workers = 8
-    prefetch_factor = 32
+    prefetch_factor = 16
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -67,4 +67,4 @@ if __name__ == "__main__":
     # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, num_workers, prefetch_factor, device, progress_bar=True)
 
     train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, num_workers, prefetch_factor, device, 
-                     progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_15.pt"))
+                     progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_28.pt"))
