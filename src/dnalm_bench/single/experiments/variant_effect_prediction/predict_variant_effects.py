@@ -1,7 +1,9 @@
 import argparse
 from tqdm.auto import tqdm
 from scipy import spatial
-from embeddings import MistralDNAVariantEmbeddingExtractor
+from ...embeddings import MistralDNAVariantEmbeddingExtractor
+from ...components import VariantDataset
+import os
 
 if __name__ == "__main__":
     model_name = "Mistral-DNA-v0.1"
@@ -11,6 +13,7 @@ if __name__ == "__main__":
     num_workers = 4
     seed = 0
     device = "cuda"
+    chroms=None
 
     out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA-v0.1/"
     os.makedirs(out_dir, exist_ok=True)
