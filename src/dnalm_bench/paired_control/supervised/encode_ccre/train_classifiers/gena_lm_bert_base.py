@@ -6,14 +6,14 @@ from ...training import EmbeddingsDataset, CNNEmbeddingsClassifier, train_classi
 
 
 if __name__ == "__main__":
-    model_name = "DNABERT-2-117M"
+    model_name = "gena-lm-bert-base"
     # embeddings_h5 = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/DNABERT-2-117M.h5"
-    embeddings_h5 = "/srv/scratch/atwang/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/DNABERT-2-117M.h5"
+    embeddings_h5 = "/srv/scratch/atwang/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/gena-lm-bert-base.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
 
     batch_size = 2048
     num_workers = 8
-    prefetch_factor = 32
+    prefetch_factor = 16
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     num_epochs = 100
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
+    out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/gena-lm-bert-base/v0"
     os.makedirs(out_dir, exist_ok=True)
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train)

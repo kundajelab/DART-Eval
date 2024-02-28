@@ -10,6 +10,9 @@ from scipy.stats import wilcoxon
 from tqdm import tqdm
 import h5py
 
+from .utils import onehot_to_chars
+
+
 class EmbeddingExtractor(metaclass=ABCMeta):
     def __new__(cls, *args, **kwargs):
 
@@ -61,8 +64,6 @@ class HFEmbeddingExtractor(EmbeddingExtractor):
         return embs
 
     def detokenize(self, seqs, token_embeddings, offsets):
-        # print(token_embeddings.shape) ####
-        # print(len(offsets[0])) ####
         gather_idx = torch.zeros((seqs.shape[0], seqs.shape[1], 1), dtype=torch.long)
         for i, offset in enumerate(offsets):
             for j, (start, end) in enumerate(offset):
@@ -70,6 +71,5 @@ class HFEmbeddingExtractor(EmbeddingExtractor):
 
         gather_idx = gather_idx.expand(-1,-1,token_embeddings.shape[2]).to(self.device)
         seq_embeddings = torch.gather(token_embeddings, 1, gather_idx)
-        # print(seq_embeddings.shape) ####
 
         return seq_embeddings
