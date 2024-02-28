@@ -9,30 +9,12 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoMod
 from scipy.stats import wilcoxon
 from tqdm import tqdm
 import h5py
+from ..embeddings import HFEmbeddingExtractor
 
 
-class SimpleSequenceEmbeddingExtractor(metaclass=ABCMeta):
-    def __new__(cls, *args, **kwargs):
-        
-        return super().__new__(cls)
-
-    @abstractmethod
-    def __init__(self, batch_size, num_workers, device):
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.device = device
-
-    @abstractmethod
-    def tokenize(self, seqs):
-        pass
-
-    @abstractmethod
-    def model_fwd(self, tokens, attention_mask):
-        pass
-
-    @abstractmethod
-    def detokenize(self, seqs, token_embeddings, offsets):
-        pass
+class HFSimpleEmbeddingExtractor(HFEmbeddingExtractor):
+    def __init__(self, tokenizer, model, batch_size, num_workers, device):
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     def extract_embeddings(self, dataset, out_path, progress_bar=False):
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
@@ -54,50 +36,40 @@ class SimpleSequenceEmbeddingExtractor(metaclass=ABCMeta):
                 seq_embeddings_dset[start:end] = seq_embeddings.numpy(force=True)
 
                 start = end
-    
 
-class HFSimpleEmbeddingExtractor(SimpleSequenceEmbeddingExtractor):
+class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
-        self.tokenizer = tokenizer
-        self.model = model
-        self.model.to(device)
-        model.eval()
-        super().__init__(batch_size, num_workers, device)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
-        tokens = encoded["input_ids"]
-        offsets = encoded["offset_mapping"]
+    def extract_embeddings(self, dataset, out_path, progress_bar=False):
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        with h5py.File(out_path, "w") as out_f:
+            start = 0
+            for ref, alt in tqdm(dataloader, disable=(not progress_bar)):
 
-        return tokens, offsets
+                end = start + len(seqs)
+
+                ref_tokens, ref_offsets = self.tokenize(ref)
+                alt_tokens, alt_offsets = self.tokenize(alt)
+
+                ref_token_emb = self.model_fwd(ref_tokens)
+                alt_token_emb = self.model_fwd(alt_tokens)
+
+                ref_embeddings = self.detokenize(ref, ref_token_emb, ref_offsets)
+                alt_embeddings = self.detokenize(alt, alt_token_emb, alt_offsets)
+
+                ref_embeddings_dset = out_f.require_dataset("ref_emb", (len(dataset), ref_embeddings.shape[1], ref_embeddings.shape[2]),
+                                                            chunks=ref_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
+                alt_embeddings_dset = out_f.require_dataset("alt_emb", (len(dataset), alt_embeddings.shape[1], alt_embeddings.shape[2]),
+                        chunks = alt_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
+
+                ref_embeddings_dset[start:end] = ref_embeddings.numpy(force=True)
+
+                alt_embeddings_dset[start:end] = alt_embeddings.numpy(force=True)
+
+                start = end
+
     
-    def model_fwd(self, tokens):
-        tokens = tokens.to(device=self.device)
-        with torch.no_grad():
-            torch_outs = self.model(
-                tokens,
-                output_hidden_states=True
-            )
-            embs = torch_outs.hidden_states[-1]
-
-        return embs
-
-    def detokenize(self, seqs, token_embeddings, offsets):
-        # print(token_embeddings.shape) ####
-        # print(len(offsets[0])) ####
-        gather_idx = torch.zeros((seqs.shape[0], seqs.shape[1], 1), dtype=torch.long)
-        for i, offset in enumerate(offsets):
-            for j, (start, end) in enumerate(offset):
-                gather_idx[i,start:end,:] = j
-
-        gather_idx = gather_idx.expand(-1,-1,token_embeddings.shape[2]).to(self.device)
-        seq_embeddings = torch.gather(token_embeddings, 1, gather_idx)
-        # print(seq_embeddings.shape) ####
-
-        return seq_embeddings
-
-
 class DNABERT2EmbeddingExtractor(HFSimpleEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
@@ -108,6 +80,21 @@ class DNABERT2EmbeddingExtractor(HFSimpleEmbeddingExtractor):
 
 
 class MistralDNAEmbeddingExtractor(HFSimpleEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"RaphaelMourad/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(self.model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"zhihan1996/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_config(config)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+class MistralDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
