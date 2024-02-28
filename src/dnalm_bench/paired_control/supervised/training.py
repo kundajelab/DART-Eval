@@ -61,7 +61,7 @@ class EmbeddingsDataset(IterableDataset):
             start = worker_info.id * per_worker
             end = min(start + per_worker, self.elements_df.height)
 
-        df_sub = self.elements_df.slice(start, end)
+        df_sub = self.elements_df.slice(start, end - start)
         # print(df_sub) ####
         valid_inds = df_sub.get_column('region_idx').to_numpy().astype(np.int32)
         query_struct = NCLS(valid_inds, valid_inds + 1, valid_inds)
@@ -85,7 +85,7 @@ class EmbeddingsDataset(IterableDataset):
                     yield torch.from_numpy(seq_emb), torch.from_numpy(ctrl_emb)
     
 
-def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, num_workers, prefetch_factor, device, progress_bar=False):
+def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
 
@@ -97,16 +97,25 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
     # print(one.shape) ####
 
-    with open(log_file, "w") as f:
-        f.write("\t".join(log_cols) + "\n")
+    if resume_from is not None:
+        start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
+        checkpoint_resume = torch.load(resume_from)
+        model.load_state_dict(checkpoint_resume)
+    else:
+        start_epoch = 0
+
+    log_mode = "w" if resume_from is None else "a"
+    with open(log_file, log_mode) as f:
+        if resume_from is None:
+            f.write("\t".join(log_cols) + "\n")
 
         model.to(device)
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         criterion = torch.nn.CrossEntropyLoss()
 
-        for epoch in range(num_epochs):
-            for i, (seq_emb, ctrl_emb) in enumerate(tqdm(train_dataloader, disable=(not progress_bar))):
+        for epoch in range(start_epoch, num_epochs):
+            for i, (seq_emb, ctrl_emb) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 seq_emb = seq_emb.to(device)
                 ctrl_emb = ctrl_emb.to(device)
                 
@@ -123,7 +132,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             val_acc = 0
             val_acc_paired = 0
             with torch.no_grad():
-                for i, (seq_emb, ctrl_emb) in enumerate(val_dataloader):
+                for i, (seq_emb, ctrl_emb) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
                     seq_emb = seq_emb.to(device)
                     ctrl_emb = ctrl_emb.to(device)
 
