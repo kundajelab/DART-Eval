@@ -116,3 +116,10 @@ class DNABERT2EmbeddingExtractor(HFPairedControlEmbeddingExtractor):
         model = AutoModelForMaskedLM.from_config(config)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+
+class GenaLMEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"AIRI-Institute/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
