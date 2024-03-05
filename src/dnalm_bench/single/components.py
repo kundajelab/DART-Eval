@@ -51,7 +51,7 @@ class SimpleSequence(Dataset):
                 return self.elements_df.height
         
         def __getitem__(self, idx):
-                chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df.row(idx)
+                chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
 
                 # Extract the sequence
                 window = end - start
@@ -69,7 +69,6 @@ class SimpleSequence(Dataset):
                 a = start_adj - start
                 b = end_adj - start
                 seq[a:b,:] = one_hot_encode(sequence)
-
                 return torch.from_numpy(seq)
 
 class VariantDataset(Dataset):
@@ -145,3 +144,21 @@ class VariantDataset(Dataset):
                 ref_seq[a:b,:] = one_hot_encode(sequence)
                 alt_seq[a:b,:] = one_hot_encode(alt_sequence)
                 return torch.from_numpy(ref_seq), torch.from_numpy(alt_seq)
+        
+
+class VariantDataLoader(DataLoader):
+        def __init__(self, dataset, batch_size=1, shuffle=False, sampler=None,
+                 batch_sampler=None, num_workers=0, collate_fn=None,
+                 pin_memory=False, drop_last=False, timeout=0,
+                 worker_init_fn=None, dummy=None):
+                self.dataset = dataset
+                super().__init__(dataset, batch_size, shuffle, sampler, batch_sampler,
+                                num_workers, collate_fn, pin_memory, drop_last, timeout,
+                                worker_init_fn, dummy)
+                
+        
+        def __iter__(self):
+                for batch in super().__iter__():
+                # Filter out None items in each batch
+                        filtered_batch = [item for item in batch if item is not None]
+                        yield filtered_batch
