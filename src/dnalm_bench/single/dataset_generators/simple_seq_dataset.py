@@ -5,10 +5,11 @@ np.random.seed(0)
 
 
 def parse_args():
-	parser = argparse.ArgumentParser(description="Given a bed file DNA sequences, pads them to uniform length and returns a new file")
+	parser = argparse.ArgumentParser(description="Given a narrowPeak file, pads them to a specified length around the summit and returns a new file")
 	parser.add_argument("--input_bed", type=str, required=True, help="Bed file containing input elements")
 	parser.add_argument("--output_file", type=str, help="Output file")
 	parser.add_argument("--input_size", type=int, default=2114, help="Input size to the model")
+	parser.add_argument("--eval_size", type=int, default=1000, help="Central portion over which embeddings will be calculated")
 	args = parser.parse_args()
 	return args
 
@@ -24,31 +25,19 @@ def make_region_df(ccre_table, args):
 		"elem_relative_end": [],
 	}
 
-	unique_start_ends = set()
 	for reg in range(len(ccre_table)):
-		if ccre_table.loc[reg, 0] == "chrM":
-			continue
+		# if ccre_table.loc[reg, 0] == "chrM":
+		# 	continue
 		chrom = ccre_table.loc[reg, 0]
-		start, end = ccre_table.loc[reg, 1], ccre_table.loc[reg, 2]
-		if (chrom, start, end) in unique_start_ends:
-			continue
+		summit_pos = ccre_table.loc[reg, 1] + ccre_table.loc[reg, 9]
 		region_info["chr"].append(chrom)
-		region_info["elem_start"].append(start)
-		region_info["elem_end"].append(end)
-		#Determine how much to expand the region by
-		length = end - start
-		# if length > args.input_size:
-		# 	print(length)
-		# 	assert length < args.input_size
-		to_expand = args.input_size - length
-		expand_start = max(0, start - to_expand // 2)
-		expand_end = expand_start + args.input_size
-		region_info["input_start"].append(expand_start)
-		region_info["input_end"].append(expand_end)
+		region_info["input_start"].append(summit_pos - args.input_size // 2)
+		region_info["input_end"].append(summit_pos + args.input_size // 2)
+		region_info["elem_start"].append(summit_pos - args.eval_size // 2)
+		region_info["elem_end"].append(summit_pos + args.eval_size // 2)
 		#Add relative positions of cCRE to table
-		region_info["elem_relative_start"].append(start - expand_start)
-		region_info["elem_relative_end"].append(end - expand_start)
-		unique_start_ends.add((chrom, start, end))
+		region_info["elem_relative_start"].append(args.input_size // 2 - args.eval_size // 2)
+		region_info["elem_relative_end"].append(args.input_size // 2 + args.eval_size // 2)
 	
 
 	return pd.DataFrame(region_info)
