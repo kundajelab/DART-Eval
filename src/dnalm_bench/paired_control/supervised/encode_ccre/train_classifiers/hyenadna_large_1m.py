@@ -2,13 +2,13 @@ import os
 
 from torch.utils.data import DataLoader
 
-from ...training import EmbeddingsDataset, CNNEmbeddingsClassifier, train_classifier
+from ...training import EmbeddingsDataset, CNNSlicedEmbeddingsClassifier, train_classifier
 
 
 if __name__ == "__main__":
-    model_name = "gena-lm-bert-base"
+    model_name = "hyenadna-large-1m-seqlen-hf"
     # embeddings_h5 = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/DNABERT-2-117M.h5"
-    embeddings_h5 = "/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/gena-lm-bert-base.h5"
+    embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
 
     batch_size = 2048
@@ -51,23 +51,21 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    input_channels = 768
+    input_channels = 256
     hidden_channels = 32
     kernel_size = 8
 
     lr = 2e-3
-
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v1"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v1"    
     os.makedirs(out_dir, exist_ok=True)
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train)
     val_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_val)
-    model = CNNEmbeddingsClassifier(input_channels, hidden_channels, kernel_size)
+    model = CNNSlicedEmbeddingsClassifier(input_channels, hidden_channels, kernel_size)
     # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
     train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
-                     progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_118.pt"))
+                     progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_75.pt"))
     
-

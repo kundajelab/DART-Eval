@@ -33,7 +33,7 @@ class EmbeddingExtractor(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def detokenize(self, seqs, token_embeddings, offsets):
+    def extract_embeddings(self, dataset, out_path, progress_bar=False):
         pass
 
 class HFEmbeddingExtractor(EmbeddingExtractor):
