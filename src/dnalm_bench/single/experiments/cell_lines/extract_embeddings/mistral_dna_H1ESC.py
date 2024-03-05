@@ -1,7 +1,7 @@
 import os
 import sys
 
-from ....embeddings import SimpleSequenceEmbeddingExtractor, MistralDNAEmbeddingExtractor
+from ....embeddings import MistralDNAEmbeddingExtractor
 from ....components import SimpleSequence
 
 
