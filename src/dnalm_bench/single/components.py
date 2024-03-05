@@ -111,8 +111,10 @@ class VariantDataset(Dataset):
                 return self.elements_df.height
 
         def __getitem__(self, idx):
-                chrom, pos, ref, alt = self.elements_df.row(idx)
+                chrom, pos, ref, alt = self.elements_df.row(idx)[:4]
 
+                # 1-indexed position
+                pos = int(pos) - 1
                 # Extract the sequence
                 window = 500
                 ref_seq = np.zeros((window, 4), dtype=np.int8)
@@ -120,19 +122,44 @@ class VariantDataset(Dataset):
                 fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
 
                 # extend the sequence by -249 on the left of pos and +250 on the right of pos
-                sequence_data = fa[chrom][max(0, pos-249), pos+250] # check if pos+250 goes outside chrom
-                sequence = sequence_data.seq.upper()
+                sequence_data = fa[chrom][pos-250:pos+250] # check if pos+250 goes outside chrom
+                sequence = str(sequence_data.seq.upper())
                 start_adj = sequence_data.start
                 end_adj = sequence_data.end
-                alt_sequence_data = fa[chrom][max(0, pos-249):pos]
-                alt_sequence_data += alt
-                alt_sequence_data += fa[chrom][pos+1:pos+250]
+                alt_sequence_data = str(fa[chrom][pos-250:pos])
+                if fa[chrom][pos]==ref:         
+                        alt_sequence_data += alt
+                elif fa[chrom][pos-1]==alt:
+                        alt_sequence_data += ref
+                else:
+                        # print(chrom, pos, ref, alt, " not in reference.")
+                        return torch.from_numpy(ref_seq), torch.from_numpy(alt_seq)
+                alt_sequence_data += str(fa[chrom][pos+1:pos+250])
                 alt_sequence = alt_sequence_data.upper()
-                
-                fa.close()
+                start_adj = sequence_data.start
+                end_adj = sequence_data.end
 
-                a = start_adj - start
-                b = end_adj - start
-                ref_seq[:end_adj,:] = one_hot_encode(sequence)
-                alt_seq[:end_adj,:] = one_hot_encode(alt_sequence)
+                fa.close()
+                a = start_adj - (pos - 250)
+                b = end_adj - (pos - 250)
+                ref_seq[a:b,:] = one_hot_encode(sequence)
+                alt_seq[a:b,:] = one_hot_encode(alt_sequence)
                 return torch.from_numpy(ref_seq), torch.from_numpy(alt_seq)
+        
+
+class VariantDataLoader(DataLoader):
+        def __init__(self, dataset, batch_size=1, shuffle=False, sampler=None,
+                 batch_sampler=None, num_workers=0, collate_fn=None,
+                 pin_memory=False, drop_last=False, timeout=0,
+                 worker_init_fn=None, dummy=None):
+                self.dataset = dataset
+                super().__init__(dataset, batch_size, shuffle, sampler, batch_sampler,
+                                num_workers, collate_fn, pin_memory, drop_last, timeout,
+                                worker_init_fn, dummy)
+                
+        
+        def __iter__(self):
+                for batch in super().__iter__():
+                # Filter out None items in each batch
+                        filtered_batch = [item for item in batch if item is not None]
+                        yield filtered_batch

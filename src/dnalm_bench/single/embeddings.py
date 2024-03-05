@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoModelForCausalLM, BertConfig
 from scipy.stats import wilcoxon
 from tqdm import tqdm
@@ -42,12 +42,16 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     def extract_embeddings(self, dataset, out_path, progress_bar=False):
+        # breakpoint()
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
         with h5py.File(out_path, "w") as out_f:
             start = 0
+            print(dataloader)
             for ref, alt in tqdm(dataloader, disable=(not progress_bar)):
+                if torch.all(ref == 0) and torch.all(alt==0):
+                    continue
 
-                end = start + len(seqs)
+                end = start + len(ref)
 
                 ref_tokens, ref_offsets = self.tokenize(ref)
                 alt_tokens, alt_offsets = self.tokenize(alt)
@@ -82,8 +86,8 @@ class DNABERT2EmbeddingExtractor(HFSimpleEmbeddingExtractor):
 class MistralDNAEmbeddingExtractor(HFSimpleEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(self.model_name, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
@@ -97,7 +101,7 @@ class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
 class MistralDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(self.model_name, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
