@@ -1,9 +1,8 @@
 import os
 import sys
-sys.path.append("../../../")
 
-from embeddings import SimpleSequenceEmbeddingExtractor, MistralDNAEmbeddingExtractor
-from components import SimpleSequence
+from ....embeddings import SimpleSequenceEmbeddingExtractor, MistralDNAEmbeddingExtractor
+from ....components import SimpleSequence
 
 
 if __name__ == "__main__":
@@ -14,7 +13,7 @@ if __name__ == "__main__":
     cell_line = "K562"
     # chroms = ["chr22"]
     chroms = None
-    batch_size = 2048
+    batch_size = 64
     num_workers = 4
     seed = 0
     device = "cuda"
