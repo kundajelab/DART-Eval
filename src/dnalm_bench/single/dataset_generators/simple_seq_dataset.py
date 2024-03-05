@@ -24,9 +24,15 @@ def make_region_df(ccre_table, args):
 		"elem_relative_end": [],
 	}
 
+	unique_start_ends = set()
 	for reg in range(len(ccre_table)):
-		region_info["chr"].append(ccre_table.loc[reg, 0])
+		if ccre_table.loc[reg, 0] == "chrM":
+			continue
+		chrom = ccre_table.loc[reg, 0]
 		start, end = ccre_table.loc[reg, 1], ccre_table.loc[reg, 2]
+		if (chrom, start, end) in unique_start_ends:
+			continue
+		region_info["chr"].append(chrom)
 		region_info["elem_start"].append(start)
 		region_info["elem_end"].append(end)
 		#Determine how much to expand the region by
@@ -35,13 +41,14 @@ def make_region_df(ccre_table, args):
 		# 	print(length)
 		# 	assert length < args.input_size
 		to_expand = args.input_size - length
-		expand_start = start - to_expand // 2
+		expand_start = max(0, start - to_expand // 2)
 		expand_end = expand_start + args.input_size
 		region_info["input_start"].append(expand_start)
 		region_info["input_end"].append(expand_end)
 		#Add relative positions of cCRE to table
 		region_info["elem_relative_start"].append(start - expand_start)
-		region_info["elem_relative_end"].append(end - expand_end)
+		region_info["elem_relative_end"].append(end - expand_start)
+		unique_start_ends.add((chrom, start, end))
 	
 
 	return pd.DataFrame(region_info)
