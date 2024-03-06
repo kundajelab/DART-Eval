@@ -137,10 +137,8 @@ class VariantDataset(Dataset):
                         print(chrom, pos, allele1, allele2, " not in reference.")
                         return torch.from_numpy(allele1_seq), torch.from_numpy(allele2_seq)
 
-                # print(allele1_sequence_data, allele2_sequence_data)
                 allele1_sequence = allele1_sequence_data.upper()
                 allele2_sequence = allele2_sequence_data.upper()
-                
 
                 fa.close()
                 a = start_adj - (pos - 250)
