@@ -129,10 +129,10 @@ class VariantDataset(Dataset):
                 alt_sequence_data = str(fa[chrom][pos-250:pos])
                 if fa[chrom][pos]==ref:         
                         alt_sequence_data += alt
-                elif fa[chrom][pos-1]==alt:
+                elif fa[chrom][pos]==alt:
                         alt_sequence_data += ref
                 else:
-                        # print(chrom, pos, ref, alt, " not in reference.")
+                        print(chrom, pos, ref, alt, " not in reference.")
                         return torch.from_numpy(ref_seq), torch.from_numpy(alt_seq)
                 alt_sequence_data += str(fa[chrom][pos+1:pos+250])
                 alt_sequence = alt_sequence_data.upper()
@@ -145,21 +145,3 @@ class VariantDataset(Dataset):
                 ref_seq[a:b,:] = one_hot_encode(sequence)
                 alt_seq[a:b,:] = one_hot_encode(alt_sequence)
                 return torch.from_numpy(ref_seq), torch.from_numpy(alt_seq)
-        
-
-class VariantDataLoader(DataLoader):
-        def __init__(self, dataset, batch_size=1, shuffle=False, sampler=None,
-                 batch_sampler=None, num_workers=0, collate_fn=None,
-                 pin_memory=False, drop_last=False, timeout=0,
-                 worker_init_fn=None, dummy=None):
-                self.dataset = dataset
-                super().__init__(dataset, batch_size, shuffle, sampler, batch_sampler,
-                                num_workers, collate_fn, pin_memory, drop_last, timeout,
-                                worker_init_fn, dummy)
-                
-        
-        def __iter__(self):
-                for batch in super().__iter__():
-                # Filter out None items in each batch
-                        filtered_batch = [item for item in batch if item is not None]
-                        yield filtered_batch
