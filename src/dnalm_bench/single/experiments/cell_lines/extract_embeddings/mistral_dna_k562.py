@@ -9,7 +9,7 @@ if __name__ == "__main__":
     model_name = "Mistral-DNA-v0.1"
     #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/K562.bed"
+    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/K562_peaks.bed"
     cell_line = "K562"
     # chroms = ["chr22"]
     chroms = None
