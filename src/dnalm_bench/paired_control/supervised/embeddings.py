@@ -12,13 +12,11 @@ import h5py
 
 from ..components import PairedControlDataset
 from ...utils import onehot_to_chars
-from ...embeddings import HFEmbeddingExtractor
+from ...embeddings import HFEmbeddingExtractor, SequenceBaselineEmbeddingExtractor
 
-class HFPairedControlEmbeddingExtractor(HFEmbeddingExtractor):
+
+class PairedControlEmbeddingExtractor:
     _idx_mode = "variable"
-
-    def __init__(self, tokenizer, model, batch_size, num_workers, device):
-        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
@@ -68,35 +66,18 @@ class HFPairedControlEmbeddingExtractor(HFEmbeddingExtractor):
 
         os.rename(out_path + ".tmp", out_path)
 
-    # def extract_embeddings(self, dataset, out_path, progress_bar=False):
-    #     dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
-    #     with h5py.File(out_path, "w") as out_f:
-    #         start = 0
-    #         for seqs, ctrls in tqdm(dataloader, disable=(not progress_bar)):
-    #             end = start + len(seqs)
+class SequenceBaselinePairedControlEmbeddingExtractor(SequenceBaselineEmbeddingExtractor, PairedControlEmbeddingExtractor):
+    _idx_mode = "fixed"
 
-    #             seq_tokens, seq_offsets = self.tokenize(seqs)
-    #             ctrl_tokens, ctrl_offsets = self.tokenize(ctrls)
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx)
 
-    #             seq_token_emb = self.model_fwd(seq_tokens)
-    #             ctrl_token_emb = self.model_fwd(ctrl_tokens)
 
-    #             seq_embeddings = self.detokenize(seqs, seq_token_emb, seq_offsets)
-    #             ctrl_embeddings = self.detokenize(ctrls, ctrl_token_emb, ctrl_offsets)
-    #             # print(seq_embeddings.shape) ####
-
-    #             seq_embeddings_dset = out_f.require_dataset("seq_emb", (len(dataset), seq_embeddings.shape[1], seq_embeddings.shape[2]), 
-    #                                                         chunks=seq_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
-    #             seq_embeddings_dset[start:end] = seq_embeddings.numpy(force=True)
-
-    #             ctrl_embeddings_dset = out_f.require_dataset("ctrl_emb", (len(dataset), ctrl_embeddings.shape[1], ctrl_embeddings.shape[2]), 
-    #                                                          chunks=ctrl_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
-    #             ctrl_embeddings_dset[start:end] = ctrl_embeddings.numpy(force=True)
-
-    #             start = end
-
-class DNABERT2EmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -105,7 +86,7 @@ class DNABERT2EmbeddingExtractor(HFPairedControlEmbeddingExtractor):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
-class GenaLMEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+class GenaLMEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -113,7 +94,7 @@ class GenaLMEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
-class HyenaDNAEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+class HyenaDNAEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
     _idx_mode = "fixed"
 
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -136,7 +117,7 @@ class HyenaDNAEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
         return np.array(slice_idx)
 
 
-class MistralDNAEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+class MistralDNAEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -144,7 +125,7 @@ class MistralDNAEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
-class NucleotideTransformerEmbeddingExtractor(HFPairedControlEmbeddingExtractor):
+class NucleotideTransformerEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
     _idx_mode = "fixed"
 
     def __init__(self, model_name, batch_size, num_workers, device):

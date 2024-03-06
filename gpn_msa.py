@@ -91,7 +91,8 @@ class GPNMSAEvaluator(components.MaskedLogPerplexityEvaluator):
 		def __init__(self, model_name, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device):
 			super().__init__(genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
 			self.model_name = f"songlab/{model_name}"
-			msa_path = "zip:///::https://huggingface.co/datasets/songlab/multiz100way/resolve/main/89.zarr.zip"
+			# msa_path = "zip:///::https://huggingface.co/datasets/songlab/multiz100way/resolve/main/89.zarr.zip"
+			msa_path = "/scratch/groups/akundaje/dnalm_benchmark/msa/89.zarr"
 			self.genome_msa = GenomeMSA(msa_path)
 			self.dataset = GPNMSADataset(genome_fa, self.genome_msa, elements_tsv, chroms, seed)
 			self.dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
