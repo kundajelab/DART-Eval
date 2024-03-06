@@ -124,42 +124,6 @@ class EmbeddingsDataset(IterableDataset):
 
                     yield torch.from_numpy(seq_emb), torch.from_numpy(ctrl_emb), torch.from_numpy(seq_inds), torch.from_numpy(ctrl_inds)
 
-            # for chunk_slice, _, _ in h5["seq_emb"].iter_chunks():
-            #     chunk_start, chunk_end = chunk_slice.start, chunk_slice.stop
-
-            #     chunk_inds = list(query_struct.find_overlap(chunk_start, chunk_end))
-            #     if len(chunk_inds) == 0:
-            #         continue
-
-            #     if self.cache_dir_seq is not None:
-            #         seq_cache_path = os.path.join(self.cache_dir_seq, f"{chunk_start}_{chunk_end}.npy")
-            #         try:
-            #             seq_chunk = np.load(seq_cache_path)
-            #         except FileNotFoundError:
-            #             seq_chunk = h5["seq_emb"][chunk_slice,:,:]
-            #             np.save(seq_cache_path + ".tmp.npy", seq_chunk)
-            #             os.rename(seq_cache_path + ".tmp.npy", seq_cache_path)
-            #     else:
-            #         seq_chunk = h5["seq_emb"][chunk_slice,:,:]
-                
-            #     if self.cache_dir_ctrl is not None:
-            #         ctrl_cache_path = os.path.join(self.cache_dir_ctrl, f"{chunk_start}_{chunk_end}.npy")
-            #         try:
-            #             ctrl_chunk = np.load(ctrl_cache_path)
-            #         except FileNotFoundError:
-            #             ctrl_chunk = h5["ctrl_emb"][chunk_slice,:,:]
-            #             np.save(ctrl_cache_path + ".tmp.npy", ctrl_chunk)
-            #             os.rename(ctrl_cache_path + ".tmp.npy", ctrl_cache_path)
-            #     else:
-            #         ctrl_chunk = h5["ctrl_emb"][chunk_slice,:,:]
-
-            #     for i, _, _ in chunk_inds:
-            #         # print(i, chunk_start) ####
-            #         i_rel = i - chunk_start
-            #         seq_emb = seq_chunk[i_rel]
-            #         ctrl_emb = ctrl_chunk[i_rel]
-
-            #         yield torch.from_numpy(seq_emb), torch.from_numpy(ctrl_emb)
 
 def _collate_batch(batch):
     max_seq_len = max(seq_emb.shape[0] for seq_emb, _, _, _ in batch)
@@ -324,8 +288,8 @@ class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
         return seq_embeddings
 
 
-class CNNSequenceClassifier(torch.nn.Module):
-    def __init__(self, input_channels, hidden_channels, kernel_size, n_filters, n_layers_trunk):
+class CNNSequenceBaselineClassifier(torch.nn.Module):
+    def __init__(self, n_filters, n_layers):
         super().__init__()
 
         self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=21, padding=10)
@@ -333,16 +297,14 @@ class CNNSequenceClassifier(torch.nn.Module):
 
         self.rconvs = torch.nn.ModuleList([
             torch.nn.Conv1d(n_filters, n_filters, kernel_size=3, padding=2**i, 
-                dilation=2**i) for i in range(1, n_layers_trunk+1)
+                dilation=2**i) for i in range(1, n_layers+1)
         ])
         self.rrelus = torch.nn.ModuleList([
-            torch.nn.ReLU() for i in range(1, n_layers_trunk+1)
+            torch.nn.ReLU() for i in range(1, n_layers+1)
         ])
 
-        self.conv1 = torch.nn.Conv1d(input_channels, hidden_channels, 1, padding=1)
-        self.conv2 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-        self.conv3 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-        self.fc1 = torch.nn.Linear(hidden_channels, 2)
+        self.linear = torch.nn.Linear(n_filters, 2)
+
 
     def forward(self, x, _):
         x = x.swapaxes(1, 2)
@@ -352,10 +314,43 @@ class CNNSequenceClassifier(torch.nn.Module):
             x_conv = a(c(x))
             x = torch.add(x, x_conv)
 
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        x = x.sum(dim=2)
-        x = self.fc1(x)
+        x = torch.mean(x[:,:,37:-37], dim=2)
 
         return x
+
+
+# class CNNSequenceBaselineClassifier(torch.nn.Module):
+#     def __init__(self, input_channels, hidden_channels, kernel_size, n_layers_trunk):
+#         super().__init__()
+
+#         self.iconv = torch.nn.Conv1d(4, input_channels, kernel_size=21, padding=10)
+#         self.irelu = torch.nn.ReLU()
+
+#         self.rconvs = torch.nn.ModuleList([
+#             torch.nn.Conv1d(input_channels, input_channels, kernel_size=3, padding=2**i, 
+#                 dilation=2**i) for i in range(1, n_layers_trunk+1)
+#         ])
+#         self.rrelus = torch.nn.ModuleList([
+#             torch.nn.ReLU() for i in range(1, n_layers_trunk+1)
+#         ])
+
+#         self.conv1 = torch.nn.Conv1d(input_channels, hidden_channels, 1, padding=1)
+#         self.conv2 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
+#         self.conv3 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
+#         self.fc1 = torch.nn.Linear(hidden_channels, 2)
+
+#     def forward(self, x, _):
+#         x = x.swapaxes(1, 2)
+
+#         x = self.irelu(self.iconv(x))
+#         for a, c in zip(self.rrelus, self.rconvs):
+#             x_conv = a(c(x))
+#             x = torch.add(x, x_conv)
+
+#         x = F.relu(self.conv1(x))
+#         x = F.relu(self.conv2(x))
+#         x = F.relu(self.conv3(x))
+#         x = x.sum(dim=2)
+#         x = self.fc1(x)
+
+#         return x
