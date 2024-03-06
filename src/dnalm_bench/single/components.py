@@ -51,7 +51,7 @@ class SimpleSequence(Dataset):
                 return self.elements_df.height
         
         def __getitem__(self, idx):
-                chrom, start, end, elem_start, elem_end, _, _, rc = self.elements_df.row(idx)
+                chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
 
                 # Extract the sequence
                 window = end - start
@@ -69,7 +69,6 @@ class SimpleSequence(Dataset):
                 a = start_adj - start
                 b = end_adj - start
                 seq[a:b,:] = one_hot_encode(sequence)
-
                 return torch.from_numpy(seq)
 
 class VariantDataset(Dataset):

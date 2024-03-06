@@ -14,10 +14,6 @@ from .utils import onehot_to_chars
 
 
 class EmbeddingExtractor(metaclass=ABCMeta):
-    def __new__(cls, *args, **kwargs):
-
-        return super().__new__(cls)
-
     @abstractmethod
     def __init__(self, batch_size, num_workers, device):
         self.batch_size = batch_size
@@ -32,11 +28,11 @@ class EmbeddingExtractor(metaclass=ABCMeta):
     def model_fwd(self, tokens, attention_mask):
         pass
 
-    @abstractmethod
-    def detokenize(self, seqs, token_embeddings, offsets):
-        pass
+    # @abstractmethod
+    # def extract_embeddings(self, dataset, out_path, progress_bar=False):
+    #     pass
 
-class HFEmbeddingExtractor(EmbeddingExtractor):
+class HFEmbeddingExtractor(EmbeddingExtractor, metaclass=ABCMeta):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
         self.tokenizer = tokenizer
         self.model = model
@@ -73,3 +69,14 @@ class HFEmbeddingExtractor(EmbeddingExtractor):
         seq_embeddings = torch.gather(token_embeddings, 1, gather_idx)
 
         return seq_embeddings
+
+
+class SequenceBaselineEmbeddingExtractor(EmbeddingExtractor, metaclass=ABCMeta):
+    def __init__(self, batch_size, num_workers, device):
+        super().__init__(batch_size, num_workers, device)
+
+    def tokenize(self, seqs):
+        return seqs, None
+
+    def model_fwd(self, seqs):
+        return seqs
