@@ -90,6 +90,28 @@ class MistralDNAEmbeddingExtractor(HFSimpleEmbeddingExtractor):
         model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+class GENALMEmbeddingExtractor(HFSimpleEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"AIRI-Institute/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+class NucleotideTransformerEmbeddingExtractor(HFSimpleEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+class HyenaDNAEmbeddingExtractor(HFSimpleEmbeddingExtractor):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+
 class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
