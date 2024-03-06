@@ -82,40 +82,61 @@ class SimpleEmbeddingExtractor:
 #                 start = end
 
 class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
+    _idx_mode = "variable"
+
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.uint32)
+        for i, offset in enumerate(offsets):
+            for j, (start, end) in enumerate(offset):
+                gather_idx[i,start:end] = j
+        
+        return gather_idx
 
     def extract_embeddings(self, dataset, out_path, progress_bar=False):
         # breakpoint()
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-        with h5py.File(out_path, "w") as out_f:
+        
+        with h5py.File(out_path + ".tmp", "w") as out_f:
+            allele1_grp = out_f.create_group("allele1")
+            allele2_grp = out_f.create_group("allele2")
+
             start = 0
-            print(dataloader)
-            for ref, alt in tqdm(dataloader, disable=(not progress_bar)):
-                if torch.all(ref == 0) and torch.all(alt==0):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+                if torch.all(allele1 == 0) and torch.all(allele2==0):
                     continue
+                end = start + len(allele1)
 
-                end = start + len(ref)
+                allele1_tokens, allele1_offsets = self.tokenize(allele1)
+                allele2_tokens, allele2_offsets = self.tokenize(allele2)
 
-                ref_tokens, ref_offsets = self.tokenize(ref)
-                alt_tokens, alt_offsets = self.tokenize(alt)
+                allele1_token_emb = self.model_fwd(allele1_tokens)
+                allele2_token_emb = self.model_fwd(allele2_tokens)
 
-                ref_token_emb = self.model_fwd(ref_tokens)
-                alt_token_emb = self.model_fwd(alt_tokens)
+                if self._idx_mode == "variable":
+                    allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
+                    allele1_indices_dset = allele1_grp.require_dataset("idx_var", (len(dataset), allele1_indices.shape[1]), dtype=np.uint32)
+                    allele1_indices_dset[start:end] = allele1_indices
 
-                ref_embeddings = self.detokenize(ref, ref_token_emb, ref_offsets)
-                alt_embeddings = self.detokenize(alt, alt_token_emb, alt_offsets)
+                    allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
+                    allele2_indices_dset = allele2_grp.require_dataset("idx_var", (len(dataset), allele2_indices.shape[1]), dtype=np.uint32)
+                    allele2_indices_dset[start:end] = allele2_indices
 
-                ref_embeddings_dset = out_f.require_dataset("ref_emb", (len(dataset), ref_embeddings.shape[1], ref_embeddings.shape[2]),
-                                                            chunks=ref_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
-                alt_embeddings_dset = out_f.require_dataset("alt_emb", (len(dataset), alt_embeddings.shape[1], alt_embeddings.shape[2]),
-                        chunks = alt_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
+                elif (start == 0) and (self._idx_mode == "fixed"):
+                    allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
+                    allele1_indices_dset = allele1_grp.create_dataset("idx_fix", data=allele1_indices, dtype=np.uint32)
+                    allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
+                    allele2_indices_dset = allele2_grp.create_dataset("idx_fix", data=allele2_indices, dtype=np.uint32)
 
-                ref_embeddings_dset[start:end] = ref_embeddings.numpy(force=True)
-
-                alt_embeddings_dset[start:end] = alt_embeddings.numpy(force=True)
+                allele1_grp.create_dataset(f"emb_{start}_{end}", data=allele1_token_emb.numpy(force=True))
+                allele2_grp.create_dataset(f"emb_{start}_{end}", data=allele2_token_emb.numpy(force=True))
 
                 start = end
+        
+        os.rename(out_path + ".tmp", out_path)       
 
     
 class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
