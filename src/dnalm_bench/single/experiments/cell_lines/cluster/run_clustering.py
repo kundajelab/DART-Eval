@@ -7,7 +7,8 @@ import numpy as np
 
 from .....embedding_clustering import EmbeddingCluster, load_embeddings_and_labels
 
-embedding_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/cell_line_2114/Mistral-DNA-v0.1/"
+embedding_dir = sys.argv[1]
+out_dir = sys.argv[2]
 
 
 cluster_metric = adjusted_rand_score
@@ -24,7 +25,7 @@ emb_cluster = EmbeddingCluster(cluster_obj, embeddings, labels)
 print(emb_cluster.get_clustering_score(cluster_metric))
 
 print("Visualizing")
-emb_cluster.plot_embeddings(UMAP(), "/users/patelas/scratch/cluster_test_plot.svg", categories)
+emb_cluster.plot_embeddings(UMAP(), f"{out_dir}cluster_plot.svg", categories)
 
-emb_cluster.save_model("/users/patelas/scratch/cluster_test_obj.joblib")
+emb_cluster.save_model("{out_dir}cluster_obj.joblib")
 
