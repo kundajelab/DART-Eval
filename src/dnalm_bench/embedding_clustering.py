@@ -5,6 +5,7 @@ import hashlib
 from scipy.stats import wilcoxon
 import os
 import matplotlib.pyplot as plt
+import joblib
 from sklearn.cluster import *
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
@@ -35,6 +36,9 @@ class EmbeddingCluster():
 		plt.legend(handles=scatter.legend_elements()[0], labels=categories)
 		plt.savefig(out_path, format="svg")
 		plt.show()
+
+	def save_model(self, out_path):
+		joblib.dump(self.cluster_obj, out_path)
 
 
 def load_embeddings_and_labels(embedding_dir):

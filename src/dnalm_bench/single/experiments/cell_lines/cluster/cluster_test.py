@@ -26,3 +26,5 @@ print(emb_cluster.get_clustering_score(cluster_metric))
 print("Visualizing")
 emb_cluster.plot_embeddings(UMAP(), "/users/patelas/scratch/cluster_test_plot.svg", categories)
 
+emb_cluster.save_model("/users/patelas/scratch/cluster_test_obj.joblib")
+
