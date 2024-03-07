@@ -10,6 +10,7 @@ from .....embedding_clustering import EmbeddingCluster, load_embeddings_and_labe
 embedding_dir = sys.argv[1]
 out_dir = sys.argv[2]
 
+os.makedirs(out_dir, exist_ok=True)
 
 cluster_metric = adjusted_rand_score
 
