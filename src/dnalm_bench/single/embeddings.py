@@ -158,6 +158,7 @@ class GENALMEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        print(model)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 class NucleotideTransformerEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):

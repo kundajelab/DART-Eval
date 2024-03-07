@@ -16,7 +16,7 @@ if __name__ == "__main__":
     device = "cuda"
     chroms=None
 
-    out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
+    out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA2/"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "mistral.Afr.CaQTLs.variant_embeddings.h5")
 

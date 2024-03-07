@@ -34,7 +34,7 @@ class EmbeddingCluster():
 		plt.title("Model Embeddings Colored by Cell Type")
 		print(scatter.legend_elements()[0])
 		plt.legend(handles=scatter.legend_elements()[0], labels=categories)
-		plt.savefig(out_path, format="svg")
+		plt.savefig(out_path, format="png")
 		plt.show()
 
 	def save_model(self, out_path):
