@@ -13,7 +13,7 @@ embedding_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddin
 cluster_metric = adjusted_rand_score
 
 print("Loading embeddings and labels")
-embeddings, labels, categories = load_embeddings_and_labels(embedding_dir, 1000)
+embeddings, labels, categories = load_embeddings_and_labels(embedding_dir)
 print(embeddings.shape)
 
 cluster_obj = KMeans(n_clusters=len(np.unique(labels)))

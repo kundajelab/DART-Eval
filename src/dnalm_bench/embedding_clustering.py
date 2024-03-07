@@ -6,7 +6,7 @@ from scipy.stats import wilcoxon
 import os
 import matplotlib.pyplot as plt
 from sklearn.cluster import *
-
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 class EmbeddingCluster():
 	def __init__(self, cluster_obj, embeddings, labels):
@@ -37,26 +37,32 @@ class EmbeddingCluster():
 		plt.show()
 
 
-def load_embeddings_and_labels(embedding_dir, chunk_size=10000):
+def load_embeddings_and_labels(embedding_dir):
 	'''
 	Assumes embedding_dir contains ONLY embedding numpy arrays
 	Elements in each array will have the same label
 	'''
 	labels, arrays = [], []
-	cat_list = [x[:-3] for x in os.listdir(embedding_dir) if ".h5" in x]
+	cat_list = [x.split("_")[0] for x in os.listdir(embedding_dir) if "_peaks.h5" in x]
 	print(cat_list)
-	emb_files = [h5py.File(os.path.join(embedding_dir, x), "r") for x in os.listdir(embedding_dir) if ".h5" in x]
+	emb_files = [h5py.File(os.path.join(embedding_dir, x), "r") for x in os.listdir(embedding_dir) if "_peaks.h5" in x]
 	for cat, file in enumerate(emb_files):
 		running_arrays = []
-		num_embs = file["seq_emb"].shape
-		# num_embs = [2000, num_embs[1], num_embs[2]]
-		curr_index = 0
-		while curr_index < num_embs[0]:
-			print(curr_index)
-			curr_chunk = file["seq_emb"][curr_index : min(curr_index+chunk_size, num_embs[0])]
-			running_arrays.append(curr_chunk.mean(1))
-			curr_index += chunk_size
-		arrays.append(np.vstack(running_arrays))
-		labels.extend([cat] * num_embs[0])
+		for key in list(file['seq'].keys()):
+			if "idx" in key:
+				continue
+			split = key.split("_")
+			ind_start, ind_end = int(split[-2]), int(split[-1])
+			h5_array = file['seq'][key][:]
+			idx_vars = file['seq']['idx_var'][ind_start:ind_end]
+			mins, maxes = idx_vars.min(1), idx_vars.max(1) + 1
+			indices = [np.arange(mi, ma) for mi, ma in zip(mins, maxes)]
 
+			# Calculate mean over specified slices for each row
+			curr_means = np.array([np.mean(h5_array[i, indices[i], :], axis=0) for i in range(h5_array.shape[0])])
+			running_arrays.append(curr_means)
+			labels.extend([cat] * len(curr_means))
+		arrays.append(np.vstack(running_arrays))
+	stacked_arrays = np.vstack(arrays)
+	assert len(stacked_arrays) == len(labels)
 	return np.vstack(arrays), labels, cat_list
