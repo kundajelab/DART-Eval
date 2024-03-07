@@ -89,12 +89,10 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
-        # breakpoint()
         gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.uint32)
         for i, offset in enumerate(offsets):
             for j, (start, end) in enumerate(offset):
                 gather_idx[i,start:end] = j
-        # breakpoint()
         return gather_idx
 
     def extract_embeddings(self, dataset, out_path, progress_bar=False):
@@ -115,7 +113,6 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 
                 allele1_token_emb = self.model_fwd(allele1_tokens)
                 allele2_token_emb = self.model_fwd(allele2_tokens)
-                breakpoint()
 
                 if self._idx_mode == "variable":
                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
