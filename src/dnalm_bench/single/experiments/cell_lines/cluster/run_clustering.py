@@ -26,7 +26,7 @@ emb_cluster = EmbeddingCluster(cluster_obj, embeddings, labels)
 print(emb_cluster.get_clustering_score(cluster_metric))
 
 print("Visualizing")
-emb_cluster.plot_embeddings(UMAP(), f"{out_dir}cluster_plot.svg", categories)
+emb_cluster.plot_embeddings(UMAP(), f"{out_dir}cluster_plot.png", categories)
 
 emb_cluster.save_model("{out_dir}cluster_obj.joblib")
 
