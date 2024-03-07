@@ -89,15 +89,15 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
+        # breakpoint()
         gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.uint32)
         for i, offset in enumerate(offsets):
             for j, (start, end) in enumerate(offset):
                 gather_idx[i,start:end] = j
-        
+        # breakpoint()
         return gather_idx
 
     def extract_embeddings(self, dataset, out_path, progress_bar=False):
-        # breakpoint()
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
         
         with h5py.File(out_path + ".tmp", "w") as out_f:
@@ -105,7 +105,7 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
             allele2_grp = out_f.create_group("allele2")
 
             start = 0
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)): # shape = batch_size x 500 x 4
                 if torch.all(allele1 == 0) and torch.all(allele2==0):
                     continue
                 end = start + len(allele1)
@@ -115,6 +115,7 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 
                 allele1_token_emb = self.model_fwd(allele1_tokens)
                 allele2_token_emb = self.model_fwd(allele2_tokens)
+                breakpoint()
 
                 if self._idx_mode == "variable":
                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
@@ -237,6 +238,7 @@ class GenaLMVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
 
 
 class HyenaDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
+    _idx_mode = "fixed"
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
@@ -254,4 +256,38 @@ class HyenaDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
         seq_embeddings = token_embeddings[:,:seqs.shape[1],:]
 
         return seq_embeddings
+    
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx)
+    
+class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor, SimpleEmbeddingExtractor):
+    _idx_mode = "fixed"
+
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model =  AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        # print(tokens.shape) ####
+
+        return tokens, None
+
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        seq_len = seqs.shape[1]
+        inds = np.zeros(seq_len, dtype=np.int32)
+        # seq_len_contig = (seq_len // 6) * 6
+        for i in range(seq_len // 6):
+            inds[i*6:(i+1)*6] = i + 1
+        inds[(i+1)*6:] = np.arange(i+2, i+(seq_len%6)+2)
+
+        return inds
 
