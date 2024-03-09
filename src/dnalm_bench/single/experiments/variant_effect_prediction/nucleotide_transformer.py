@@ -1,9 +1,8 @@
-import argparse
-from tqdm.auto import tqdm
-from scipy import spatial
+from .variants_tasks import load_embeddings_and_compute_cosine_distance
 from ...embeddings import NucleotideTransformerVariantEmbeddingExtractor
 from ...components import VariantDataset
 import os
+import polars as pl
 
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
@@ -23,4 +22,11 @@ if __name__ == "__main__":
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     extractor = NucleotideTransformerVariantEmbeddingExtractor(model_name, batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)
+
+    cosine_distances  = load_embeddings_and_compute_cosine_distance(out_dir, progress_bar=True)
+
+    df = dataset.elements_df
+    cos_dist = pl.Series('cosine_distances', cosine_distances)
+    df = df.with_columns(cos_dist)
+    df.write_csv(os.path.join(out_dir, "nt.Afr.CaQTLs.cosine_distances.tsv"), separator="\t")
 

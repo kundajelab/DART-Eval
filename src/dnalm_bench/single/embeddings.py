@@ -234,7 +234,6 @@ class GenaLMVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
-
 class HyenaDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     _idx_mode = "fixed"
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -261,7 +260,7 @@ class HyenaDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
         
         return np.array(slice_idx)
     
-class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor, SimpleEmbeddingExtractor):
+class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     _idx_mode = "fixed"
 
     def __init__(self, model_name, batch_size, num_workers, device):

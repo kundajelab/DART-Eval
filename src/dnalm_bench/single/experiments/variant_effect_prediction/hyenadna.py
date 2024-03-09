@@ -1,9 +1,8 @@
-import argparse
-from tqdm.auto import tqdm
-from scipy import spatial
+from .variants_tasks import load_embeddings_and_compute_cosine_distance
 from ...embeddings import HyenaDNAVariantEmbeddingExtractor
 from ...components import VariantDataset
 import os
+import polars as pl
 
 if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"
@@ -24,3 +23,10 @@ if __name__ == "__main__":
     extractor = HyenaDNAVariantEmbeddingExtractor(model_name, batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)
 
+    cosine_distances  = load_embeddings_and_compute_cosine_distance(out_dir)
+
+    df = dataset.elements_df
+    cos_dist = pl.Series('cosine_distances', cosine_distances)
+    df = df.with_columns(cos_dist)
+    df.write_csv(os.path.join(out_dir, "hyena-dna.Afr.CaQTLs.cosine_distances.tsv"), separator="\t")
+    

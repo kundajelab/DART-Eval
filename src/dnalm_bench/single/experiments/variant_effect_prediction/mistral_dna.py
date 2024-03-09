@@ -1,9 +1,8 @@
-import argparse
-from tqdm.auto import tqdm
-from scipy import spatial
 from ...embeddings import MistralDNAVariantEmbeddingExtractor
 from ...components import VariantDataset
 import os
+import polars as pl
+from .variants_tasks import load_embeddings_and_compute_cosine_distance
 
 if __name__ == "__main__":
     model_name = "Mistral-DNA-v0.1"
@@ -16,11 +15,18 @@ if __name__ == "__main__":
     device = "cuda"
     chroms=None
 
-    out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA2/"
+    out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "mistral.Afr.CaQTLs.variant_embeddings.h5")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     extractor = MistralDNAVariantEmbeddingExtractor(model_name, batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)
+
+    cosine_distances  = load_embeddings_and_compute_cosine_distance(out_dir)
+
+    df = dataset.elements_df
+    cos_dist = pl.Series('cosine_distances', cosine_distances)
+    df = df.with_columns(cos_dist)
+    df.write_csv(os.path.join(out_dir, "mistral.Afr.CaQTLs.cosine_distances.tsv"), separator="\t")
 
