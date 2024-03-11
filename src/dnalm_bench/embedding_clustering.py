@@ -58,12 +58,18 @@ def load_embeddings_and_labels(embedding_dir):
 			split = key.split("_")
 			ind_start, ind_end = int(split[-2]), int(split[-1])
 			h5_array = file['seq'][key][:]
-			idx_vars = file['seq']['idx_var'][ind_start:ind_end]
-			mins, maxes = idx_vars.min(1), idx_vars.max(1) + 1
-			indices = [np.arange(mi, ma) for mi, ma in zip(mins, maxes)]
+			if "idx_var" in file['seq'].keys():
+				idx_vars = file['seq']['idx_var'][ind_start:ind_end]
+				mins, maxes = idx_vars.min(1), idx_vars.max(1) + 1
+				indices = [np.arange(mi, ma) for mi, ma in zip(mins, maxes)]
+				curr_means = np.array([np.mean(h5_array[i, indices[i], :], axis=0) for i in range(h5_array.shape[0])])
+			elif "idx_fix" in file['seq'].keys():
+				idx_fix = file['seq']['idx_fix'][:]
+				indices = np.arange(idx_fix.min(), idx_fix.max())
+				curr_means = np.mean(h5_array[:, indices, :], axis=1)
+
 
 			# Calculate mean over specified slices for each row
-			curr_means = np.array([np.mean(h5_array[i, indices[i], :], axis=0) for i in range(h5_array.shape[0])])
 			running_arrays.append(curr_means)
 			labels.extend([cat] * len(curr_means))
 		arrays.append(np.vstack(running_arrays))
