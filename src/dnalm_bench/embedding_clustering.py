@@ -65,7 +65,7 @@ def load_embeddings_and_labels(embedding_dir):
 				curr_means = np.array([np.mean(h5_array[i, indices[i], :], axis=0) for i in range(h5_array.shape[0])])
 			elif "idx_fix" in file['seq'].keys():
 				idx_fix = file['seq']['idx_fix'][:]
-				indices = np.arange(idx_fix.min(), idx_fix.max())
+				indices = np.arange(idx_fix.min(), idx_fix.max() + 1)
 				curr_means = np.mean(h5_array[:, indices, :], axis=1)
 
 
