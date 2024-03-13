@@ -52,22 +52,30 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    n_filters = 256
-    n_layers = 7
+    n_filters = 64
+    # n_layers = 7
+    n_layers_dil = 7
 
     # input_channels = 256
-    # hidden_channels = 32
-    # kernel_size = 8
+    emb_channels = 256
+    hidden_channels = 32
+    pos_channels = 1
+    kernel_size = 8
+    init_kernel_size = 41
+
+
+    seq_len = 500
 
     # n_layers_trunk = 7
 
-    # lr = 1e-2
-    lr = 2e-3
+    # lr = 5e-4
+    lr = 1e-3
+    # lr = 2e-3
 
     num_epochs = 150
 
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v2"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v32"
     os.makedirs(out_dir, exist_ok=True)
 
     # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_500_jitter_50/{model_name}"
@@ -75,9 +83,11 @@ if __name__ == "__main__":
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train, cache_dir=cache_dir)
     val_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_val, cache_dir=cache_dir)
-    model = CNNSequenceBaselineClassifier(n_filters, n_layers)
+    model = CNNSequenceBaselineClassifier(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, n_layers_dil)
+    # model = CNNSequenceBaselineClassifier(n_filters, n_layers)
     # model = CNNSequenceBaselineClassifier(input_channels, hidden_channels, kernel_size, n_layers_trunk)
 
+    # print(f"Parameter count: {sum(p.numel() for p in model.parameters())}")
     train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
     # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
-    #                  progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_131.pt"))
+    #                  progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_77.pt"))

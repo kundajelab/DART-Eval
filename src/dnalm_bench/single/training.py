@@ -15,7 +15,7 @@ from ncls import NCLS
 # from scipy.stats import wilcoxon
 from tqdm import tqdm
 
-from ...utils import one_hot_encode
+from ..utils import one_hot_encode
 
 class EmbeddingsDataset(IterableDataset):
     _elements_dtypes = {
@@ -89,24 +89,15 @@ class EmbeddingsDataset(IterableDataset):
             else:
                 idx_seq_fixed = False
 
-            if "idx_fix" in h5["ctrl"]:
-                idx_ctrl_dset = h5["ctrl/idx_fix"][:].astype(np.int64)
-                idx_ctrl_fixed = True
-            else:
-                idx_ctrl_fixed = False
-
             for chunk_start, chunk_end in chunk_ranges:
                 chunk_range = list(query_struct.find_overlap(chunk_start, chunk_end))
                 if len(chunk_range) == 0:
                     continue
 
                 seq_chunk = h5[f"seq/emb_{chunk_start}_{chunk_end}"][:]
-                ctrl_chunk = h5[f"ctrl/emb_{chunk_start}_{chunk_end}"][:]
 
                 if not idx_seq_fixed:
                     idx_seq_chunk = h5["seq/idx_var"][chunk_start:chunk_end]
-                if not idx_ctrl_fixed:
-                    idx_ctrl_chunk = h5["ctrl/idx_var"][chunk_start:chunk_end]
 
                 for i, _, _ in chunk_range:
                     i_rel = i - chunk_start
@@ -114,37 +105,23 @@ class EmbeddingsDataset(IterableDataset):
                         seq_inds = idx_seq_dset
                     else:
                         seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
-                    if idx_ctrl_fixed:
-                        ctrl_inds = idx_ctrl_dset
-                    else:
-                        ctrl_inds = idx_ctrl_chunk[i_rel].astype(np.int64)
 
                     seq_emb = seq_chunk[i_rel]
-                    ctrl_emb = ctrl_chunk[i_rel]
 
-                    yield torch.from_numpy(seq_emb), torch.from_numpy(ctrl_emb), torch.from_numpy(seq_inds), torch.from_numpy(ctrl_inds)
+                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds)
 
 
 def _collate_batch(batch):
     max_seq_len = max(seq_emb.shape[0] for seq_emb, _, _, _ in batch)
-    max_ctrl_len = max(ctrl_emb.shape[0] for _, ctrl_emb, _, _ in batch)
     seq_embs = torch.zeros(len(batch), max_seq_len, batch[0][0].shape[1])
-    ctrl_embs = torch.zeros(len(batch), max_ctrl_len, batch[0][1].shape[1])
-    for i, (seq_emb, ctrl_emb, _, _) in enumerate(batch):
+    for i, (seq_emb, _) in enumerate(batch):
         seq_embs[i,:seq_emb.shape[0]] = seq_emb
-        ctrl_embs[i,:ctrl_emb.shape[0]] = ctrl_emb
 
-    seq_inds = torch.stack([seq_inds for _, _, seq_inds, _ in batch])
-    ctrl_inds = torch.stack([ctrl_inds for _, _, _, ctrl_inds in batch])
+    seq_inds = torch.stack([seq_inds for _, seq_inds in batch])
 
-    return seq_embs, ctrl_embs, seq_inds, ctrl_inds
+    return seq_embs, seq_inds
     
 
-# def _detokenize(embs, inds, device):
-#     gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(device)
-#     seq_embeddings = torch.gather(embs, 1, gather_idx)
-
-#     return seq_embeddings
 
 def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
@@ -172,11 +149,11 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             f.write("\t".join(log_cols) + "\n")
 
         model.to(device)
+        model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
-            model.train()
             for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 seq_emb = seq_emb.to(device)
                 ctrl_emb = ctrl_emb.to(device)
@@ -199,7 +176,6 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             val_loss = 0
             val_acc = 0
             val_acc_paired = 0
-            model.eval()
             with torch.no_grad():
                 for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
                     seq_emb = seq_emb.to(device)
@@ -228,28 +204,9 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
-
-
-# class RMSNorm(torch.nn.Module):
-#     """
-#     Root Mean Square Layer Normalization (RMSNorm)
-#     Adapted from https://github.com/facebookresearch/llama/blob/ef351e9cd9496c579bf9f2bb036ef11bdc5ca3d2/llama/model.py#L34
-#     """
-#     def __init__(self, dim: int, eps: float = 1e-6):
-#         super().__init__()
-#         self.eps = eps
-#         self.weight = nn.Parameter(torch.ones(dim))
-
-#     def _norm(self, x):
-#         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
-
-#     def forward(self, x):
-#         output = self._norm(x.float()).type_as(x)
-
-#         return output
     
  
-class CNNEmbeddingsClassifierBase(torch.nn.Module):
+class CNNEmbeddingsClassifier(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
         super().__init__()
 
@@ -260,7 +217,10 @@ class CNNEmbeddingsClassifierBase(torch.nn.Module):
 
     @staticmethod
     def _detokenize(embs, inds):
-        return embs
+        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
+        seq_embeddings = torch.gather(embs, 1, gather_idx)
+
+        return seq_embeddings
 
     def forward(self, embs, inds):
         x = self._detokenize(embs, inds)
@@ -273,15 +233,8 @@ class CNNEmbeddingsClassifierBase(torch.nn.Module):
 
         return x
     
-class CNNEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
-    @staticmethod
-    def _detokenize(embs, inds):
-        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
-        seq_embeddings = torch.gather(embs, 1, gather_idx)
 
-        return seq_embeddings
-
-class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
+class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
     @staticmethod
     def _detokenize(embs, inds):
         positions = torch.arange(embs.shape[1], device=embs.device)
@@ -292,46 +245,6 @@ class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
 
         return seq_embeddings
 
-
-class CNNSequenceBaselineClassifier(torch.nn.Module):
-    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, n_layers_dil):
-        super().__init__()
-
-        self.iconv = torch.nn.Conv1d(4, emb_channels, kernel_size=init_kernel_size, padding='same')
-        self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
-        self.pos_proj = torch.nn.Linear(pos_channels, emb_channels)
-        
-        self.rconvs = torch.nn.ModuleList([
-            torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=3, padding=2**i, 
-                dilation=2**i) for i in range(1, n_layers_dil+1)
-        ])
-        self.rrelus = torch.nn.ModuleList([
-            torch.nn.ReLU() for i in range(1, n_layers_dil+1)
-        ])
-
-        # self.norm = nn.BatchNorm1d(emb_channels)
-        # self.norm = nn.LayerNorm(emb_channels)
-        # self.iconv2 = torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=21, padding=10)
-        self.trunk = CNNEmbeddingsClassifierBase(emb_channels, hidden_channels, kernel_size)
-
-    def forward(self, x, _):
-        x = x.swapaxes(1, 2)
-        x = self.iconv(x)
-        x = x.swapaxes(1, 2)
-        p = self.pos_proj(self.pos_emb)
-        x = F.relu(x + p)
-        
-        x = x.swapaxes(1, 2)
-        for a, c in zip(self.rrelus, self.rconvs):
-            x_conv = a(c(x))
-            x = torch.add(x, x_conv)
-        x = x.swapaxes(1, 2)
-        
-        x = self.trunk(x, None)
-
-        return x
-    
-    
 
 # class CNNSequenceBaselineClassifier(torch.nn.Module):
 #     def __init__(self, n_filters, n_layers):

@@ -7,8 +7,8 @@ from ....components import SimpleSequence
 
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
-    #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     cell_line = sys.argv[1] #cell line name
     category = sys.argv[2] #peaks or nonpeaks
     elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_{category}.bed"
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
     # out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{cell_line}_{category}.h5")
