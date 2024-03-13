@@ -146,3 +146,17 @@ class VariantDataset(Dataset):
                 allele1_seq[a:b,:] = one_hot_encode(allele1_sequence)
                 allele2_seq[a:b,:] = one_hot_encode(allele2_sequence)
                 return torch.from_numpy(allele1_seq), torch.from_numpy(allele2_seq)
+
+
+class FootprintingDataset(Dataset):
+
+        def __init__(self, seqs, seed):
+                self.seq_table = pd.read_csv(seqs, sep="\t", header=None)
+
+        def __len__(self):
+                return len(self.seq_table)
+
+        def __getitem__(self, idx):
+                seq = self.seq_table.loc[idx, 1]
+                return torch.from_numpy(one_hot_encode(seq))
+
