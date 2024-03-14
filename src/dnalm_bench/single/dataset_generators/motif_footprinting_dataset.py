@@ -2,18 +2,25 @@ import pandas as pd
 import numpy as np
 import argparse
 import pyfaidx
+import random
 np.random.seed(0)
 
 
 def parse_args():
 	parser = argparse.ArgumentParser(description="Given a set of negative regions, ")
-	parser.add_argument("--input_bed", type=str, required=True, help="Bed file containing input negative elements which will be footprinted")
-	parser.add_argument("--output_file", type=str, help="Output file")
-	parser.add_argument("--meme_file", type=str, help="Meme file containing motif PWMs")
-	parser.add_argument("--ref_fasta", type=str, help="Reference genome file")
+	parser.add_argument("--input_seqs", type=str, required=True, help="Text file containing input negative elements which will be footprinted")
+	parser.add_argument("--output_file", type=str, required=True, help="Output file")
+	parser.add_argument("--meme_file", type=str, required=True, help="Meme file containing motif PWMs")
 	args = parser.parse_args()
 	return args
 
+def shuffle(seq):
+	seq_list = list(seq)
+	orig_seq_list = seq_list.copy()
+	while seq_list == orig_seq_list:
+		random.shuffle(seq_list)
+	assert seq_list != orig_seq_list
+	return ''.join(seq_list)
 
 def pwm_to_consensus(pwm):
 	seq_to_base = {0:"A", 1:"C", 2:"G", 3:"T"}
@@ -52,31 +59,42 @@ def read_meme(filename):
 	return motifs
 
 def insert_motif(seq, motif):
-    motif_len = len(motif)
-    insert_loc = len(seq) // 2 - len(motif) // 2
-    seq_w_motif = seq[:insert_loc] + motif + seq[insert_loc + len(motif):]
-    assert len(seq_w_motif) == len(seq)
-    return seq_w_motif
+	'''
+	Inserts a motif into the middle of a given sequence (replaces the original middle nucleotides)
+	'''
+	motif_len = len(motif)
+	insert_loc = len(seq) // 2 - len(motif) // 2
+	seq_w_motif = seq[:insert_loc] + motif + seq[insert_loc + len(motif):]
+	assert len(seq_w_motif) == len(seq)
+	return seq_w_motif
 
 def get_all_inserts_for_seq(seq, motif_dict):
-    seq_dict = {}
-    for motif in motif_dict:
-        seq_dict[motif] = insert_motif(seq, motif_dict[motif])
-    return seq_dict
+	'''
+	Given a particular sequence, inserts all motifs into the sequence separately and returns the compiled dict
+	In addition to the true motif, also inserts a shuffled version of each motif
+	'''
+	seq_dict = {}
+	for motif in motif_dict:
+		seq_dict[motif] = [insert_motif(seq, motif_dict[motif]), insert_motif(seq, shuffle(motif_dict[motif]))]
+	return seq_dict
 
-def compile_seqs(bed, fasta, motif_dict):
+def compile_seqs(seq_file, motif_dict):
+	'''
+	Obtains all insertions for all sequences
+	In this step, we also take the reverse complement of all sequences
+	'''
 	overall_seq_dict = {}
-	for row in range(len(bed)):
-		chrom = bed.loc[row, 0]
-		start = bed.loc[row, 1]
-		end = bed.loc[row, 2]
-		curr_seq = fasta[chrom][start:end].seq
-		overall_seq_dict[str(row) + "_" + "raw" + "_forward"] = curr_seq
-		overall_seq_dict[str(row) + "_" + "raw" + "_reverse"] = reverse_complement(curr_seq)
-		curr_seq_dict = get_all_inserts_for_seq(curr_seq, motif_dict)
+	seq_file_obj = open(seq_file, "r")
+	for row, line in enumerate(seq_file_obj):
+		seq = line.strip()
+		overall_seq_dict[str(row) + "_" + "raw" + "_forward"] = seq
+		overall_seq_dict[str(row) + "_" + "raw" + "_reverse"] = reverse_complement(seq)
+		curr_seq_dict = get_all_inserts_for_seq(seq, motif_dict)
 		for motif in curr_seq_dict:
-			overall_seq_dict[str(row) + "_" + motif + "_forward"] = curr_seq_dict[motif]
-			overall_seq_dict[str(row) + "_" + motif + "_reverse"] = reverse_complement(curr_seq_dict[motif])
+			overall_seq_dict[str(row) + "_" + motif + "_forward_true"] = curr_seq_dict[motif][0]
+			overall_seq_dict[str(row) + "_" + motif + "_forward_shuffled"] = curr_seq_dict[motif][1]
+			overall_seq_dict[str(row) + "_" + motif + "_reverse_true"] = reverse_complement(curr_seq_dict[motif][0])
+			overall_seq_dict[str(row) + "_" + motif + "_reverse_shuffled"] = reverse_complement(curr_seq_dict[motif][1])
 	return overall_seq_dict
 
 
@@ -89,10 +107,8 @@ def write_to_file(overall_seq_dict, out_file):
 
 def main():
 	args = parse_args()
-	bed_data = pd.read_csv(args.input_bed, sep="\t", header=None)
-	genome = pyfaidx.Fasta(args.ref_fasta, sequence_always_upper=True)
 	motif_dict = read_meme(args.meme_file)
-	inserted_seqs_dict = compile_seqs(bed_data, genome, motif_dict)
+	inserted_seqs_dict = compile_seqs(args.input_seqs, motif_dict)
 	write_to_file(inserted_seqs_dict, args.output_file)
 
 
