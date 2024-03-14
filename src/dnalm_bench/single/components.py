@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import polars as pl
 import pyfaidx
+import pandas as pd
 # from scipy.stats import wilcoxon
 # from tqdm import tqdm
 
