@@ -152,6 +152,7 @@ class FootprintingDataset(Dataset):
 
         def __init__(self, seqs, seed):
                 self.seq_table = pd.read_csv(seqs, sep="\t", header=None)
+                self.seed = seed
 
         def __len__(self):
                 return len(self.seq_table)
