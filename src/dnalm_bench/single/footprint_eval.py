@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cosine
 from scipy.stats import wilcoxon
+import argparse
 
 
 def parse_args():
@@ -17,7 +18,7 @@ def parse_args():
 
 def load_embeddings(emb_h5):
 	running_arrays = []
-	for key in list(emb_h5['seq'].keys())[:1000]:
+	for key in list(emb_h5['seq'].keys()):
 	    if "idx" in key:
 	        continue
 	    split = key.split("_")
@@ -39,7 +40,7 @@ def load_embeddings(emb_h5):
 	return embedding_array
 
 
-def relate_embeddings_to_motifs(embedding_array):
+def relate_embeddings_to_motifs(embedding_array, seq_data):
 	embeddings_dict = {}
 	for seq_ind in range(len(embedding_array)):
 	    seq_key = seq_data.loc[seq_ind, 0].split("_")
@@ -93,8 +94,8 @@ def main():
 	seq_data = pd.read_csv(args.input_seqs, sep="\t", header=None)
 	emb_h5 = h5py.File(args.embeddings, "r")
 	embedding_array = load_embeddings(emb_h5)
-	motif_embedding_dict = relate_embeddings_to_motifs(embedding_array)
-	distances_dict = get_distances(embeddings_dict)
+	motif_embedding_dict = relate_embeddings_to_motifs(embedding_array, seq_data)
+	distances_dict = get_distances(motif_embedding_dict)
 	accuracies, pvals = get_accuracies(distances_dict), get_pvals(distances_dict)
 	final_df = pd.DataFrame([accuracies, pvals], index=["Accuracy", "P-Value"]).T
 	final_df.to_csv(args.output_file, sep="\t", index=True, header=True)
