@@ -8,6 +8,7 @@ from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNN
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
+    resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     model_name = "Mistral-DNA-v0.1"
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
@@ -76,4 +77,4 @@ if __name__ == "__main__":
     val_dataset = InterleavedIterableDataset([peaks_val_dataset, nonpeaks_val_dataset])
 
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
+    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
