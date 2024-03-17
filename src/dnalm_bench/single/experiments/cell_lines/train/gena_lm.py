@@ -10,7 +10,7 @@ if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
     resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
-    model_name = "Mistral-DNA-v0.1"
+    model_name = "gena-lm-bert-large-t2t"
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
     nonpeaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
     peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    input_channels = 256
+    input_channels = 1024
     hidden_channels = 32
     kernel_size = 8
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v1"    
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v1"   
     os.makedirs(out_dir, exist_ok=True)
 
     peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw)
