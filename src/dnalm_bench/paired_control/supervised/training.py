@@ -294,20 +294,20 @@ class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
 
 
 class CNNSequenceBaselineClassifier(torch.nn.Module):
-    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, n_layers_dil):
+    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels):
         super().__init__()
 
         self.iconv = torch.nn.Conv1d(4, emb_channels, kernel_size=init_kernel_size, padding='same')
         self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
         self.pos_proj = torch.nn.Linear(pos_channels, emb_channels)
         
-        self.rconvs = torch.nn.ModuleList([
-            torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=3, padding=2**i, 
-                dilation=2**i) for i in range(1, n_layers_dil+1)
-        ])
-        self.rrelus = torch.nn.ModuleList([
-            torch.nn.ReLU() for i in range(1, n_layers_dil+1)
-        ])
+        # self.rconvs = torch.nn.ModuleList([
+        #     torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=3, padding=2**i, 
+        #         dilation=2**i) for i in range(1, n_layers_dil+1)
+        # ])
+        # self.rrelus = torch.nn.ModuleList([
+        #     torch.nn.ReLU() for i in range(1, n_layers_dil+1)
+        # ])
 
         # self.norm = nn.BatchNorm1d(emb_channels)
         # self.norm = nn.LayerNorm(emb_channels)
@@ -321,11 +321,11 @@ class CNNSequenceBaselineClassifier(torch.nn.Module):
         p = self.pos_proj(self.pos_emb)
         x = F.relu(x + p)
         
-        x = x.swapaxes(1, 2)
-        for a, c in zip(self.rrelus, self.rconvs):
-            x_conv = a(c(x))
-            x = torch.add(x, x_conv)
-        x = x.swapaxes(1, 2)
+        # x = x.swapaxes(1, 2)
+        # for a, c in zip(self.rrelus, self.rconvs):
+        #     x_conv = a(c(x))
+        #     x = torch.add(x, x_conv)
+        # x = x.swapaxes(1, 2)
         
         x = self.trunk(x, None)
 

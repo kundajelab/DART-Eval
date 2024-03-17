@@ -1,6 +1,7 @@
 # from abc import ABCMeta, abstractmethod
 import os
 import math
+import heapq
 
 import numpy as np
 import torch
@@ -10,6 +11,7 @@ from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import Dataset, DataLoader, IterableDataset, get_worker_info
 import polars as pl
 import pyfaidx
+import pyBigWig
 import h5py
 from ncls import NCLS
 # from scipy.stats import wilcoxon
@@ -17,29 +19,24 @@ from tqdm import tqdm
 
 from ..utils import one_hot_encode
 
-class EmbeddingsDataset(IterableDataset):
+class AssayEmbeddingsDataset(IterableDataset):
     _elements_dtypes = {
         "chr": pl.Utf8,
         "input_start": pl.UInt32,
         "input_end": pl.UInt32,
-        "ccre_start": pl.UInt32,
-        "ccre_end": pl.UInt32,
-        "ccre_relative_start": pl.UInt32,
-        "ccre_relative_end": pl.UInt32,
-        "reverse_complement": pl.Boolean
+        "elem_start": pl.UInt32,
+        "elem_end": pl.UInt32,
+        "elem_relative_start": pl.UInt32,
+        "elem_relative_end": pl.UInt32
     }
 
-    def __init__(self, embeddings_h5, elements_tsv, chroms, cache_dir=None):
+    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None):
         super().__init__()
 
         self.elements_df = self._load_elements(elements_tsv, chroms)
         self.embeddings_h5 = embeddings_h5
-        self.cache_dir_seq = os.path.join(cache_dir, "seq") if cache_dir is not None else None
-        self.cache_dir_ctrl = os.path.join(cache_dir, "ctrl") if cache_dir is not None else None
-
-        if cache_dir is not None:
-            os.makedirs(self.cache_dir_seq, exist_ok=True)
-            os.makedirs(self.cache_dir_ctrl, exist_ok=True)
+        self.assay_bw = assay_bw
+        self.bounds = bounds
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
@@ -60,18 +57,22 @@ class EmbeddingsDataset(IterableDataset):
 
     def __iter__(self):
         worker_info = get_worker_info()
-        if worker_info is None:
+        if self.bounds is not None:
+            start, end = self.bounds
+        elif worker_info is None:
             start = 0
-            end = self.elements_df.height
+            end = len(self)
         else:
-            per_worker = int(math.ceil(self.elements_df.height / float(worker_info.num_workers)))
+            per_worker = int(math.ceil(len(self) / float(worker_info.num_workers)))
             start = worker_info.id * per_worker
-            end = min(start + per_worker, self.elements_df.height)
+            end = min(start + per_worker, len(self))
 
         df_sub = self.elements_df.slice(start, end - start)
-        # print(df_sub) ####
         valid_inds = df_sub.get_column('region_idx').to_numpy().astype(np.int32)
+        region_idx_to_row = {v: i for i, v in enumerate(valid_inds)}
         query_struct = NCLS(valid_inds, valid_inds + 1, valid_inds)
+
+        bw = pyBigWig.open(self.assay_bw)
 
         chunk_start = 0
         with h5py.File(self.embeddings_h5) as h5:
@@ -108,22 +109,105 @@ class EmbeddingsDataset(IterableDataset):
 
                     seq_emb = seq_chunk[i_rel]
 
-                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds)
+                    # print(df_sub[i]) ####
+                    _, chrom, region_start, region_end, _, _, _, _ = self.elements_df.row(region_idx_to_row[i])
+                    # print(chrom, region_start, region_end) ####
+
+                    track = np.nan_to_num(bw.values(chrom, region_start, region_end, numpy=True))
+
+                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.from_numpy(track)
+
+        bw.close()
+
+class InterleavedIterableDataset(IterableDataset):
+    def __init__(self, datasets):
+        super().__init__()
+
+        self.datasets = datasets
+
+    def __len__(self):
+        return sum(len(d) for d in self.datasets)
+
+    def __iter__(self):
+        lengths = []
+        worker_info = get_worker_info()
+        for d in self.datasets:
+            if worker_info is None:
+                d.bounds = (0, len(d))
+                lengths.append(len(d))
+            else:
+                per_worker = int(math.ceil(len(d) / float(worker_info.num_workers)))
+                start = worker_info.id * per_worker
+                end = min(start + per_worker, len(d))
+                d.bounds = (start, end)
+                lengths.append(end - start)
+
+        iterators = [iter(dataset) for dataset in self.datasets]
+        heap = [(0., 0, l, i) for i, l in enumerate(lengths) if l > 0]
+        heapq.heapify(heap)
+        while heap:
+            frac, complete, length, ind = heapq.heappop(heap)
+            yield_vals = list(next(iterators[ind]))
+            yield_vals.append(torch.tensor(ind, dtype=torch.long))
+
+            yield tuple(yield_vals)
+
+            if complete + 1 < length:
+                updated_record = ((complete + 1) / length, complete + 1, length, ind)
+                heapq.heappush(heap, updated_record)
+
+
+def log1pMSELoss(log_predicted_counts, true_counts):
+    log_true = torch.log(true_counts+1)
+    return torch.mean(torch.square(log_true - log_predicted_counts), dim=-1)
+
+
+def pearson_correlation(a, b):
+    a = a - torch.mean(a)
+    b = b - torch.mean(b)
+
+    var_a = torch.sum(a ** 2)
+    var_b = torch.sum(b ** 2)
+    cov = torch.sum(a * b)
+
+    r = cov / torch.sqrt(var_a * var_b)
+    r = torch.nan_to_num(r)
+
+    return r.item()
+
+def counts_pearson(log_preds, targets):
+    log_targets = torch.log(targets + 1)
+
+    r = pearson_correlation(log_preds, log_targets)
+
+    return r
+
+
+def counts_spearman(log_preds, targets):
+    log_targets = torch.log(targets + 1)
+
+    preds_rank = log_preds.argsort().argsort().float()
+    targets_rank = log_targets.argsort().argsort().float()
+
+    r = pearson_correlation(preds_rank, targets_rank)
+
+    return r
 
 
 def _collate_batch(batch):
     max_seq_len = max(seq_emb.shape[0] for seq_emb, _, _, _ in batch)
     seq_embs = torch.zeros(len(batch), max_seq_len, batch[0][0].shape[1])
-    for i, (seq_emb, _) in enumerate(batch):
+    for i, (seq_emb, _, _, _) in enumerate(batch):
         seq_embs[i,:seq_emb.shape[0]] = seq_emb
 
-    seq_inds = torch.stack([seq_inds for _, seq_inds in batch])
+    seq_inds = torch.stack([seq_inds for _, seq_inds, _, _ in batch])
+    tracks = torch.stack([track for _, _, track, _ in batch])
+    indicators = torch.stack([indicator for _, _, _, indicator in batch])
 
-    return seq_embs, seq_inds
+    return seq_embs, seq_inds, tracks, indicators
     
 
-
-def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
                                   pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
@@ -131,11 +215,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 
     os.makedirs(out_dir, exist_ok=True)
     log_file = os.path.join(out_dir, "train.log")
-    log_cols = ["epoch", "val_loss", "val_acc", "val_acc_paired"]
-
-    zero = torch.tensor(0, dtype=torch.long, device=device)[None]
-    one = torch.tensor(1, dtype=torch.long, device=device)[None]
-    # print(one.shape) ####
+    log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
 
     if resume_from is not None:
         start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
@@ -149,78 +229,78 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             f.write("\t".join(log_cols) + "\n")
 
         model.to(device)
-        model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
-            for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+            model.train()
+            for i, (seq_emb, seq_inds, track, indicator) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 seq_emb = seq_emb.to(device)
-                ctrl_emb = ctrl_emb.to(device)
                 seq_inds = seq_inds.to(device)
-                ctrl_inds = ctrl_inds.to(device)
+                track = track.to(device)
+                true_counts = track.sum(dim=1)
 
-                # seq_emb = _detokenize(seq_emb, seq_inds, device)
-                # ctrl_emb = _detokenize(ctrl_emb, ctrl_inds, device)
+                # print(seq_emb.shape, seq_inds.shape, track.shape, indicator.shape) ####
                 
                 optimizer.zero_grad()
-                out_seq = model(seq_emb, seq_inds)
-                out_ctrl = model(ctrl_emb, ctrl_inds)
-                loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
-                loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                loss = loss_seq + loss_ctrl
+                log1p_counts = model(seq_emb, seq_inds)
+                loss = log1pMSELoss(log1p_counts, true_counts)
                 loss.backward()
-                # clip_grad_norm_(model.parameters(), 10)
                 optimizer.step()
             
             val_loss = 0
-            val_acc = 0
-            val_acc_paired = 0
+            val_counts_pred = []
+            val_counts_true = []
+            val_indicators = []
+            model.eval()
             with torch.no_grad():
-                for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
+                for i, (seq_emb, seq_inds, track, indicator) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
                     seq_emb = seq_emb.to(device)
-                    ctrl_emb = ctrl_emb.to(device)
                     seq_inds = seq_inds.to(device)
-                    ctrl_inds = ctrl_inds.to(device)
+                    track = track.to(device)
+                    true_counts = track.sum(dim=1)
+                    
+                    optimizer.zero_grad()
+                    log1p_counts = model(seq_emb, seq_inds)
+                    loss = log1pMSELoss(log1p_counts, true_counts)
 
-                    # seq_emb = _detokenize(seq_emb, seq_inds, device)
-                    # ctrl_emb = _detokenize(ctrl_emb, ctrl_inds, device)
-
-                    out_seq = model(seq_emb, seq_inds)
-                    out_ctrl = model(ctrl_emb, ctrl_inds)
-                    loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
-                    loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
                     val_loss += loss.item()
-                    val_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
-                    val_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
-            
-            val_loss /= len(val_dataloader.dataset) * 2
-            val_acc /= len(val_dataloader.dataset) * 2
-            val_acc_paired /= len(val_dataloader.dataset)
+                    val_counts_pred.append(log1p_counts)
+                    val_counts_true.append(true_counts)
+                    val_indicators.append(indicator)
 
-            print(f"Epoch {epoch}: val_loss={val_loss}, val_acc={val_acc}, val_acc_paired={val_acc_paired}")
-            f.write(f"{epoch}\t{val_loss}\t{val_acc}\t{val_acc_paired}\n")
+            val_loss /= len(val_dataloader)
+            val_counts_pred = torch.cat(val_counts_pred, dim=0)
+            val_counts_true = torch.cat(val_counts_true, dim=0)
+            val_indicators = torch.cat(val_indicators, dim=0)
+
+            val_counts_pred_peaks = val_counts_pred[val_indicators == 0]
+            val_counts_true_peaks = val_counts_true[val_indicators == 0]
+
+            val_pearson_all = counts_pearson(val_counts_pred, val_counts_true)
+            val_pearson_peaks = counts_pearson(val_counts_pred_peaks, val_counts_true_peaks)
+            val_spearman_all = counts_spearman(val_counts_pred, val_counts_true)
+            val_spearman_peaks = counts_spearman(val_counts_pred_peaks, val_counts_true_peaks)
+
+            print(f"Epoch {epoch}: val_loss={val_loss}, val_pearson_all={val_pearson_all}, val_spearman_all={val_spearman_all}, val_pearson_peaks={val_pearson_peaks}, val_spearman_peaks={val_spearman_peaks}")
+            f.write(f"{epoch}\t{val_loss}\t{val_pearson_all}\t{val_spearman_all}\t{val_pearson_peaks}\t{val_spearman_peaks}\n")
             f.flush()
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
     
- 
-class CNNEmbeddingsClassifier(torch.nn.Module):
+
+class CNNEmbeddingsPredictorBase(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
         super().__init__()
 
         self.conv1 = torch.nn.Conv1d(input_channels, hidden_channels, 1, padding=1)
         self.conv2 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
         self.conv3 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-        self.fc1 = torch.nn.Linear(hidden_channels, 2)
+        self.fc1 = torch.nn.Linear(hidden_channels, 1)
 
     @staticmethod
     def _detokenize(embs, inds):
-        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
-        seq_embeddings = torch.gather(embs, 1, gather_idx)
-
-        return seq_embeddings
+        return embs
 
     def forward(self, embs, inds):
         x = self._detokenize(embs, inds)
@@ -230,11 +310,19 @@ class CNNEmbeddingsClassifier(torch.nn.Module):
         x = F.relu(self.conv3(x))
         x = x.sum(dim=2)
         x = self.fc1(x)
+        x = x.squeeze(-1)
 
         return x
     
+class CNNEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
+    @staticmethod
+    def _detokenize(embs, inds):
+        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
+        seq_embeddings = torch.gather(embs, 1, gather_idx)
 
-class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
+        return seq_embeddings
+
+class CNNSlicedEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
     @staticmethod
     def _detokenize(embs, inds):
         positions = torch.arange(embs.shape[1], device=embs.device)
@@ -245,70 +333,3 @@ class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
 
         return seq_embeddings
 
-
-# class CNNSequenceBaselineClassifier(torch.nn.Module):
-#     def __init__(self, n_filters, n_layers):
-#         super().__init__()
-
-#         self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=21, padding=10)
-#         self.irelu = torch.nn.ReLU()
-
-#         self.rconvs = torch.nn.ModuleList([
-#             torch.nn.Conv1d(n_filters, n_filters, kernel_size=3, padding=2**i, 
-#                 dilation=2**i) for i in range(1, n_layers+1)
-#         ])
-#         self.rrelus = torch.nn.ModuleList([
-#             torch.nn.ReLU() for i in range(1, n_layers+1)
-#         ])
-
-#         self.linear = torch.nn.Linear(n_filters, 2)
-
-
-#     def forward(self, x, _):
-#         x = x.swapaxes(1, 2)
-
-#         x = self.irelu(self.iconv(x))
-#         for a, c in zip(self.rrelus, self.rconvs):
-#             x_conv = a(c(x))
-#             x = torch.add(x, x_conv)
-
-#         x = torch.mean(x[:,:,37:-37], dim=2)
-
-#         return x
-
-
-# class CNNSequenceBaselineClassifier(torch.nn.Module):
-#     def __init__(self, input_channels, hidden_channels, kernel_size, n_layers_trunk):
-#         super().__init__()
-
-#         self.iconv = torch.nn.Conv1d(4, input_channels, kernel_size=21, padding=10)
-#         self.irelu = torch.nn.ReLU()
-
-#         self.rconvs = torch.nn.ModuleList([
-#             torch.nn.Conv1d(input_channels, input_channels, kernel_size=3, padding=2**i, 
-#                 dilation=2**i) for i in range(1, n_layers_trunk+1)
-#         ])
-#         self.rrelus = torch.nn.ModuleList([
-#             torch.nn.ReLU() for i in range(1, n_layers_trunk+1)
-#         ])
-
-#         self.conv1 = torch.nn.Conv1d(input_channels, hidden_channels, 1, padding=1)
-#         self.conv2 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-#         self.conv3 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-#         self.fc1 = torch.nn.Linear(hidden_channels, 2)
-
-#     def forward(self, x, _):
-#         x = x.swapaxes(1, 2)
-
-#         x = self.irelu(self.iconv(x))
-#         for a, c in zip(self.rrelus, self.rconvs):
-#             x_conv = a(c(x))
-#             x = torch.add(x, x_conv)
-
-#         x = F.relu(self.conv1(x))
-#         x = F.relu(self.conv2(x))
-#         x = F.relu(self.conv3(x))
-#         x = x.sum(dim=2)
-#         x = self.fc1(x)
-
-#         return x

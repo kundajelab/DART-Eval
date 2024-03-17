@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     n_filters = 64
     # n_layers = 7
-    n_layers_dil = 7
+    # n_layers_dil = 7
 
     # input_channels = 256
     emb_channels = 256
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v32"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v30"
     os.makedirs(out_dir, exist_ok=True)
 
     # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_500_jitter_50/{model_name}"
@@ -83,11 +83,11 @@ if __name__ == "__main__":
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train, cache_dir=cache_dir)
     val_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_val, cache_dir=cache_dir)
-    model = CNNSequenceBaselineClassifier(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, n_layers_dil)
+    model = CNNSequenceBaselineClassifier(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels)
     # model = CNNSequenceBaselineClassifier(n_filters, n_layers)
     # model = CNNSequenceBaselineClassifier(input_channels, hidden_channels, kernel_size, n_layers_trunk)
 
-    # print(f"Parameter count: {sum(p.numel() for p in model.parameters())}")
+    print(f"Parameter count: {sum(p.numel() for p in model.parameters())}")
     train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
     # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
     #                  progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_77.pt"))
