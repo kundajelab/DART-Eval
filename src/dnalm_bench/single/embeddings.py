@@ -140,10 +140,15 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_config(config)
-        super().__init__(tokenizer, model, batch_size, num_workers, device)
+        # tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        # config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+        # model = AutoModelForMaskedLM.from_config(config)
+
+        tokenizer1 = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        config1 = BertConfig.from_pretrained(model_name)
+        model1 = AutoModelForMaskedLM.from_pretrained(model_name, config=config1, trust_remote_code=True)
+
+        super().__init__(tokenizer1, model1, batch_size, num_workers, device)
 
 
 class MistralDNAEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
