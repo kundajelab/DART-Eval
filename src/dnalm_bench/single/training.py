@@ -227,6 +227,7 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
     with open(log_file, "a") as f:
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
+            f.flush()
 
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
