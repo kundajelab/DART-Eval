@@ -111,7 +111,7 @@ class EmbeddingsDataset(IterableDataset):
                 for i, _, _ in chunk_range:
                     i_rel = i - chunk_start
                     if idx_seq_fixed:
-                        seq_inds = idx_ctrl_dset
+                        seq_inds = idx_seq_dset
                     else:
                         seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
                     if idx_ctrl_fixed:
@@ -172,11 +172,11 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             f.write("\t".join(log_cols) + "\n")
 
         model.to(device)
-        model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
+            model.train()
             for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 seq_emb = seq_emb.to(device)
                 ctrl_emb = ctrl_emb.to(device)
@@ -199,6 +199,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
             val_loss = 0
             val_acc = 0
             val_acc_paired = 0
+            model.eval()
             with torch.no_grad():
                 for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
                     seq_emb = seq_emb.to(device)
@@ -248,7 +249,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 #         return output
     
  
-class CNNEmbeddingsClassifier(torch.nn.Module):
+class CNNEmbeddingsClassifierBase(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size):
         super().__init__()
 
@@ -259,10 +260,7 @@ class CNNEmbeddingsClassifier(torch.nn.Module):
 
     @staticmethod
     def _detokenize(embs, inds):
-        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
-        seq_embeddings = torch.gather(embs, 1, gather_idx)
-
-        return seq_embeddings
+        return embs
 
     def forward(self, embs, inds):
         x = self._detokenize(embs, inds)
@@ -275,8 +273,15 @@ class CNNEmbeddingsClassifier(torch.nn.Module):
 
         return x
     
+class CNNEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
+    @staticmethod
+    def _detokenize(embs, inds):
+        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
+        seq_embeddings = torch.gather(embs, 1, gather_idx)
 
-class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
+        return seq_embeddings
+
+class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifierBase):
     @staticmethod
     def _detokenize(embs, inds):
         positions = torch.arange(embs.shape[1], device=embs.device)
@@ -289,34 +294,74 @@ class CNNSlicedEmbeddingsClassifier(CNNEmbeddingsClassifier):
 
 
 class CNNSequenceBaselineClassifier(torch.nn.Module):
-    def __init__(self, n_filters, n_layers):
+    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels):
         super().__init__()
 
-        self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=21, padding=10)
-        self.irelu = torch.nn.ReLU()
+        self.iconv = torch.nn.Conv1d(4, emb_channels, kernel_size=init_kernel_size, padding='same')
+        self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
+        self.pos_proj = torch.nn.Linear(pos_channels, emb_channels)
+        
+        # self.rconvs = torch.nn.ModuleList([
+        #     torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=3, padding=2**i, 
+        #         dilation=2**i) for i in range(1, n_layers_dil+1)
+        # ])
+        # self.rrelus = torch.nn.ModuleList([
+        #     torch.nn.ReLU() for i in range(1, n_layers_dil+1)
+        # ])
 
-        self.rconvs = torch.nn.ModuleList([
-            torch.nn.Conv1d(n_filters, n_filters, kernel_size=3, padding=2**i, 
-                dilation=2**i) for i in range(1, n_layers+1)
-        ])
-        self.rrelus = torch.nn.ModuleList([
-            torch.nn.ReLU() for i in range(1, n_layers+1)
-        ])
-
-        self.linear = torch.nn.Linear(n_filters, 2)
-
+        # self.norm = nn.BatchNorm1d(emb_channels)
+        # self.norm = nn.LayerNorm(emb_channels)
+        # self.iconv2 = torch.nn.Conv1d(emb_channels, emb_channels, kernel_size=21, padding=10)
+        self.trunk = CNNEmbeddingsClassifierBase(emb_channels, hidden_channels, kernel_size)
 
     def forward(self, x, _):
         x = x.swapaxes(1, 2)
-
-        x = self.irelu(self.iconv(x))
-        for a, c in zip(self.rrelus, self.rconvs):
-            x_conv = a(c(x))
-            x = torch.add(x, x_conv)
-
-        x = torch.mean(x[:,:,37:-37], dim=2)
+        x = self.iconv(x)
+        x = x.swapaxes(1, 2)
+        p = self.pos_proj(self.pos_emb)
+        x = F.relu(x + p)
+        
+        # x = x.swapaxes(1, 2)
+        # for a, c in zip(self.rrelus, self.rconvs):
+        #     x_conv = a(c(x))
+        #     x = torch.add(x, x_conv)
+        # x = x.swapaxes(1, 2)
+        
+        x = self.trunk(x, None)
 
         return x
+    
+    
+
+# class CNNSequenceBaselineClassifier(torch.nn.Module):
+#     def __init__(self, n_filters, n_layers):
+#         super().__init__()
+
+#         self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=21, padding=10)
+#         self.irelu = torch.nn.ReLU()
+
+#         self.rconvs = torch.nn.ModuleList([
+#             torch.nn.Conv1d(n_filters, n_filters, kernel_size=3, padding=2**i, 
+#                 dilation=2**i) for i in range(1, n_layers+1)
+#         ])
+#         self.rrelus = torch.nn.ModuleList([
+#             torch.nn.ReLU() for i in range(1, n_layers+1)
+#         ])
+
+#         self.linear = torch.nn.Linear(n_filters, 2)
+
+
+#     def forward(self, x, _):
+#         x = x.swapaxes(1, 2)
+
+#         x = self.irelu(self.iconv(x))
+#         for a, c in zip(self.rrelus, self.rconvs):
+#             x_conv = a(c(x))
+#             x = torch.add(x, x_conv)
+
+#         x = torch.mean(x[:,:,37:-37], dim=2)
+
+#         return x
 
 
 # class CNNSequenceBaselineClassifier(torch.nn.Module):
