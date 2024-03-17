@@ -15,7 +15,8 @@ class DNABERT2Evaluator(components.MaskedLogPerplexityEvaluator):
 		self.model_name = f"zhihan1996/{model_name}"
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
 		config = BertConfig.from_pretrained(self.model_name, trust_remote_code=True)
-		self.model = AutoModelForMaskedLM.from_config(config)
+		self.model = AutoModelForMaskedLM.from_pretrained(self.model_name, config=config, trust_remote_code=True)
+		# self.model = AutoModelForMaskedLM.from_config(config)
 		self.model.to(device)
 
 	@property
