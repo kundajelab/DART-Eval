@@ -127,16 +127,23 @@ class VariantDataset(Dataset):
                 end_adj = allele1_sequence_data.end
                 allele1_sequence_data = str(allele1_sequence_data.seq)
                 allele2_sequence_data = str(fa[chrom][pos-250:pos].seq)
-                if fa[chrom][pos]==allele1: # allele1 is the reference allele
+                fa_chrom_pos = str(fa[chrom][pos]).upper()
+                if fa_chrom_pos==allele1: # allele1 is the reference allele
                         allele2_sequence_data += allele2
                         allele2_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
-                elif fa[chrom][pos]==allele2:
+                elif fa_chrom_pos==allele2:
                         allele1_sequence_data, allele2_sequence_data = allele2_sequence_data, allele1_sequence_data # allele2 is the reference allele
                         allele1_sequence_data += allele1
                         allele1_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
                 else: # allele1 and allele2 both do not appear in the reference genome
-                        print(chrom, pos, allele1, allele2, " not in reference.")
-                        return torch.from_numpy(allele1_seq), torch.from_numpy(allele2_seq)
+                        print(chrom, pos, allele1, allele2, " not in reference. In reference, it appears as ", fa_chrom_pos)
+                        # still score the SNP by replacing chrom:pos with allele1 and allele2 respectively
+                        allele1_sequence_data = str(fa[chrom][pos-250:pos].seq)
+                        allele2_sequence_data = str(fa[chrom][pos-250:pos].seq) 
+                        allele1_sequence_data += allele1
+                        allele2_sequence_data += allele2
+                        allele1_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
+                        allele2_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
 
                 allele1_sequence = allele1_sequence_data.upper()
                 allele2_sequence = allele2_sequence_data.upper()

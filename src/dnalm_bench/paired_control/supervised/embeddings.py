@@ -82,7 +82,8 @@ class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExt
         model_name = f"zhihan1996/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_config(config)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        # model = AutoModelForMaskedLM.from_config(config)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
@@ -121,7 +122,7 @@ class MistralDNAEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingE
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model =  AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        # model =  AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 

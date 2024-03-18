@@ -10,7 +10,7 @@ from scipy.stats import wilcoxon
 from tqdm import tqdm
 import h5py
 from ..embeddings import HFEmbeddingExtractor
-from ..utils import onehot_to_chars
+from ..utils import onehot_to_chars, NoModule
 
 
 
@@ -140,9 +140,11 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_config(config)
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
@@ -217,7 +219,7 @@ class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
         model_name = f"zhihan1996/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_config(config)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 class MistralDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):

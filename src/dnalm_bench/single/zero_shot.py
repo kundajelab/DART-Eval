@@ -102,7 +102,8 @@ class DNABERT2Evaluator(LogitExtractor, MaskedZeroShotScore):
         model_name = f"zhihan1996/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         config = BertConfig.from_pretrained(self.model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_config(config)
+        # model = AutoModelForMaskedLM.from_config(config)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, genome_fa, elements_tsv, chroms, batch_size, num_workers, seed, device)
 
     @property
