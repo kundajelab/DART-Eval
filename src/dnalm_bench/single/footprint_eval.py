@@ -30,8 +30,8 @@ def load_embeddings(emb_h5):
 	        indices = [np.arange(mi, ma) for mi, ma in zip(mins, maxes)]
 	        curr_means = np.array([np.mean(h5_array[i, indices[i], :], axis=0) for i in range(h5_array.shape[0])])
 	        running_arrays.append(curr_means)
-	    elif "idx_fix" in file['seq'].keys():
-	        idx_fix = file['seq']['idx_fix'][:]
+	    elif "idx_fix" in emb_h5['seq'].keys():
+	        idx_fix = emb_h5['seq']['idx_fix'][:]
 	        indices = np.arange(idx_fix.min(), idx_fix.max() + 1)
 	        curr_means = np.mean(h5_array[:, indices, :], axis=1)
 	        running_arrays.append(curr_means)
