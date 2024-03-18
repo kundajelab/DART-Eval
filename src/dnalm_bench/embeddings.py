@@ -55,8 +55,10 @@ class HFEmbeddingExtractor(EmbeddingExtractor, metaclass=ABCMeta):
                 tokens,
                 output_hidden_states=True
             )
-            embs = torch_outs.hidden_states[-1]
-
+            if len(torch_outs.hidden_states) == self.batch_size:
+                embs = torch_outs.hidden_states
+            else:
+                embs = torch_outs.hidden_states[-1]
         return embs
 
     def detokenize(self, seqs, token_embeddings, offsets):

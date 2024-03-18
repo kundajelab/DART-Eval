@@ -113,7 +113,6 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
 
                 allele1_token_emb = self.model_fwd(allele1_tokens)
                 allele2_token_emb = self.model_fwd(allele2_tokens)
-
                 if self._idx_mode == "variable":
                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
                     allele1_indices_dset = allele1_grp.require_dataset("idx_var", (len(dataset), allele1_indices.shape[1]), dtype=np.uint32)
@@ -133,7 +132,6 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
                 allele2_grp.create_dataset(f"emb_{start}_{end}", data=allele2_token_emb.numpy(force=True))
 
                 start = end
-        
         os.rename(out_path + ".tmp", out_path)       
 
     
@@ -217,9 +215,11 @@ class HyenaDNAEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor)
 class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 class MistralDNAVariantEmbeddingExtractor(HFVariantEmbeddingExtractor):
