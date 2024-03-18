@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 
 ALPHABET = np.array(["A","C","G","T"], dtype="S1")
@@ -8,6 +10,7 @@ def onehot_to_chars(onehot):
 
 	return strings
 
+
 def one_hot_encode(sequence):
     sequence = sequence.upper()
 
@@ -15,3 +18,24 @@ def one_hot_encode(sequence):
     one_hot = (seq_chararray[:,None] == ALPHABET[None,:]).astype(np.int8)
 
     return one_hot
+
+
+class NoModule:
+    def __init__(self, *module_names):
+        self.module_names = module_names
+        self.original_modules = {}
+
+    def __enter__(self):
+        for module_name in self.module_names:
+            if module_name in sys.modules:
+                self.original_modules[module_name] = sys.modules[module_name]
+            sys.modules[module_name] = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        for module_name in self.module_names:
+            if module_name in self.original_modules:
+                sys.modules[module_name] = self.original_modules[module_name]
+            else:
+                del sys.modules[module_name]
+
+
