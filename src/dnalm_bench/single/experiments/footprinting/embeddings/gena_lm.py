@@ -1,8 +1,8 @@
 import os
 import sys
 
-from ...embeddings import GENALMEmbeddingExtractor
-from ...components import FootprintingDataset
+from ....embeddings import GENALMEmbeddingExtractor
+from ....components import FootprintingDataset
 
 
 if __name__ == "__main__":

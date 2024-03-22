@@ -1,8 +1,8 @@
 import os
 import sys
 
-from ...embeddings import MistralDNAEmbeddingExtractor
-from ...components import FootprintingDataset
+from ....embeddings import MistralDNAEmbeddingExtractor
+from ....components import FootprintingDataset
 
 
 if __name__ == "__main__":
