@@ -15,10 +15,9 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/footprinting/{model_name}/"
-    # os.makedirs(out_dir, exist_ok=True)
-    # out_path = os.path.join(out_dir, f"embeddings.h5")
-    out_path = "/users/patelas/scratch/testfootprintlikelihoods.tsv"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/likelihoods/footprinting/{model_name}/"
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"likelihoods.tsv")
 
     dataset = FootprintingDataset(seq_table, seed)
     evaluator = DNABERT2Evaluator(model_name, batch_size, num_workers, device)

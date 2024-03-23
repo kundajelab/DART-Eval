@@ -36,11 +36,14 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        attention_mask = encoded["attention_mask"]
+        try:
+            attention_mask = encoded["attention_mask"]
+        except:
+            attention_mask = None
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
-            starts = 0
+            starts = torch.tensor([0]*tokens.shape[0])
         if self.end_token is not None:
             ends = torch.where(tokens == self.end_token)[1]
         else:
