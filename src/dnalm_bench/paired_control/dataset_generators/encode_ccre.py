@@ -36,7 +36,7 @@ def make_region_df(ccre_table, args):
 		to_expand = args.input_size + 2 * args.max_jitter - length
 		expand_start = start - to_expand // 2
 		#Calculate final start and end positions of input region to model
-		jitter_start_pos = np.random.randint(expand_start, expand_start + 2 * args.max_jitter)
+		jitter_start_pos = np.random.randint(expand_start, expand_start + 2 * args.max_jitter) if args.max_jitter > 0 else expand_start
 		jitter_end_pos = jitter_start_pos + args.input_size
 		#Add model start and end positions to table
 		region_info["input_start"].append(jitter_start_pos)
