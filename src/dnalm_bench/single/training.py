@@ -30,13 +30,18 @@ class AssayEmbeddingsDataset(IterableDataset):
         "elem_relative_end": pl.UInt32
     }
 
-    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None):
+    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1):
         super().__init__()
 
-        self.elements_df = self._load_elements(elements_tsv, chroms)
+        self.elements_df_all = self._load_elements(elements_tsv, chroms)
         self.embeddings_h5 = embeddings_h5
         self.assay_bw = assay_bw
         self.bounds = bounds
+        self.crop = crop
+        self.downsample_ratio = downsample_ratio
+
+        self.next_epoch = 0
+        self._set_epoch()
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
@@ -51,7 +56,17 @@ class AssayEmbeddingsDataset(IterableDataset):
         df = df.collect()
 
         return df
-    
+
+    def _set_epoch(self):
+        segment = self.next_epoch % self.downsample_ratio
+        total_elements = self.elements_df_all.height
+        segment_boundaries = np.linspace(0, total_elements, self.downsample_ratio + 1).round().astype(np.int32)
+        start = segment_boundaries[segment]
+        end = segment_boundaries[segment + 1]
+
+        self.elements_df = self.elements_df_all.slice(start, end - start)
+        self.next_epoch += 1
+
     def __len__(self):
         return self.elements_df.height
 
@@ -101,29 +116,42 @@ class AssayEmbeddingsDataset(IterableDataset):
                     idx_seq_chunk = h5["seq/idx_var"][chunk_start:chunk_end]
 
                 for i, _, _ in chunk_range:
+                    # print(worker_info.id, i, "a") ####
                     i_rel = i - chunk_start
                     if idx_seq_fixed:
                         seq_inds = idx_seq_dset
                     else:
                         seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
 
+                    # print(worker_info.id, i, "b") ####
                     seq_emb = seq_chunk[i_rel]
 
                     # print(df_sub[i]) ####
+                    # print(worker_info.id, i, "c") ####
                     _, chrom, region_start, region_end, _, _, _, _ = self.elements_df.row(region_idx_to_row[i])
                     # print(chrom, region_start, region_end) ####
 
+                    # print(worker_info.id, i, "d") ####
                     track = np.nan_to_num(bw.values(chrom, region_start, region_end, numpy=True))
+                    if self.crop > 0:
+                        track = track[self.crop:-self.crop]
 
+                    # print(worker_info.id, i, "e") ####
                     yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.from_numpy(track)
 
         bw.close()
+        self._set_epoch()
+
 
 class InterleavedIterableDataset(IterableDataset):
     def __init__(self, datasets):
         super().__init__()
 
         self.datasets = datasets
+
+    # def set_epoch(self, epoch):
+    #     for d in self.datasets:
+    #         d.set_epoch(epoch)
 
     def __len__(self):
         return sum(len(d) for d in self.datasets)
@@ -218,8 +246,10 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
     log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
 
     if resume_from is not None:
-        start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
-        checkpoint_resume = torch.load(resume_from)
+        # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
         model.load_state_dict(checkpoint_resume)
     else:
         start_epoch = 0

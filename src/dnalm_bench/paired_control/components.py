@@ -18,8 +18,8 @@ class PairedControlDataset(Dataset):
 		"input_end": pl.UInt32,
 		"ccre_start": pl.UInt32,
 		"ccre_end": pl.UInt32,
-		"ccre_relative_start": pl.UInt32,
-		"ccre_relative_end": pl.UInt32,
+		"ccre_relative_start": pl.Int32,
+		"ccre_relative_end": pl.Int32,
 		"reverse_complement": pl.Boolean
 	}
 

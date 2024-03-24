@@ -145,6 +145,17 @@ class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor)
 
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+    def model_fwd(self, tokens):
+        tokens = tokens.to(device=self.device)
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens,
+                output_hidden_states=True
+            )
+            embs = torch_outs.hidden_states
+
+        return embs
+
 
 class MistralDNAEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
     def __init__(self, model_name, batch_size, num_workers, device):

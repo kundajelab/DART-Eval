@@ -20,6 +20,11 @@ def one_hot_encode(sequence):
     return one_hot
 
 
+def loop_infinite(iterable):
+    while True:
+        yield from iterable
+
+
 class NoModule:
     def __init__(self, *module_names):
         self.module_names = module_names
