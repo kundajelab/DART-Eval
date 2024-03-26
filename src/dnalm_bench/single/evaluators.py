@@ -184,7 +184,7 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, batch_size, num_workers, seed, device)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
     def start_token(self):
