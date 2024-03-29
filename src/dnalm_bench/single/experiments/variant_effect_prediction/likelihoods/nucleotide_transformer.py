@@ -1,12 +1,12 @@
 import os
 import sys
 
-from ....evaluators import HDVariantEvaluator
+from ....evaluators import NTVariantEvaluator
 from ....components import VariantDataset
 
 
 if __name__ == "__main__":
-    model_name = "hyenadna-large-1m-seqlen-hf"
+    model_name = "nucleotide-transformer-v2-500m-multi-species"
     batch_size = 64
     num_workers = 4
     seed = 0
@@ -33,5 +33,5 @@ if __name__ == "__main__":
         out_path = os.path.join(out_dir, f"{likelihood_tsv}")
 
         dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-        evaluator = HDVariantEvaluator(model_name, batch_size, num_workers, device)
+        evaluator = NTVariantEvaluator(model_name, batch_size, num_workers, device)
         evaluator.evaluate(dataset, out_path, progress_bar=True)

@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoModelForCausalLM, BertConfig
 from scipy.stats import wilcoxon
 from tqdm import tqdm
-from ..utils import onehot_to_chars
+from ..utils import NoModule, onehot_to_chars
 import polars as pl
 
 class LikelihoodEvaluator(metaclass=ABCMeta):
@@ -82,43 +82,6 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
                 out_file_obj.flush()
 
 class VariantLikelihoodEvaluator(LikelihoodEvaluator):
-# dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-#         with h5py.File(out_path + ".tmp", "w") as out_f:
-#             allele1_grp = out_f.create_group("allele1")
-#             allele2_grp = out_f.create_group("allele2")
-
-#             start = 0
-#             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)): # shape = batch_size x 500 x 4
-#                 if torch.all(allele1 == 0) and torch.all(allele2==0):
-#                     continue
-#                 end = start + len(allele1)
-
-#                 allele1_tokens, allele1_offsets = self.tokenize(allele1)
-#                 allele2_tokens, allele2_offsets = self.tokenize(allele2)
-
-#                 allele1_token_emb = self.model_fwd(allele1_tokens)
-#                 allele2_token_emb = self.model_fwd(allele2_tokens)
-#                 if self._idx_mode == "variable":
-#                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
-#                     allele1_indices_dset = allele1_grp.require_dataset("idx_var", (len(dataset), allele1_indices.shape[1]), dtype=np.uint32)
-#                     allele1_indices_dset[start:end] = allele1_indices
-
-#                     allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
-#                     allele2_indices_dset = allele2_grp.require_dataset("idx_var", (len(dataset), allele2_indices.shape[1]), dtype=np.uint32)
-#                     allele2_indices_dset[start:end] = allele2_indices
-
-#                 elif (start == 0) and (self._idx_mode == "fixed"):
-#                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
-#                     allele1_indices_dset = allele1_grp.create_dataset("idx_fix", data=allele1_indices, dtype=np.uint32)
-#                     allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
-#                     allele2_indices_dset = allele2_grp.create_dataset("idx_fix", data=allele2_indices, dtype=np.uint32)
-
-#                 allele1_grp.create_dataset(f"emb_{start}_{end}", data=allele1_token_emb.numpy(force=True))
-#                 allele2_grp.create_dataset(f"emb_{start}_{end}", data=allele2_token_emb.numpy(force=True))
-
-#                 start = end
-#         os.rename(out_path + ".tmp", out_path) 
-
 
     def evaluate(self, dataset, output_file, progress_bar=True):
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
@@ -175,9 +138,10 @@ class CausalZeroShotScore(metaclass=ABCMeta):
 class DNABERT2Evaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
@@ -255,9 +219,10 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
 class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
