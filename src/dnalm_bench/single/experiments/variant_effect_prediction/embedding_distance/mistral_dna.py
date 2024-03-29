@@ -18,8 +18,8 @@ if __name__ == "__main__":
     chroms=None
 
     h5_file = "mistral.gm12878.dsqtls.benchmarking.variant_embeddings.h5"
-    # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
-    out_dir = "/scratch/groups/akundaje/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
+    out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
+    # out_dir = "/scratch/groups/akundaje/dnalm_benchmark/embeddings/variant_embeddings/Mistral-DNA/"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, h5_file)
 
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     cos_dist = pl.Series('cosine_distances', cosine_distances)
     df = df.with_columns(cos_dist)
     df.write_csv(os.path.join(out_dir, "mistral.gm12878.dsqtls.benchmarking.cosine_distances.tsv"), separator="\t")
-
+A

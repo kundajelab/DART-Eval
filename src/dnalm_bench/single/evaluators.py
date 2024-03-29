@@ -8,6 +8,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoMod
 from scipy.stats import wilcoxon
 from tqdm import tqdm
 from ..utils import onehot_to_chars
+import polars as pl
 
 class LikelihoodEvaluator(metaclass=ABCMeta):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
@@ -53,6 +54,7 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
     def model_fwd(self, tokens, attention_mask):
         with torch.no_grad():
             try:
+                # breakpoint()
                 torch_outs = self.model(
                     tokens,
                     attention_mask=attention_mask,
@@ -79,6 +81,61 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
                 out_file_obj.write(f"{str(lhood)}\n")
                 out_file_obj.flush()
 
+class VariantLikelihoodEvaluator(LikelihoodEvaluator):
+# dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+#         with h5py.File(out_path + ".tmp", "w") as out_f:
+#             allele1_grp = out_f.create_group("allele1")
+#             allele2_grp = out_f.create_group("allele2")
+
+#             start = 0
+#             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)): # shape = batch_size x 500 x 4
+#                 if torch.all(allele1 == 0) and torch.all(allele2==0):
+#                     continue
+#                 end = start + len(allele1)
+
+#                 allele1_tokens, allele1_offsets = self.tokenize(allele1)
+#                 allele2_tokens, allele2_offsets = self.tokenize(allele2)
+
+#                 allele1_token_emb = self.model_fwd(allele1_tokens)
+#                 allele2_token_emb = self.model_fwd(allele2_tokens)
+#                 if self._idx_mode == "variable":
+#                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
+#                     allele1_indices_dset = allele1_grp.require_dataset("idx_var", (len(dataset), allele1_indices.shape[1]), dtype=np.uint32)
+#                     allele1_indices_dset[start:end] = allele1_indices
+
+#                     allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
+#                     allele2_indices_dset = allele2_grp.require_dataset("idx_var", (len(dataset), allele2_indices.shape[1]), dtype=np.uint32)
+#                     allele2_indices_dset[start:end] = allele2_indices
+
+#                 elif (start == 0) and (self._idx_mode == "fixed"):
+#                     allele1_indices = self._offsets_to_indices(allele1_offsets, allele1)
+#                     allele1_indices_dset = allele1_grp.create_dataset("idx_fix", data=allele1_indices, dtype=np.uint32)
+#                     allele2_indices = self._offsets_to_indices(allele2_offsets, allele2)
+#                     allele2_indices_dset = allele2_grp.create_dataset("idx_fix", data=allele2_indices, dtype=np.uint32)
+
+#                 allele1_grp.create_dataset(f"emb_{start}_{end}", data=allele1_token_emb.numpy(force=True))
+#                 allele2_grp.create_dataset(f"emb_{start}_{end}", data=allele2_token_emb.numpy(force=True))
+
+#                 start = end
+#         os.rename(out_path + ".tmp", out_path) 
+
+
+    def evaluate(self, dataset, output_file, progress_bar=True):
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        allele1_likelihoods = []
+        allele2_likelihoods = []
+        
+        for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1 = self.tokenize(allele1)
+            tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2 = self.tokenize(allele2)
+            lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1)
+            lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2)
+            for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
+                allele1_likelihoods.append(lhood_allele1)
+                allele2_likelihoods.append(lhood_allele2)
+        data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
+        df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
+        df.write_csv(output_file, separator="\t")
 
 
 class MaskedZeroShotScore(metaclass=ABCMeta):
@@ -88,6 +145,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
         pass
 
     def score(self, tokens, starts, ends, attention_mask):
+        # breakpoint()
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
         lls = torch.zeros(tokens.shape[:2], device=self.device)
@@ -180,6 +238,86 @@ class MistralEvaluator(LikelihoodEvaluator, CausalZeroShotScore):
 
 
 class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 3
+    
+    @property
+    def end_token(self):
+        return None
+    
+class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"zhihan1996/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
+
+
+class GenaLMVariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"AIRI-Institute/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
+
+
+class HDVariantEvaluator(VariantLikelihoodEvaluator, CausalZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+
+
+class MistralVariantEvaluator(VariantLikelihoodEvaluator, CausalZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"RaphaelMourad/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
+
+
+class NTVariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
