@@ -35,6 +35,9 @@ class LoRAModule(nn.Module):
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
 
+    def forward(self, *args, **kwargs):
+        return self.model(*args, **kwargs)
+
     def parameters(self):
         return list(minlora.get_lora_params(self.model))
 
@@ -66,10 +69,7 @@ class HFClassifierModel(nn.Module):
     def forward(self, seqs):
         tokens = self._tokenize(seqs)
 
-        torch_outs = self.model(
-            tokens,
-            output_hidden_states=True
-        )
+        torch_outs = self.model(tokens)
         logits = torch_outs.logits
 
         return logits
