@@ -72,6 +72,7 @@ class HFLoRAModel(LoRAModel):
             tokens,
             output_hidden_states=True
         )
+        print(torch_outs) ####
         cls_embs = torch_outs.pooler_output
 
         return cls_embs
