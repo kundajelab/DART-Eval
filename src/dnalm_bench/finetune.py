@@ -16,7 +16,7 @@ import minlora
 from .utils import onehot_to_chars
 
 
-class LoRAModel(nn.module, metaclass=ABCMeta):
+class LoRAModel(nn.Module, metaclass=ABCMeta):
     def __init__(self, model, lora_rank, lora_alpha, lora_dropout):
         lora_config = {
             nn.Embedding: {
