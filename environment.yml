@@ -19,5 +19,6 @@ dependencies:
   - conda-forge::pip=24.0
   - bioconda::pyfaidx=0.7.2.1
   - bioconda::ncls=0.0.68
-  # - pip:
-  #   - "--editable=git+https://github.com/songlab-cal/gpn.git@05b23c54c572813810c094b31031901f7109575b#egg=gpn"
+  - pip:
+    - "--editable=git+https://github.com/cccntu/minLoRA.git@d47a4c93df87540bb396172cfac1f3246e7db5f9#egg=minLoRA"
+    # - "--editable=git+https://github.com/songlab-cal/gpn.git@05b23c54c572813810c094b31031901f7109575b#egg=gpn"

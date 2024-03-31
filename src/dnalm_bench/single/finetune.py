@@ -1,0 +1,319 @@
+import os
+from abc import ABCMeta, abstractmethod
+import hashlib
+import shutil
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset, ConcatDataset
+from transformers import AutoTokenizer, AutoModel
+from tqdm import tqdm
+import polars as pl
+import h5py
+import pyfaidx
+import pyBigWig
+
+from ..finetune import HFLoRAModel
+from ..utils import onehot_to_chars, one_hot_encode, NoModule
+
+
+class ChromatinEndToEndDataset(Dataset):
+    _elements_dtypes = {
+        "chr": pl.Utf8,
+        "input_start": pl.UInt32,
+        "input_end": pl.UInt32,
+        "elem_start": pl.UInt32,
+        "elem_end": pl.UInt32,
+    }
+
+    def __init__(self, genome_fa, bigwig, elements_tsv, chroms, crop, downsample_ratio=None, cache_dir=None):
+        super().__init__()
+
+        self.crop = crop
+
+        self.elements_df_all = self._load_elements(elements_tsv, chroms)
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+            
+            bw_path_abs = os.path.abspath(bigwig)
+            bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash)
+            self._copy_if_not_exists(bigwig, bw_cache_path)
+            bigwig = bw_cache_path
+
+            fa_path_abs = os.path.abspath(genome_fa)
+            fa_idx_path_abs = fa_path_abs + ".fai"
+            fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
+            fa_cache_path = os.path.join(cache_dir, fa_path_hash)
+            fa_idx_cache_path = fa_cache_path + ".fai"
+            self._copy_if_not_exists(genome_fa, fa_cache_path)
+            genome_fa = fa_cache_path
+            try:
+                self._copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
+            except FileNotFoundError:
+                pass
+
+        self.genome_fa = genome_fa
+        fa = pyfaidx.Fasta(self.genome_fa) # Build index if needed
+        fa.close()
+
+        self.bw = bigwig
+
+        self.downsample_ratio = downsample_ratio
+        if downsample_ratio is None:
+            self.elements_df = self.elements_df_all
+
+    @classmethod
+    def _load_elements(cls, elements_file, chroms):
+        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+        
+        if chroms is not None:
+                df = df.filter(pl.col("chr").is_in(chroms))
+
+        df = df.collect()
+
+        return df
+
+    @staticmethod
+    def _copy_if_not_exists(src, dst):
+        try:
+            with open(dst, "xb") as f, open(src, "rb") as sf:
+                shutil.copyfileobj(sf, f)
+        except FileExistsError:
+            pass
+
+    def set_epoch(self, epoch):
+        if self.downsample_ratio is None:
+            return
+
+        offset = epoch % self.downsample_ratio
+        self.elements_df = self.elements_df_all.gather_every(self.downsample_ratio, offset)
+    
+    def __len__(self):
+        return self.elements_df.height
+    
+    def __getitem__(self, idx):
+        chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
+
+        seq = np.zeros((self.in_window, 4), dtype=np.int8)
+
+        fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
+
+        sequence_data = fa[chrom][max(0, start):end]
+        sequence = sequence_data.seq.upper()
+        start_adj = sequence_data.start
+        end_adj = sequence_data.end
+
+        a = start_adj - start
+        b = end_adj - start
+        # print(peak_start, start_adj) ####
+        # print(a,b) ####
+        seq[a:b,:] = one_hot_encode(sequence)
+
+        fa.close()
+
+        out_start = start + self.crop
+        out_end = end - self.crop
+        out_start_adj = max(out_start, start_adj)
+        out_end_adj = min(out_end, end_adj)
+
+        c = out_start_adj - out_start
+        d = out_end_adj - out_start
+
+        signal = np.zeros(out_end - out_start, dtype=np.float32)
+
+        bw = pyBigWig.open(self.bw)
+        track = bw.values(chrom, out_start_adj, out_end_adj, numpy=True)
+        signal[c:d] = np.nan_to_num(track)
+        bw.close()
+
+        return torch.from_numpy(seq), torch.from_numpy(signal)
+
+
+def log1pMSELoss(log_predicted_counts, true_counts):
+    log_true = torch.log(true_counts+1)
+    return torch.mean(torch.square(log_true - log_predicted_counts), dim=-1)
+
+
+def pearson_correlation(a, b):
+    a = a - torch.mean(a)
+    b = b - torch.mean(b)
+
+    var_a = torch.sum(a ** 2)
+    var_b = torch.sum(b ** 2)
+    cov = torch.sum(a * b)
+
+    r = cov / torch.sqrt(var_a * var_b)
+    r = torch.nan_to_num(r)
+
+    return r.item()
+
+def counts_pearson(log_preds, targets):
+    log_targets = torch.log(targets + 1)
+
+    r = pearson_correlation(log_preds, log_targets)
+
+    return r
+
+
+def counts_spearman(log_preds, targets):
+    log_targets = torch.log(targets + 1)
+
+    preds_rank = log_preds.argsort().argsort().float()
+    targets_rank = log_targets.argsort().argsort().float()
+
+    r = pearson_correlation(preds_rank, targets_rank)
+
+    return r
+    
+
+def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+
+    val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+    val_neg_dataloader = DataLoader(val_neg_dataset, batch_size=batch_size, num_workers=num_workers,
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+
+    os.makedirs(out_dir, exist_ok=True)
+    log_file = os.path.join(out_dir, "train.log")
+    log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
+
+    if resume_from is not None:
+        # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
+        model.load_state_dict(checkpoint_resume)
+    else:
+        start_epoch = 0
+
+    with open(log_file, "a") as f:
+        if resume_from is None:
+            f.write("\t".join(log_cols) + "\n")
+            f.flush()
+
+        model.to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+        for epoch in range(start_epoch, num_epochs):
+            model.train()
+            train_pos_dataset.set_epoch(epoch)
+            train_neg_dataset.set_epoch(epoch)
+            train_dataset = ConcatDataset([train_pos_dataset, train_neg_dataset])
+            train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True,
+                                          pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+            for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+                seq = seq.to(device)
+                track = track.to(device)
+                true_counts = track.sum(dim=1)
+                
+                optimizer.zero_grad()
+                log1p_counts = model(seq)
+                loss = log1pMSELoss(log1p_counts, true_counts)
+                loss.backward()
+                optimizer.step()
+            
+            val_loss = 0
+            val_counts_pred = []
+            val_counts_true = []
+            model.eval()
+            with torch.no_grad():
+                for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos")):
+                    seq = seq.to(device)
+                    track = track.to(device)
+                    true_counts = track.sum(dim=1)
+                    
+                    log1p_counts = model(seq)
+                    loss = log1pMSELoss(log1p_counts, true_counts)
+
+                    val_loss += loss.item()
+                    val_counts_pred.append(log1p_counts)
+                    val_counts_true.append(true_counts)
+
+                val_counts_pred_peaks = torch.cat(val_counts_pred, dim=0)
+                val_counts_true_peaks = torch.cat(val_counts_true, dim=0)
+
+                val_pearson_peaks = counts_pearson(val_counts_pred_peaks, val_counts_true_peaks)
+                val_spearman_peaks = counts_spearman(val_counts_pred_peaks, val_counts_true_peaks)
+
+                for i, (seq, track) in enumerate(tqdm(val_neg_dataloader, disable=(not progress_bar), desc="val_neg")):
+                    seq = seq.to(device)
+                    track = track.to(device)
+                    true_counts = track.sum(dim=1)
+                    
+                    log1p_counts = model(seq)
+                    loss = log1pMSELoss(log1p_counts, true_counts)
+
+                    val_loss += loss.item()
+                    val_counts_pred.append(log1p_counts)
+                    val_counts_true.append(true_counts)
+
+                val_loss /= (len(val_pos_dataloader) + len(val_neg_dataloader))
+                val_counts_pred = torch.cat(val_counts_pred, dim=0)
+                val_counts_true = torch.cat(val_counts_true, dim=0)
+
+                val_pearson_all = counts_pearson(val_counts_pred, val_counts_true)
+                val_spearman_all = counts_spearman(val_counts_pred, val_counts_true)
+
+            print(f"Epoch {epoch}: val_loss={val_loss}, val_pearson_all={val_pearson_all}, val_spearman_all={val_spearman_all}, val_pearson_peaks={val_pearson_peaks}, val_spearman_peaks={val_spearman_peaks}")
+            f.write(f"{epoch}\t{val_loss}\t{val_pearson_all}\t{val_spearman_all}\t{val_pearson_peaks}\t{val_spearman_peaks}\n")
+            f.flush()
+
+            checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
+            torch.save(model.state_dict(), checkpoint_path)
+
+
+class ChromatinPredictionHead(torch.nn.Module):
+    def __init__(self, input_channels):
+        super().__init__()
+        self.linear = torch.nn.Linear(input_channels, 1)
+
+    def forward(self, embs):
+        x = self.linear(embs)
+        x = x.squeeze(-1)
+
+        return x
+
+    
+class DNABERT2LoRAModel(HFLoRAModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+        model_name = f"zhihan1996/{model_name}"
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+
+        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+
+
+class MistralDNALoRAModel(HFLoRAModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+        model_name = f"RaphaelMourad/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+
+
+class GENALMLoRAModel(HFLoRAModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+        model_name = f"AIRI-Institute/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+
+
+class NucleotideTransformerLoRAModel(HFLoRAModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+
+
+class HyenaDNALoRAModel(HFLoRAModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
