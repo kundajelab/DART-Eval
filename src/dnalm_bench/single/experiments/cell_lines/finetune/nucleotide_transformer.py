@@ -86,7 +86,7 @@ if __name__ == "__main__":
     val_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_val, crop, cache_dir=cache_dir)
 
     model = NucleotideTransformerLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout)
-    model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
+    # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
     train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
                                     progress_bar=True, resume_from=resume_checkpoint)

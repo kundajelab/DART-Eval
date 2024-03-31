@@ -16,7 +16,7 @@ import minlora
 from .utils import onehot_to_chars
 
 
-class LoRAModel(nn.Module, metaclass=ABCMeta):
+class LoRAModule(nn.Module):
     def __init__(self, model, lora_rank, lora_alpha, lora_dropout):
         super().__init__()
 
@@ -35,16 +35,12 @@ class LoRAModel(nn.Module, metaclass=ABCMeta):
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
 
-        device_indicator = torch.empty(0)
-        self.register_buffer("device_indicator", device_indicator)
+    #     device_indicator = torch.empty(0)
+    #     self.register_buffer("device_indicator", device_indicator)
 
-    @property
-    def device(self):
-        return self.device_indicator.device
-
-    @abstractmethod
-    def forward(self, seqs):
-        pass
+    # @property
+    # def device(self):
+    #     return self.device_indicator.device
 
     def parameters(self):
         return list(minlora.get_lora_params(self.model))
@@ -53,11 +49,13 @@ class LoRAModel(nn.Module, metaclass=ABCMeta):
         return minlora.get_lora_state_dict(self.model)
 
 
-class HFLoRAModel(LoRAModel):
-    def __init__(self, tokenizer, model, lora_rank, lora_alpha, lora_dropout):
+class HFClassifierModel(nn.Module):
+    def __init__(self, tokenizer, model):
+        super().__init__()
+        
+        self.model = model
         self.tokenizer = tokenizer
-        super().__init__(model, lora_rank, lora_alpha, lora_dropout)
-
+        
     def _tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
@@ -72,7 +70,6 @@ class HFLoRAModel(LoRAModel):
             tokens,
             output_hidden_states=True
         )
-        print(torch_outs) ####
-        cls_embs = torch_outs.pooler_output
+        logits = torch_outs.logits
 
-        return cls_embs
+        return logits
