@@ -4,7 +4,7 @@ import sys
 import torch
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-from ....finetune import ChromatinPredictionHead, ChromatinEndToEndDataset, train_finetuned_chromatin_model, NucleotideTransformerLoRAModel
+from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, NucleotideTransformerLoRAModel
 
 
 if __name__ == "__main__":
