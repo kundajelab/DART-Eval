@@ -307,7 +307,7 @@ class NucleotideTransformerLoRAModel(HFLoRAModel):
     def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        model = EsmModel.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
 
 
