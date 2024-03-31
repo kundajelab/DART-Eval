@@ -97,7 +97,7 @@ class ChromatinEndToEndDataset(Dataset):
     def __getitem__(self, idx):
         chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
 
-        seq = np.zeros((self.in_window, 4), dtype=np.int8)
+        seq = np.zeros((end - start, 4), dtype=np.int8)
 
         fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
 
