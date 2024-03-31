@@ -205,8 +205,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True,
                                           pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
             for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
-                seq = seq.to(device)
-                track = track.to(device)
+                # seq = seq.to(device)
+                # track = track.to(device)
                 true_counts = track.sum(dim=1)
                 
                 optimizer.zero_grad()
@@ -221,8 +221,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             model.eval()
             with torch.no_grad():
                 for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos")):
-                    seq = seq.to(device)
-                    track = track.to(device)
+                    # seq = seq.to(device)
+                    # track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
                     log1p_counts = model(seq)
