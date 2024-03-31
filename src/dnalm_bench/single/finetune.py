@@ -304,12 +304,12 @@ class GENALMLoRAModel(HFClassifierModel):
 
 
 class NucleotideTransformerLoRAModel(HFClassifierModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         # config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         # print(config) ####
-        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
         model.esm = LoRAModule(model.esm, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)

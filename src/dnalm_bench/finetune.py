@@ -35,13 +35,6 @@ class LoRAModule(nn.Module):
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
 
-    #     device_indicator = torch.empty(0)
-    #     self.register_buffer("device_indicator", device_indicator)
-
-    # @property
-    # def device(self):
-    #     return self.device_indicator.device
-
     def parameters(self):
         return list(minlora.get_lora_params(self.model))
 
@@ -52,9 +45,12 @@ class LoRAModule(nn.Module):
 class HFClassifierModel(nn.Module):
     def __init__(self, tokenizer, model):
         super().__init__()
-        
+
         self.model = model
         self.tokenizer = tokenizer
+
+        device_indicator = torch.empty(0)
+        self.register_buffer("device_indicator", device_indicator)
         
     def _tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
@@ -62,6 +58,10 @@ class HFClassifierModel(nn.Module):
         tokens = encoded["input_ids"]
 
         return tokens.to(self.device)
+
+    @property
+    def device(self):
+        return self.device_indicator.device
 
     def forward(self, seqs):
         tokens = self._tokenize(seqs)
