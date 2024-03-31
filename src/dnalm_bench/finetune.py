@@ -18,6 +18,8 @@ from .utils import onehot_to_chars
 
 class LoRAModel(nn.Module, metaclass=ABCMeta):
     def __init__(self, model, lora_rank, lora_alpha, lora_dropout):
+        super().__init__()
+        
         lora_config = {
             nn.Embedding: {
                 "weight": partial(minlora.LoRAParametrization.from_embedding, rank=lora_rank, lora_dropout_p=lora_dropout, lora_alpha=lora_alpha),
