@@ -39,14 +39,14 @@ class ChromatinEndToEndDataset(Dataset):
             
             bw_path_abs = os.path.abspath(bigwig)
             bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
-            bw_cache_path = os.path.join(cache_dir, bw_path_hash)
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
             self._copy_if_not_exists(bigwig, bw_cache_path)
             bigwig = bw_cache_path
 
             fa_path_abs = os.path.abspath(genome_fa)
             fa_idx_path_abs = fa_path_abs + ".fai"
             fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
-            fa_cache_path = os.path.join(cache_dir, fa_path_hash)
+            fa_cache_path = os.path.join(cache_dir, fa_path_hash + ".fa")
             fa_idx_cache_path = fa_cache_path + ".fai"
             self._copy_if_not_exists(genome_fa, fa_cache_path)
             genome_fa = fa_cache_path
