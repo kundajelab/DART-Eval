@@ -89,7 +89,7 @@ class ChromatinEndToEndDataset(Dataset):
             return
 
         offset = epoch % self.downsample_ratio
-        self.elements_df = self.elements_df_all.take_every(self.downsample_ratio, offset)
+        self.elements_df = self.elements_df_all.take_every(n=self.downsample_ratio, offset=offset)
     
     def __len__(self):
         return self.elements_df.height
