@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
-from transformers import AutoTokenizer, AutoModel, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModel, EsmModel
 from tqdm import tqdm
 import polars as pl
 import h5py
