@@ -210,7 +210,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 true_counts = track.sum(dim=1)
                 
                 optimizer.zero_grad()
-                log1p_counts = model(seq).squeeze(2)
+                log1p_counts = model(seq).squeeze(1)
                 # print(log1p_counts.shape) ####
                 # print(true_counts.shape) ####
                 loss = log1pMSELoss(log1p_counts, true_counts)
@@ -245,7 +245,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
-                    log1p_counts = model(seq).squeeze(2)
+                    log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts)
 
                     val_loss += loss.item()
