@@ -224,10 +224,10 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             with torch.no_grad():
                 for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos")):
                     # seq = seq.to(device)
-                    # track = track.to(device)
+                    track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
-                    log1p_counts = model(seq).squeeze(2)
+                    log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts)
 
                     val_loss += loss.item()
@@ -241,7 +241,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 val_spearman_peaks = counts_spearman(val_counts_pred_peaks, val_counts_true_peaks)
 
                 for i, (seq, track) in enumerate(tqdm(val_neg_dataloader, disable=(not progress_bar), desc="val_neg")):
-                    seq = seq.to(device)
+                    # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
