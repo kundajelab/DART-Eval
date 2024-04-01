@@ -1,6 +1,8 @@
 import os
 from abc import ABCMeta, abstractmethod
 from functools import partial
+from collections import OrderedDict, namedtuple
+from types import MethodType
 
 import numpy as np
 import torch
@@ -34,15 +36,16 @@ class LoRAModule(nn.Module):
 
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
+        self.model._save_to_state_dict = MethodType(self._lora_state_dict_saver, self.model)
+
+    @staticmethod
+    def _lora_state_dict_saver(obj, destination, prefix, keep_vars):
+        for name, param in obj._parameters.items():
+            if (param is not None) and minlora.name_is_lora(name):
+                destination[prefix + name] = param if keep_vars else param.detach()
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
-
-    def parameters(self):
-        return list(minlora.get_lora_params(self.model))
-
-    def state_dict(self):
-        return minlora.get_lora_state_dict(self.model)
 
 
 class HFClassifierModel(nn.Module):

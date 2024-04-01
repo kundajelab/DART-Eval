@@ -216,6 +216,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 loss = log1pMSELoss(log1p_counts, true_counts)
                 loss.backward()
                 optimizer.step()
+
+                break ####
             
             val_loss = 0
             val_counts_pred = []
@@ -233,6 +235,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     val_loss += loss.item()
                     val_counts_pred.append(log1p_counts)
                     val_counts_true.append(true_counts)
+
+                    break ####
 
                 val_counts_pred_peaks = torch.cat(val_counts_pred, dim=0)
                 val_counts_true_peaks = torch.cat(val_counts_true, dim=0)
@@ -252,6 +256,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     val_counts_pred.append(log1p_counts)
                     val_counts_true.append(true_counts)
 
+                    break ####
+
                 val_loss /= (len(val_pos_dataloader) + len(val_neg_dataloader))
                 val_counts_pred = torch.cat(val_counts_pred, dim=0)
                 val_counts_true = torch.cat(val_counts_true, dim=0)
@@ -263,6 +269,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             f.write(f"{epoch}\t{val_loss}\t{val_pearson_all}\t{val_spearman_all}\t{val_pearson_peaks}\t{val_spearman_peaks}\n")
             f.flush()
 
+            print(model.state_dict()) ####
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
 
@@ -280,37 +287,37 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"zhihan1996/{model_name}"
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-            model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
 
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        super().__init__(tokenizer, model)
 
 
 class MistralDNALoRAModel(HFClassifierModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        super().__init__(tokenizer, model)
 
 
 class GENALMLoRAModel(HFClassifierModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
 
 
 class NucleotideTransformerLoRAModel(HFClassifierModel):
     def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        # config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-        # print(config) ####
         model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
         model.esm = LoRAModule(model.esm, lora_rank, lora_alpha, lora_dropout)
 
@@ -318,8 +325,10 @@ class NucleotideTransformerLoRAModel(HFClassifierModel):
 
 
 class HyenaDNALoRAModel(HFClassifierModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.hyena = LoRAModule(model.hyena, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
