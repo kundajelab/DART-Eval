@@ -42,6 +42,7 @@ class LoRAModule(nn.Module):
     def _lora_state_dict_saver(obj, destination, prefix, keep_vars):
         for name, param in obj._parameters.items():
             if (param is not None) and minlora.name_is_lora(name):
+                print(name) ####
                 destination[prefix + name] = param if keep_vars else param.detach()
 
     def forward(self, *args, **kwargs):
