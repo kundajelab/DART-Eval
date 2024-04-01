@@ -270,6 +270,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             f.flush()
 
             print(model.state_dict()) ####
+            model.load_state_dict(model.state_dict()) ####
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
 
