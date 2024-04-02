@@ -15,7 +15,8 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/likelihoods/footprinting_350/{model_name}/"
+    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/likelihoods/footprinting_350/{model_name}/"
+    out_dir = f"/srv/scratch/patelas/{model_name}/"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"likelihoods.tsv")
 
