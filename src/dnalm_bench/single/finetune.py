@@ -169,7 +169,8 @@ def counts_spearman(log_preds, targets):
     return r
     
 
-def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, wd, 
+                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
 
     val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
                                 pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
@@ -185,7 +186,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
         resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
         start_epoch = resume_from + 1
         checkpoint_resume = torch.load(resume_checkpoint_path)
-        model.load_state_dict(checkpoint_resume)
+        model.load_state_dict(checkpoint_resume, strict=False)
     else:
         start_epoch = 0
 
@@ -195,7 +196,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             f.flush()
 
         model.to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
 
         for epoch in range(start_epoch, num_epochs):
             model.train()
@@ -216,8 +217,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 loss = log1pMSELoss(log1p_counts, true_counts)
                 loss.backward()
                 optimizer.step()
-
-                break ####
             
             val_loss = 0
             val_counts_pred = []
@@ -235,8 +234,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     val_loss += loss.item()
                     val_counts_pred.append(log1p_counts)
                     val_counts_true.append(true_counts)
-
-                    break ####
 
                 val_counts_pred_peaks = torch.cat(val_counts_pred, dim=0)
                 val_counts_true_peaks = torch.cat(val_counts_true, dim=0)
@@ -256,8 +253,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     val_counts_pred.append(log1p_counts)
                     val_counts_true.append(true_counts)
 
-                    break ####
-
                 val_loss /= (len(val_pos_dataloader) + len(val_neg_dataloader))
                 val_counts_pred = torch.cat(val_counts_pred, dim=0)
                 val_counts_true = torch.cat(val_counts_true, dim=0)
@@ -269,8 +264,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             f.write(f"{epoch}\t{val_loss}\t{val_pearson_all}\t{val_spearman_all}\t{val_pearson_peaks}\t{val_spearman_peaks}\n")
             f.flush()
 
-            print(model.state_dict()) ####
-            model.load_state_dict(model.state_dict()) ####
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
 
@@ -293,6 +286,7 @@ class DNABERT2LoRAModel(HFClassifierModel):
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
             model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+            model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
 
@@ -302,6 +296,8 @@ class MistralDNALoRAModel(HFClassifierModel):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.model = LoRAModule(model.model, lora_rank, lora_alpha, lora_dropout)
+        
         super().__init__(tokenizer, model)
 
 

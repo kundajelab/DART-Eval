@@ -36,14 +36,13 @@ class LoRAModule(nn.Module):
 
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
-        self.model._save_to_state_dict = MethodType(self._lora_state_dict_saver, self.model)
+        self.model._register_state_dict_hook(self._state_dict_hook)   
 
     @staticmethod
-    def _lora_state_dict_saver(obj, destination, prefix, keep_vars):
-        for name, param in obj._parameters.items():
-            if (param is not None) and minlora.name_is_lora(name):
-                print(name) ####
-                destination[prefix + name] = param if keep_vars else param.detach()
+    def _state_dict_hook(self, state_dict, prefix, local_metadata):
+        keys_discard = [k for k in state_dict.keys() if k.startswith(prefix) and not minlora.name_is_lora(k)]
+        for k in keys_discard:
+            del state_dict[k]
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
