@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
-from transformers import AutoTokenizer, AutoModel, AutoConfig, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertConfig
 from tqdm import tqdm
 import polars as pl
 import h5py
@@ -285,7 +285,8 @@ class DNABERT2LoRAModel(HFClassifierModel):
         model_name = f"zhihan1996/{model_name}"
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+            config = BertConfig.from_pretrained("zhihan1996/DNABERT-2-117M")
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, config=config, num_labels=num_labels)
             model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
