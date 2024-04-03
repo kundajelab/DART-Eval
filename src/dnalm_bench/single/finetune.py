@@ -298,6 +298,7 @@ class MistralDNALoRAModel(HFClassifierModel):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.config.pad_token_id = tokenizer.pad_token_id
         model.model = LoRAModule(model.model, lora_rank, lora_alpha, lora_dropout)
         
         super().__init__(tokenizer, model)
