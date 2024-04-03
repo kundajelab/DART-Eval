@@ -10,7 +10,7 @@ dependencies:
   - conda-forge::python=3.10
   - conda-forge::numpy=1.26.3
   - conda-forge::scipy=1.12.0
-  - conda-forge::polars=0.19.12
+  - conda-forge::polars=0.20.17
   - conda-forge::pandas=2.2.0
   - conda-forge::transformers=4.37.1
   - conda-forge::tqdm=4.66.1
@@ -18,6 +18,7 @@ dependencies:
   - conda-forge::h5py=3.10.0
   - conda-forge::pip=24.0
   - bioconda::pyfaidx=0.7.2.1
+  - bioconda::pybigwig=0.3.22
   - bioconda::ncls=0.0.68
   - pip:
     - "--editable=git+https://github.com/cccntu/minLoRA.git@d47a4c93df87540bb396172cfac1f3246e7db5f9#egg=minLoRA"

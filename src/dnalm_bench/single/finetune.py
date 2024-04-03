@@ -7,14 +7,14 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, AutoConfig, AutoModelForSequenceClassification
 from tqdm import tqdm
 import polars as pl
 import h5py
 import pyfaidx
 import pyBigWig
 
-from ..finetune import HFLoRAModel
+from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule
 
 
@@ -39,14 +39,14 @@ class ChromatinEndToEndDataset(Dataset):
             
             bw_path_abs = os.path.abspath(bigwig)
             bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
-            bw_cache_path = os.path.join(cache_dir, bw_path_hash)
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
             self._copy_if_not_exists(bigwig, bw_cache_path)
             bigwig = bw_cache_path
 
             fa_path_abs = os.path.abspath(genome_fa)
             fa_idx_path_abs = fa_path_abs + ".fai"
             fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
-            fa_cache_path = os.path.join(cache_dir, fa_path_hash)
+            fa_cache_path = os.path.join(cache_dir, fa_path_hash + ".fa")
             fa_idx_cache_path = fa_cache_path + ".fai"
             self._copy_if_not_exists(genome_fa, fa_cache_path)
             genome_fa = fa_cache_path
@@ -89,7 +89,7 @@ class ChromatinEndToEndDataset(Dataset):
             return
 
         offset = epoch % self.downsample_ratio
-        self.elements_df = self.elements_df_all.gather_every(self.downsample_ratio, offset)
+        self.elements_df = self.elements_df_all.take_every(n=self.downsample_ratio, offset=offset)
     
     def __len__(self):
         return self.elements_df.height
@@ -97,7 +97,7 @@ class ChromatinEndToEndDataset(Dataset):
     def __getitem__(self, idx):
         chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
 
-        seq = np.zeros((self.in_window, 4), dtype=np.int8)
+        seq = np.zeros((end - start, 4), dtype=np.int8)
 
         fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
 
@@ -169,7 +169,8 @@ def counts_spearman(log_preds, targets):
     return r
     
 
-def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, wd, 
+                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
 
     val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
                                 pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
@@ -185,7 +186,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
         resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
         start_epoch = resume_from + 1
         checkpoint_resume = torch.load(resume_checkpoint_path)
-        model.load_state_dict(checkpoint_resume)
+        model.load_state_dict(checkpoint_resume, strict=False)
     else:
         start_epoch = 0
 
@@ -195,7 +196,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             f.flush()
 
         model.to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
 
         for epoch in range(start_epoch, num_epochs):
             model.train()
@@ -205,12 +206,14 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True,
                                           pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
             for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
-                seq = seq.to(device)
+                # seq = seq.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
                 
                 optimizer.zero_grad()
-                log1p_counts = model(seq)
+                log1p_counts = model(seq).squeeze(1)
+                # print(log1p_counts.shape) ####
+                # print(true_counts.shape) ####
                 loss = log1pMSELoss(log1p_counts, true_counts)
                 loss.backward()
                 optimizer.step()
@@ -221,11 +224,11 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             model.eval()
             with torch.no_grad():
                 for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos")):
-                    seq = seq.to(device)
+                    # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
-                    log1p_counts = model(seq)
+                    log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts)
 
                     val_loss += loss.item()
@@ -239,11 +242,11 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 val_spearman_peaks = counts_spearman(val_counts_pred_peaks, val_counts_true_peaks)
 
                 for i, (seq, track) in enumerate(tqdm(val_neg_dataloader, disable=(not progress_bar), desc="val_neg")):
-                    seq = seq.to(device)
+                    # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
                     
-                    log1p_counts = model(seq)
+                    log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts)
 
                     val_loss += loss.item()
@@ -265,55 +268,64 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             torch.save(model.state_dict(), checkpoint_path)
 
 
-class ChromatinPredictionHead(torch.nn.Module):
-    def __init__(self, input_channels):
-        super().__init__()
-        self.linear = torch.nn.Linear(input_channels, 1)
+# class ChromatinPredictionHead(torch.nn.Module):
+#     def __init__(self, input_channels):
+#         super().__init__()
+#         self.linear = torch.nn.Linear(input_channels, 1)
 
-    def forward(self, embs):
-        x = self.linear(embs)
-        x = x.squeeze(-1)
+#     def forward(self, embs):
+#         x = self.linear(embs)
+#         x = x.squeeze(-1)
 
-        return x
+#         return x
 
     
-class DNABERT2LoRAModel(HFLoRAModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+class DNABERT2LoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"zhihan1996/{model_name}"
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-            model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+            model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
 
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        super().__init__(tokenizer, model)
 
 
-class MistralDNALoRAModel(HFLoRAModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+class MistralDNALoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.model = LoRAModule(model.model, lora_rank, lora_alpha, lora_dropout)
+        
+        super().__init__(tokenizer, model)
 
 
-class GENALMLoRAModel(HFLoRAModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+class GENALMLoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
 
 
-class NucleotideTransformerLoRAModel(HFLoRAModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+class NucleotideTransformerLoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.esm = LoRAModule(model.esm, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
 
 
-class HyenaDNALoRAModel(HFLoRAModel):
-    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout):
+class HyenaDNALoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, lora_rank, lora_alpha, lora_dropout)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.hyena = LoRAModule(model.hyena, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
