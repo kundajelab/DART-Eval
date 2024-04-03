@@ -286,7 +286,8 @@ class DNABERT2LoRAModel(HFClassifierModel):
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
             config = BertConfig.from_pretrained("zhihan1996/DNABERT-2-117M")
-            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, config=config, num_labels=num_labels)
+            config.num_labels = num_labels
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, config=config)
             model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)

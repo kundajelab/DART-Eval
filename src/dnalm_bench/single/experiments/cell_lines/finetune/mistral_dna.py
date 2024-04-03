@@ -4,7 +4,7 @@ import sys
 import torch
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, NucleotideTransformerLoRAModel
+from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, MistralDNALoRAModel
 
 
 if __name__ == "__main__":
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     val_pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_val, crop, cache_dir=cache_dir)
     val_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_val, crop, cache_dir=cache_dir)
 
-    model = NucleotideTransformerLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
+    model = MistralDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
     train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, wd, num_workers, prefetch_factor, device, 
