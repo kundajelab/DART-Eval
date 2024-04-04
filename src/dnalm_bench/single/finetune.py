@@ -171,12 +171,14 @@ def counts_spearman(log_preds, targets):
 
 def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, wd, accumulate,
-                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=None, seed=0):
 
     val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
                                 pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
     val_neg_dataloader = DataLoader(val_neg_dataset, batch_size=batch_size, num_workers=num_workers,
                                 pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+
+    torch.manual_seed(seed)
 
     os.makedirs(out_dir, exist_ok=True)
     log_file = os.path.join(out_dir, "train.log")
