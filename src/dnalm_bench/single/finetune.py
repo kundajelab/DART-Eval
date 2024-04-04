@@ -208,7 +208,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                                           pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
             
             optimizer.zero_grad()
-            for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+            for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=80)):
                 # seq = seq.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
