@@ -208,7 +208,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                                           pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
             
             optimizer.zero_grad()
-            for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=80)):
+            for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
                 # seq = seq.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
@@ -231,7 +231,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             val_counts_true = []
             model.eval()
             with torch.no_grad():
-                for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos", ncols=80)):
+                for i, (seq, track) in enumerate(tqdm(val_pos_dataloader, disable=(not progress_bar), desc="val_pos", ncols=120)):
                     # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
@@ -249,7 +249,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 val_pearson_peaks = counts_pearson(val_counts_pred_peaks, val_counts_true_peaks)
                 val_spearman_peaks = counts_spearman(val_counts_pred_peaks, val_counts_true_peaks)
 
-                for i, (seq, track) in enumerate(tqdm(val_neg_dataloader, disable=(not progress_bar), desc="val_neg", ncols=80)):
+                for i, (seq, track) in enumerate(tqdm(val_neg_dataloader, disable=(not progress_bar), desc="val_neg", ncols=120)):
                     # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
