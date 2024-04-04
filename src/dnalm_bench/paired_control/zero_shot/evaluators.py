@@ -62,9 +62,9 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
     def model_fwd(self, tokens, attention_mask):
         pass
 
-    @abstractmethod
-    def score(self, tokens, starts, ends, attention_mask):
-        pass
+    # @abstractmethod
+    # def score(self, tokens, starts, ends, attention_mask):
+    #     pass
     
     def evaluate(self, out_dir, progress_bar=False):
         os.makedirs(out_dir, exist_ok=True)
