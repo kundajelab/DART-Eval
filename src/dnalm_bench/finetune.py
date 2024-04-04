@@ -64,7 +64,7 @@ class HFClassifierModel(nn.Module):
         tokens = encoded["input_ids"]
         mask = encoded["attention_mask"]
 
-        return tokens.to(self.device), mask
+        return tokens.to(self.device), mask.to(self.device)
 
     @property
     def device(self):
