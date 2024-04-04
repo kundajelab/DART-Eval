@@ -78,7 +78,7 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
             diffs_lst = []
             corrects_lst = []
             
-            for seqs, ctrls in tqdm(self.dataloader, disable=(not progress_bar)):
+            for seqs, ctrls, inds in tqdm(self.dataloader, disable=(not progress_bar), ncols=120):
                 seq_tokens, seq_starts, seq_ends, seq_attention_mask = self.tokenize(seqs)
                 ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask = self.tokenize(ctrls)
 
@@ -86,7 +86,7 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
                 ctrl_scores = self.score(ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask)
 
                 for seq_score, ctrl_score in zip(seq_scores, ctrl_scores):
-                    f.write(f"{seq_score}\t{ctrl_score}\n")
+                    f.write(f"{inds}\t{seq_score}\t{ctrl_score}\n")
                 f.flush()
 
                 diff_batch = seq_scores - ctrl_scores
