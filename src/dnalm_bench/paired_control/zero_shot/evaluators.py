@@ -11,7 +11,7 @@ from scipy.stats import wilcoxon
 from tqdm import tqdm
 
 from ..components import PairedControlDataset
-from ...utils import onehot_to_chars
+from ...utils import onehot_to_chars, NoModule
 
 class MaskedZeroShotScore(metaclass=ABCMeta):
     @property
@@ -170,9 +170,10 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
 class DNABERT2Evaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        config = BertConfig.from_pretrained(self.model_name, trust_remote_code=True)
-        model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, dataset, batch_size, num_workers, device)
 
     @property
