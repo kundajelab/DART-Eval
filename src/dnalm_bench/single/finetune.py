@@ -346,4 +346,11 @@ class HyenaDNALoRAModel(HFClassifierModel):
         tokens = encoded["input_ids"]
 
         return tokens.to(self.device), None
- 
+    
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+
+        torch_outs = self.model(tokens)
+        logits = torch_outs.logits
+
+        return logits
