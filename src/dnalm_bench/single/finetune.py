@@ -217,13 +217,12 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 # print(log1p_counts.shape) ####
                 # print(true_counts.shape) ####
                 loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
+                loss.backward()
 
                 if ((i + 1) % accumulate == 0):
-                    loss.backward()
                     optimizer.step()
                     optimizer.zero_grad()
 
-            loss.backward()
             optimizer.step()
             
             val_loss = 0
