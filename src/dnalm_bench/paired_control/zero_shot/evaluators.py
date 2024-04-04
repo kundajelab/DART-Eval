@@ -244,7 +244,6 @@ class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
 
 class NTEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
-        super().__init__(dataset, batch_size, num_workers, device)
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
