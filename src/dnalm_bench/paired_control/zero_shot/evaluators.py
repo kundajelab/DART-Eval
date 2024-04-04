@@ -141,7 +141,7 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        attention_mask = encoded["attention_mask"]
+        attention_mask = encoded.get("attention_mask")
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
@@ -211,6 +211,15 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     @property
     def end_token(self):
         return 1
+
+    def model_fwd(self, tokens, attention_mask):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = -F.cross_entropy(logits, tokens, reduction="none")
+        return lls
 
 
 class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
