@@ -1,6 +1,6 @@
 import os
 
-from ..evaluators import PairedControlDataset, NucleotideTransformerEvaluator
+from ..evaluators import PairedControlDataset, NTEvaluator
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
