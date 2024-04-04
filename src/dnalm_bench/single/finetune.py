@@ -213,11 +213,23 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
                 
-                log1p_counts = model(seq).squeeze(1)
-                # print(log1p_counts.shape) ####
-                # print(true_counts.shape) ####
-                loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
-                loss.backward()
+                try:
+                    log1p_counts = model(seq).squeeze(1)
+                    loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
+                    loss.backward()
+                    
+                except torch.cuda.OutOfMemoryError:
+                    split_ind = len(seq) // 2
+                    seq1, seq2 = seq[:split_ind], seq[split_ind:]
+                    true_counts1, true_counts2 = true_counts[:split_ind], true_counts[split_ind:]
+
+                    log1p_counts1 = model(seq1).squeeze(1)
+                    loss1 = log1pMSELoss(log1p_counts1, true_counts1) / (accumulate * 2)
+                    loss1.backward()
+
+                    log1p_counts2 = model(seq2).squeeze(1)
+                    loss2 = log1pMSELoss(log1p_counts2, true_counts2) / (accumulate * 2)
+                    loss2.backward()
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
