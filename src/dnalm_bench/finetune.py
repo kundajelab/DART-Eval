@@ -70,7 +70,7 @@ class HFClassifierModel(nn.Module):
     def device(self):
         return self.device_indicator.device
 
-    def forward(self, seqs, mask):
+    def forward(self, seqs):
         tokens, mask = self._tokenize(seqs)
 
         torch_outs = self.model(tokens, attention_mask=mask)
