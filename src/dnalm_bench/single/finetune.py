@@ -169,7 +169,8 @@ def counts_spearman(log_preds, targets):
     return r
     
 
-def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, num_epochs, out_dir, batch_size, lr, wd, 
+def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
+                                    num_epochs, out_dir, batch_size, lr, wd, accumulate,
                                     num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
 
     val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
@@ -205,18 +206,25 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             train_dataset = ConcatDataset([train_pos_dataset, train_neg_dataset])
             train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True,
                                           pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+            
+            optimizer.zero_grad()
             for i, (seq, track) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 # seq = seq.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
                 
-                optimizer.zero_grad()
                 log1p_counts = model(seq).squeeze(1)
                 # print(log1p_counts.shape) ####
                 # print(true_counts.shape) ####
-                loss = log1pMSELoss(log1p_counts, true_counts)
-                loss.backward()
-                optimizer.step()
+                loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
+
+                if ((i + 1) % accumulate == 0):
+                    loss.backward()
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+            loss.backward()
+            optimizer.step()
             
             val_loss = 0
             val_counts_pred = []

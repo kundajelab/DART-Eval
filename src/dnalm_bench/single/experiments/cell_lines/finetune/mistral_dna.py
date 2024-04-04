@@ -69,10 +69,12 @@ if __name__ == "__main__":
     lora_rank = 8
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
+
+    accumulate = 5
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 2
+    num_epochs = 5
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
@@ -91,5 +93,5 @@ if __name__ == "__main__":
     model = MistralDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
     train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
-                                    num_epochs, out_dir, batch_size, lr, wd, num_workers, prefetch_factor, device, 
+                                    num_epochs, out_dir, batch_size, lr, wd, accumulate, num_workers, prefetch_factor, device, 
                                     progress_bar=True, resume_from=resume_checkpoint)
