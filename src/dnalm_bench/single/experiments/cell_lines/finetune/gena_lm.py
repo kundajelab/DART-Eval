@@ -6,6 +6,7 @@ import torch
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, GENALMLoRAModel
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name

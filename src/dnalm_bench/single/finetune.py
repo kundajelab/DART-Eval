@@ -217,8 +217,9 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
                     loss.backward()
-                    
+
                 except torch.cuda.OutOfMemoryError:
+                    print(seq.shape) ####
                     split_ind = len(seq) // 2
                     seq1, seq2 = seq[:split_ind], seq[split_ind:]
                     true_counts1, true_counts2 = true_counts[:split_ind], true_counts[split_ind:]
