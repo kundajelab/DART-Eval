@@ -323,6 +323,13 @@ class NucleotideTransformerLoRAModel(HFClassifierModel):
 
         super().__init__(tokenizer, model)
 
+    def _tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+
+        return tokens.to(self.device), None
+
 
 class HyenaDNALoRAModel(HFClassifierModel):
     def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
@@ -332,3 +339,11 @@ class HyenaDNALoRAModel(HFClassifierModel):
         model.hyena = LoRAModule(model.hyena, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
+
+    def _tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+
+        return tokens.to(self.device), None
+ 

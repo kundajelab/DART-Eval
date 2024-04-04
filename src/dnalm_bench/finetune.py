@@ -62,17 +62,18 @@ class HFClassifierModel(nn.Module):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
+        mask = encoded["attention_mask"]
 
-        return tokens.to(self.device)
+        return tokens.to(self.device), mask
 
     @property
     def device(self):
         return self.device_indicator.device
 
-    def forward(self, seqs):
-        tokens = self._tokenize(seqs)
+    def forward(self, seqs, mask):
+        tokens, mask = self._tokenize(seqs)
 
-        torch_outs = self.model(tokens)
+        torch_outs = self.model(tokens, attention_mask=mask)
         logits = torch_outs.logits
 
         return logits
