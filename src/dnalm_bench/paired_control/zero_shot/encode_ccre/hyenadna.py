@@ -12,7 +12,7 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 
     # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
-    elements_tsv = f"/home/atwang/dnalm_bench_data/regions/ccre_test_regions_300_jitter_0.bed"
+    elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_300_jitter_0.bed"
 
     out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/zero_shot/ccre_test_regions_300_jitter_0/{model_name}/v2"
 
