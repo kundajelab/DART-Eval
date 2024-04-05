@@ -160,7 +160,6 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
             torch_outs = self.model(
                 tokens,
                 attention_mask=attention_mask,
-                encoder_attention_mask=attention_mask
             )
             logits = torch_outs.logits.swapaxes(1, 2)
             lls = -F.cross_entropy(logits, tokens, reduction="none")
