@@ -222,7 +222,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     loss.backward()
 
                 except torch.cuda.OutOfMemoryError:
-                    print(seq.shape) ####
+                    # print(seq.shape) ####
                     for j in range(seq.shape[0]):
                         try:
                             seq_j = seq[j:j+1]
