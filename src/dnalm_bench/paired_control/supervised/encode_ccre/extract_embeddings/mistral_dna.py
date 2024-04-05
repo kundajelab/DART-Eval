@@ -27,7 +27,7 @@ if __name__ == "__main__":
     # os.makedirs(out_dir, exist_ok=True)
     # out_path = os.path.join(out_dir, f"{model_name}.h5")
     
-    path = f"/home/atwang/dnalm_bench_data/encode_ccre/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    out_path = f"/home/atwang/dnalm_bench_data/encode_ccre/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
 
     dataset = PairedControlDataset(genome_fa, elements_tsv, chroms, seed)
     extractor = MistralDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)
