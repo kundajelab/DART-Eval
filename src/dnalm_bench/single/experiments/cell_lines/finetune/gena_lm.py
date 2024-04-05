@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     accumulate = 5
     
-    lr = 1e-5
+    lr = 1e-6
     wd = 0.01
     num_epochs = 3
 
