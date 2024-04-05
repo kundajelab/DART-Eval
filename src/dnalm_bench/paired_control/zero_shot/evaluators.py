@@ -104,14 +104,14 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
         metrics["acc"] = corrects.mean()
 
         wilcox = wilcoxon(diffs, alternative="greater")
-        metrics["pval"] = wilcox.pvalue
-        metrics["signed_rank_sum"] = wilcox.statistic
-        metrics["mean_diff"] = diffs.mean()
-        metrics["q05_diff"] = np.percentile(diffs, 5)
-        metrics["q25_diff"] = np.percentile(diffs, 25)
-        metrics["median_diff"] = np.median(diffs)
-        metrics["q75_diff"] = np.percentile(diffs, 75)
-        metrics["q95_diff"] = np.percentile(diffs, 95)
+        metrics["pval"] = float(wilcox.pvalue)
+        metrics["signed_rank_sum"] = float(wilcox.statistic)
+        metrics["mean_diff"] = float(diffs.mean())
+        metrics["q05_diff"] = float(np.percentile(diffs, 5))
+        metrics["q25_diff"] = float(np.percentile(diffs, 25))
+        metrics["median_diff"] = float(np.median(diffs))
+        metrics["q75_diff"] = float(np.percentile(diffs, 75))
+        metrics["q95_diff"] = float(np.percentile(diffs, 95))
 
         with open(metrics_path, "w") as f:
             json.dump(metrics, f, indent=4)
