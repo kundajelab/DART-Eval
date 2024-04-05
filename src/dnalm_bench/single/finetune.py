@@ -223,13 +223,17 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
 
                 except torch.cuda.OutOfMemoryError:
                     print(seq.shape) ####
-                    for i in range(seq.shape[0]):
-                        seq_i = seq[i:i+1]
-                        true_counts_i = true_counts[i:i+1]
+                    for j in range(seq.shape[0]):
+                        try:
+                            seq_j = seq[j:j+1]
+                            true_counts_j = true_counts[j:j+1]
 
-                        log1p_counts_i = model(seq_i).squeeze(1)
-                        loss_i = log1pMSELoss(log1p_counts_i, true_counts_i) / (accumulate * seq.shape[0])
-                        loss_i.backward()
+                            log1p_counts_j = model(seq_j).squeeze(1)
+                            loss_j = log1pMSELoss(log1p_counts_j, true_counts_j) / (accumulate * seq.shape[0])
+                            loss_j.backward()
+                        
+                        except torch.cuda.OutOfMemoryError:
+                            print(f"Failed to process sequence {i*j} due to OOM")
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()

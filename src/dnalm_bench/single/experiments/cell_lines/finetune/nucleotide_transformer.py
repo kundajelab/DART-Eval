@@ -70,11 +70,11 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 5
+    accumulate = 2
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 3
+    num_epochs = 4
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
