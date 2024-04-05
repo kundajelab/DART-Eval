@@ -216,13 +216,15 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
                 
+                fallback = False
                 try:
                     log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
                     loss.backward()
-
                 except torch.cuda.OutOfMemoryError:
-                    # print(seq.shape) ####
+                    fallback = True
+                    
+                if fallback:
                     for j in range(seq.shape[0]):
                         try:
                             seq_j = seq[j:j+1]

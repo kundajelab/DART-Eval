@@ -71,17 +71,17 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 2
+    accumulate = 3
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 4
+    num_epochs = 6
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v1" 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v4"    
+    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v5"    
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
 
     os.makedirs(out_dir, exist_ok=True)
