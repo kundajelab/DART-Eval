@@ -2,12 +2,13 @@ import os
 from abc import ABCMeta, abstractmethod
 import hashlib
 import shutil
+import importlib
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertConfig
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertConfig, AutoModel
 from tqdm import tqdm
 import polars as pl
 import h5py
@@ -326,7 +327,11 @@ class GENALMLoRAModel(HFClassifierModel):
     def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model_base = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        gena_module_name = model_base.__class__.__module__
+        cls = getattr(importlib.import_module(gena_module_name), 'BertForSequenceClassification')
+        model = cls.from_pretrained(model_name, num_labels=num_labels)
+
         model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
