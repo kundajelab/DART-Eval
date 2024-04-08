@@ -1,4 +1,5 @@
 import sys
+import shutil
 
 import numpy as np
 
@@ -20,9 +21,12 @@ def one_hot_encode(sequence):
     return one_hot
 
 
-def loop_infinite(iterable):
-    while True:
-        yield from iterable
+def copy_if_not_exists(src, dst):
+    try:
+        with open(dst, "xb") as f, open(src, "rb") as sf:
+            shutil.copyfileobj(sf, f)
+    except FileExistsError:
+        pass
 
 
 class NoModule:

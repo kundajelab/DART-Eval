@@ -1,6 +1,7 @@
 # from abc import ABCMeta, abstractmethod
 import os
 import math
+import hashlib
 
 import numpy as np
 import torch
@@ -34,12 +35,15 @@ class EmbeddingsDataset(IterableDataset):
 
         self.elements_df = self._load_elements(elements_tsv, chroms)
         self.embeddings_h5 = embeddings_h5
-        self.cache_dir_seq = os.path.join(cache_dir, "seq") if cache_dir is not None else None
-        self.cache_dir_ctrl = os.path.join(cache_dir, "ctrl") if cache_dir is not None else None
 
         if cache_dir is not None:
-            os.makedirs(self.cache_dir_seq, exist_ok=True)
-            os.makedirs(self.cache_dir_ctrl, exist_ok=True)
+            os.makedirs(cache_dir, exist_ok=True)
+
+            embeddings_h5_abs = os.path.abspath(embeddings_h5)
+            embeddings_h5_hash = hashlib.sha256(embeddings_h5_abs.encode('utf-8')).hexdigest()
+            embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".fa")
+            self._copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
+            self.embeddings_h5 = embeddings_h5_cache_path
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):

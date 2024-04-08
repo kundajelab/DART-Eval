@@ -2,6 +2,7 @@
 import os
 import math
 import heapq
+import hashlib
 
 import numpy as np
 import torch
@@ -17,7 +18,7 @@ from ncls import NCLS
 # from scipy.stats import wilcoxon
 from tqdm import tqdm
 
-from ..utils import one_hot_encode
+from ..utils import copy_if_not_exists
 
 class AssayEmbeddingsDataset(IterableDataset):
     _elements_dtypes = {
@@ -30,7 +31,7 @@ class AssayEmbeddingsDataset(IterableDataset):
         "elem_relative_end": pl.UInt32
     }
 
-    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1):
+    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1, cache_dir=None):
         super().__init__()
 
         self.elements_df_all = self._load_elements(elements_tsv, chroms)
@@ -39,6 +40,21 @@ class AssayEmbeddingsDataset(IterableDataset):
         self.bounds = bounds
         self.crop = crop
         self.downsample_ratio = downsample_ratio
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+
+            embeddings_h5_abs = os.path.abspath(embeddings_h5)
+            embeddings_h5_hash = hashlib.sha256(embeddings_h5_abs.encode('utf-8')).hexdigest()
+            embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".h5")
+            copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
+            self.embeddings_h5 = embeddings_h5_cache_path
+
+            bw_path_abs = os.path.abspath(assay_bw)
+            bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
+            copy_if_not_exists(assay_bw, bw_cache_path)
+            self.assay_bw = bw_cache_path
 
         self.next_epoch = 0
         self._set_epoch()
