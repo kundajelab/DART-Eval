@@ -17,7 +17,7 @@ if __name__ == "__main__":
     elements_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_{category}.bed"
     # chroms = ["chr22"]
     chroms = None
-    batch_size = 1024
+    batch_size = 512
     num_workers = 4
     seed = 0
     device = "cuda"
