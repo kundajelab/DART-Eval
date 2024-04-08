@@ -44,7 +44,7 @@ class SimpleSequence(Dataset):
                     copy_if_not_exists(genome_fa, fa_cache_path)
                     genome_fa = fa_cache_path
                     try:
-                        self._copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
+                        copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
                     except FileNotFoundError:
                         pass
 
