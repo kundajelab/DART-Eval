@@ -1,5 +1,6 @@
 # from abc import ABCMeta, abstractmethod
 import hashlib
+import os
 
 import numpy as np
 import torch
@@ -25,12 +26,27 @@ class SimpleSequence(Dataset):
 
         _seed_upper = 2**128
 
-        def __init__(self, genome_fa, elements_tsv, chroms, seed):
+        def __init__(self, genome_fa, elements_tsv, chroms, seed, cache_dir=None):
                 super().__init__()
 
                 self.seed = seed
 
                 self.elements_df = self._load_elements(elements_tsv, chroms)
+
+                if cache_dir is not None:
+                    os.makedirs(cache_dir, exist_ok=True)
+
+                    fa_path_abs = os.path.abspath(genome_fa)
+                    fa_idx_path_abs = fa_path_abs + ".fai"
+                    fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
+                    fa_cache_path = os.path.join(cache_dir, fa_path_hash + ".fa")
+                    fa_idx_cache_path = fa_cache_path + ".fai"
+                    self._copy_if_not_exists(genome_fa, fa_cache_path)
+                    genome_fa = fa_cache_path
+                    try:
+                        self._copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
+                    except FileNotFoundError:
+                        pass
 
                 self.genome_fa = genome_fa
                 fa = pyfaidx.Fasta(self.genome_fa) # Build index if needed
