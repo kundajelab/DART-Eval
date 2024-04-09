@@ -1,6 +1,6 @@
 import os
 
-from ..evaluators import PairedControlDataset, GenaEvaluator
+from ..evaluators import PairedControlDataset, GenaLMEvaluator
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     device = "cuda"
 
     dataset = PairedControlDataset(genome_fa, elements_tsv, chroms, seed)
-    evaluator = GenaEvaluator(model_name, dataset, batch_size, num_workers, device)
+    evaluator = GenaLMEvaluator(model_name, dataset, batch_size, num_workers, device)
     metrics = evaluator.evaluate(out_dir, progress_bar=True)
 
     for k, v in metrics.items():
