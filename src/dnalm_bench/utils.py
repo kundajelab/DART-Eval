@@ -23,7 +23,7 @@ def one_hot_encode(sequence):
 
 def copy_if_not_exists(src, dst):
     try:
-        with open(dst, "xb") as f, open(src, "rb") as sf:
+        with open(src, "rb") as sf, open(dst, "xb") as f:
             shutil.copyfileobj(sf, f)
     except FileExistsError:
         pass

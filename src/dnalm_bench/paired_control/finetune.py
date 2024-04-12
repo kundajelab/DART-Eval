@@ -81,7 +81,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
                     out_ctrl = model(ctrl)
                     loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
                     loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                    val_loss += loss.item()
+                    val_loss += (loss_seq + loss_ctrl).item()
                     val_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
                     val_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
             
