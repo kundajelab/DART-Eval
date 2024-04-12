@@ -51,14 +51,12 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
         for epoch in range(start_epoch, num_epochs):
             optimizer.zero_grad()
             model.train()
-            for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
-                seq_emb = seq_emb.to(device)
-                ctrl_emb = ctrl_emb.to(device)
-                seq_inds = seq_inds.to(device)
-                ctrl_inds = ctrl_inds.to(device)
+            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+                seq = seq.to(device)
+                ctrl = ctrl.to(device)
                 
-                out_seq = model(seq_emb, seq_inds)
-                out_ctrl = model(ctrl_emb, ctrl_inds)
+                out_seq = model(seq)
+                out_ctrl = model(ctrl)
                 loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
                 loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
                 loss = (loss_seq + loss_ctrl) / accumulate
@@ -79,8 +77,8 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
                     seq = seq.to(device)
                     ctrl = ctrl.to(device)
 
-                    out_seq = model(seq, seq_inds)
-                    out_ctrl = model(ctrl, ctrl_inds)
+                    out_seq = model(seq)
+                    out_ctrl = model(ctrl)
                     loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
                     loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
                     val_loss += loss.item()
