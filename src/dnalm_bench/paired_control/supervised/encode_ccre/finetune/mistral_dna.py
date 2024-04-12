@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v0"      
+    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v1"      
 
     os.makedirs(out_dir, exist_ok=True)
 
