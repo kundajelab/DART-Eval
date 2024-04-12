@@ -10,8 +10,7 @@ from ....components import PairedControlDataset
 
 
 if __name__ == "__main__":
-    cell_line = sys.argv[1] #cell line name
-    resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "nucleotide-transformer-v2-500m-multi-species"
     # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
