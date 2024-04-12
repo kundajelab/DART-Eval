@@ -19,7 +19,7 @@ from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule, copy_if_not_exists
 
 
-def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, wd, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, wd, accumulate, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers,
                                   pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, 
@@ -49,26 +49,27 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
+            optimizer.zero_grad()
             model.train()
             for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
                 seq_emb = seq_emb.to(device)
                 ctrl_emb = ctrl_emb.to(device)
                 seq_inds = seq_inds.to(device)
                 ctrl_inds = ctrl_inds.to(device)
-
-                # seq_emb = _detokenize(seq_emb, seq_inds, device)
-                # ctrl_emb = _detokenize(ctrl_emb, ctrl_inds, device)
                 
-                optimizer.zero_grad()
                 out_seq = model(seq_emb, seq_inds)
                 out_ctrl = model(ctrl_emb, ctrl_inds)
                 loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
                 loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                loss = loss_seq + loss_ctrl
+                loss = (loss_seq + loss_ctrl) / accumulate
                 loss.backward()
-                # clip_grad_norm_(model.parameters(), 10)
-                optimizer.step()
-            
+
+                if ((i + 1) % accumulate == 0):
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+            optimizer.step()
+        
             val_loss = 0
             val_acc = 0
             val_acc_paired = 0
