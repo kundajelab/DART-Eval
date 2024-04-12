@@ -19,7 +19,7 @@ from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule, copy_if_not_exists
 
 
-def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, wd, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers,
                                   pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, 
@@ -45,7 +45,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
             f.write("\t".join(log_cols) + "\n")
 
         model.to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):

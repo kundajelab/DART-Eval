@@ -61,8 +61,6 @@ if __name__ == "__main__":
 
     emb_channels = 1024
 
-    crop = 557
-
     lora_rank = 8
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
