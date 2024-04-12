@@ -56,11 +56,11 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
                 # ctrl = ctrl.to(device)
                 
                 out_seq = model(seq)
+                loss_seq = criterion(out_seq, one.expand(out_seq.shape[0])) / accumulate
+                loss_seq.backward()
                 out_ctrl = model(ctrl)
-                loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
-                loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                loss = (loss_seq + loss_ctrl) / accumulate
-                loss.backward()
+                loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0])) / accumulate
+                loss_ctrl.backward()
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
