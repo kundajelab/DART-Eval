@@ -18,7 +18,7 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_350_jitter_0.bed"
 
-    batch_size = 256
+    batch_size = 128
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
