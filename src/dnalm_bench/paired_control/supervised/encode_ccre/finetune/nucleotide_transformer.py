@@ -18,7 +18,7 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_350_jitter_0.bed"
 
-    batch_size = 64
+    batch_size = 1024
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 2
+    accumulate = 1
     
     lr = 1e-4
     wd = 0.01
