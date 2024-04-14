@@ -81,7 +81,7 @@ if __name__ == "__main__":
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v1" 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v7"    
+    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v8"    
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
 
     os.makedirs(out_dir, exist_ok=True)
