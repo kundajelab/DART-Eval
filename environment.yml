@@ -17,6 +17,7 @@ dependencies:
   - conda-forge::deepspeed=0.13.1
   - conda-forge::h5py=3.10.0
   - conda-forge::pip=24.0
+  - conda-forge::scikit-learn=1.4.2
   - bioconda::pyfaidx=0.7.2.1
   - bioconda::pybigwig=0.3.22
   - bioconda::ncls=0.0.68
