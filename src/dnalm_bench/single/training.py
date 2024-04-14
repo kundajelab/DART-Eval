@@ -254,9 +254,9 @@ def _collate_batch(batch):
 
 def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
-                                  pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+                                  pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
-                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
 
     os.makedirs(out_dir, exist_ok=True)
     log_file = os.path.join(out_dir, "train.log")
@@ -370,6 +370,7 @@ class CNNEmbeddingsPredictorBase(torch.nn.Module):
 class CNNEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
     @staticmethod
     def _detokenize(embs, inds):
+        breakpoint()
         gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
         seq_embeddings = torch.gather(embs, 1, gather_idx)
 
