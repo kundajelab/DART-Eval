@@ -415,7 +415,8 @@ class DNABERT2LoRAModel(HFClassifierModel):
             config = BertConfig.from_pretrained(model_name)
             config.num_labels = num_labels
             model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, config=config)
-            model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+            model.bert.embeddings = LoRAModule(model.bert.embeddings, lora_rank, lora_alpha, lora_dropout)
+            model.bert.encoder = LoRAModule(model.bert.encoder, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
 
@@ -440,7 +441,8 @@ class GENALMLoRAModel(HFClassifierModel):
         cls = getattr(importlib.import_module(gena_module_name), 'BertForSequenceClassification')
         model = cls.from_pretrained(model_name, num_labels=num_labels)
 
-        model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+        model.bert.embeddings = LoRAModule(model.bert.embeddings, lora_rank, lora_alpha, lora_dropout)
+        model.bert.encoder = LoRAModule(model.bert.encoder, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
 
