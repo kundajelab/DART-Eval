@@ -9,7 +9,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
-    resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    eval_mode = sys.argv[2] if len(sys.argv) > 2 else "test"
 
     model_name = "Mistral-DNA-v0.1"
 
@@ -58,6 +58,8 @@ if __name__ == "__main__":
         "chr20",
         "chr22"
     ]
+    
+    modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
     emb_channels = 256
 
@@ -80,15 +82,16 @@ if __name__ == "__main__":
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
 
     os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
-    idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
-    neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_test, crop, cache_dir=cache_dir)
+    pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
+    idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
+    neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
 
     model = MistralDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
-    metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_dir,
+    metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
                                        num_workers, prefetch_factor, device, progress_bar=True)
     
     for k, v in metrics.items():
