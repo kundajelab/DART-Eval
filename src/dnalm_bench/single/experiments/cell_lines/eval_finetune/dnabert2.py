@@ -97,6 +97,7 @@ if __name__ == "__main__":
 
     model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
+    print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
 
     metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
