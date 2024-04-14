@@ -302,8 +302,9 @@ def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, mo
     # val_counts_true = []
     torch.manual_seed(seed)
     
-    model.eval()
     model.to(device)
+
+    model.eval()
 
     with torch.no_grad():
         test_loss_pos = 0
