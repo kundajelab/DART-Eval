@@ -69,12 +69,12 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 10
+    num_epochs = 5
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v1"      
+    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v2"      
 
     os.makedirs(out_dir, exist_ok=True)
 
