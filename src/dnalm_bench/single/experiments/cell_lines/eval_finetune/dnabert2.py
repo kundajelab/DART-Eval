@@ -9,7 +9,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
-    resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    eval_mode = sys.argv[2] if len(sys.argv) > 2 else "test"
 
     model_name = "DNABERT-2-117M"
 
@@ -58,6 +58,8 @@ if __name__ == "__main__":
         "chr22"
     ]
 
+    modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
+
     emb_channels = 768
 
     crop = 557
@@ -86,10 +88,10 @@ if __name__ == "__main__":
 
     os.makedirs(out_dir, exist_ok=True)
 
-    chroms_test = chroms_val ####
-    pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
-    idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
-    neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_test, crop, cache_dir=cache_dir)
+    # chroms_test = chroms_val ####
+    pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
+    idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
+    neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
 
     model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
