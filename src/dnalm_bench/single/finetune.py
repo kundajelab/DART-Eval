@@ -295,7 +295,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
             torch.save(model.state_dict(), checkpoint_path)
 
 
-def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_dir,
+def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
                                        num_workers, prefetch_factor, device, progress_bar=False, seed=0):
     # val_loss = 0
     # val_counts_pred = []
@@ -401,8 +401,7 @@ def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, mo
             "test_auprc": test_auprc,
         }
 
-    metrics_path = os.path.join(out_dir, "metrics.json")
-    with open(metrics_path, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
 
     return metrics

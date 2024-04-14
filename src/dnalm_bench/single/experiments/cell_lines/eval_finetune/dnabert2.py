@@ -88,6 +88,8 @@ if __name__ == "__main__":
 
     os.makedirs(out_dir, exist_ok=True)
 
+    out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
+
     # chroms_test = chroms_val ####
     pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
     idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
@@ -97,7 +99,7 @@ if __name__ == "__main__":
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
 
-    metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_dir,
+    metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
                                        num_workers, prefetch_factor, device, progress_bar=True)
     
     for k, v in metrics.items():
