@@ -86,6 +86,7 @@ if __name__ == "__main__":
 
     os.makedirs(out_dir, exist_ok=True)
 
+    chroms_test = chroms_val ####
     pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
     idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, chroms_test, crop, cache_dir=cache_dir)
     neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_test, crop, cache_dir=cache_dir)
