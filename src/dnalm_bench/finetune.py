@@ -36,6 +36,9 @@ class LoRAModule(nn.Module):
 
         self.model = model
         minlora.add_lora(self.model, lora_config=lora_config)
+        for n, p in model.named_parameters():
+            if not minlora.name_is_lora(n):
+                p.requires_grad = False
         self.model._register_state_dict_hook(self._state_dict_hook)   
 
     @staticmethod
