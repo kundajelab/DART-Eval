@@ -150,14 +150,13 @@ class MaskedProbingScore(metaclass=ABCMeta):
         pass
 
     def score(self, tokens, starts, ends, attention_mask, offsets):
-        # breakpoint()
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
         offsets = offsets.to(device=self.device)
         indices = self._offsets_to_indices(offsets, tokens)
+        indices = torch.from_numpy(indices).to(device=self.device)
         with torch.no_grad():
             try:
-                # breakpoint()
                 torch_outs = self.model(
                     tokens,
                     attention_mask=attention_mask,
@@ -166,18 +165,8 @@ class MaskedProbingScore(metaclass=ABCMeta):
             except:
                 torch_outs = self.model(tokens)
         
-        # lls = torch.zeros(tokens.shape[:2], device=self.device)
-        # for i in range(tokens.shape[1]):
-        #     clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
-        #     masked_tokens = tokens.clone()
-        #     masked_tokens[:,i,...] = self.mask_token
-        #     # breakpoint()
-        #     lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
-
-        probed_outs = self.probed_model(torch_outs, indices)
-        out = probed_outs.sum(dim=1).numpy(force=True)
-
-        return out
+        probed_outs = self.probed_model(torch_outs.hidden_states, indices)
+        return probed_outs
     
 
 class CausalZeroShotScore(metaclass=ABCMeta):
@@ -288,7 +277,7 @@ class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator):
     
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
-        gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.uint32)
+        gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.int64)
         for i, offset in enumerate(offsets):
             for j, (start, end) in enumerate(offset):
                 gather_idx[i,start:end] = j
@@ -314,6 +303,7 @@ class DNABERT2ProbingVariantEvaluator(DNABERT2VariantEvaluator, MaskedProbingSco
         model_checkpoint = torch.load(model_path)
         probed_model.load_state_dict(model_checkpoint)
         self.probed_model = probed_model
+        self.probed_model.to(device)
 
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
