@@ -17,7 +17,7 @@ if __name__ == "__main__":
     nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
     assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
 
-    batch_size = 2048
+    batch_size = 1024
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
