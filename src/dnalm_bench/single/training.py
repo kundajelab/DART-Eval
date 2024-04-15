@@ -348,7 +348,6 @@ class CNNEmbeddingsPredictorBase(torch.nn.Module):
 class CNNEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
     @staticmethod
     def _detokenize(embs, inds):
-        breakpoint()
         gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
         seq_embeddings = torch.gather(embs, 1, gather_idx)
 
