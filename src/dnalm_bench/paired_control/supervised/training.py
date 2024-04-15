@@ -1,6 +1,8 @@
 # from abc import ABCMeta, abstractmethod
 import os
 import math
+import hashlib
+import warnings
 
 import numpy as np
 import torch
@@ -34,12 +36,15 @@ class EmbeddingsDataset(IterableDataset):
 
         self.elements_df = self._load_elements(elements_tsv, chroms)
         self.embeddings_h5 = embeddings_h5
-        self.cache_dir_seq = os.path.join(cache_dir, "seq") if cache_dir is not None else None
-        self.cache_dir_ctrl = os.path.join(cache_dir, "ctrl") if cache_dir is not None else None
 
         if cache_dir is not None:
-            os.makedirs(self.cache_dir_seq, exist_ok=True)
-            os.makedirs(self.cache_dir_ctrl, exist_ok=True)
+            os.makedirs(cache_dir, exist_ok=True)
+
+            embeddings_h5_abs = os.path.abspath(embeddings_h5)
+            embeddings_h5_hash = hashlib.sha256(embeddings_h5_abs.encode('utf-8')).hexdigest()
+            embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".fa")
+            self._copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
+            self.embeddings_h5 = embeddings_h5_cache_path
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
@@ -160,10 +165,21 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
     # print(one.shape) ####
 
+    model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
     if resume_from is not None:
-        start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
-        checkpoint_resume = torch.load(resume_from)
-        model.load_state_dict(checkpoint_resume)
+        # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
+        model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
     else:
         start_epoch = 0
 
@@ -171,8 +187,6 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
 
-        model.to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
@@ -214,7 +228,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
                     out_ctrl = model(ctrl_emb, ctrl_inds)
                     loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
                     loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                    val_loss += loss.item()
+                    val_loss += (loss_seq + loss_ctrl).item()
                     val_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
                     val_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
             

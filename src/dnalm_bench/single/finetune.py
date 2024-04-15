@@ -3,6 +3,8 @@ from abc import ABCMeta, abstractmethod
 import hashlib
 import shutil
 import importlib
+import json
+import warnings
 
 import numpy as np
 import torch
@@ -14,6 +16,7 @@ import polars as pl
 import h5py
 import pyfaidx
 import pyBigWig
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule
@@ -185,12 +188,21 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
     log_file = os.path.join(out_dir, "train.log")
     log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
 
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+
     if resume_from is not None:
         # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
         resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
         start_epoch = resume_from + 1
         checkpoint_resume = torch.load(resume_checkpoint_path)
         model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
     else:
         start_epoch = 0
 
@@ -198,9 +210,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
             f.flush()
-
-        model.to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
 
         for epoch in range(start_epoch, num_epochs):
             model.train()
@@ -291,18 +300,120 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+            optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
+            torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
 
 
-# class ChromatinPredictionHead(torch.nn.Module):
-#     def __init__(self, input_channels):
-#         super().__init__()
-#         self.linear = torch.nn.Linear(input_channels, 1)
+def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
+                                       num_workers, prefetch_factor, device, progress_bar=False, seed=0):
+    # val_loss = 0
+    # val_counts_pred = []
+    # val_counts_true = []
+    torch.manual_seed(seed)
+    
+    model.to(device)
 
-#     def forward(self, embs):
-#         x = self.linear(embs)
-#         x = x.squeeze(-1)
+    model.eval()
 
-#         return x
+    with torch.no_grad():
+        test_loss_pos = 0
+        test_counts_pred_pos = []
+        test_counts_true_pos = []
+        test_pos_dataloader = DataLoader(pos_dataset, batch_size=batch_size, num_workers=num_workers,
+                                         pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq, track) in enumerate(tqdm(test_pos_dataloader, disable=(not progress_bar), desc="test_pos", ncols=120)):
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq).squeeze(1)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_pos += loss.item()
+            test_counts_pred_pos.append(log1p_counts)
+            test_counts_true_pos.append(true_counts)
+
+        test_counts_pred_pos = torch.cat(test_counts_pred_pos, dim=0)
+        test_counts_true_pos = torch.cat(test_counts_true_pos, dim=0)
+        test_pearson_pos = counts_pearson(test_counts_pred_pos, test_counts_true_pos)
+        test_spearman_pos = counts_spearman(test_counts_pred_pos, test_counts_true_pos)
+        test_loss_pos /= len(test_pos_dataloader)
+
+        test_loss_idr = 0
+        test_counts_pred_idr = []
+        test_counts_true_idr = []
+        test_idr_dataloader = DataLoader(idr_dataset, batch_size=batch_size, num_workers=num_workers,
+                                            pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq, track) in enumerate(tqdm(test_idr_dataloader, disable=(not progress_bar), desc="test_idr", ncols=120)):
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq).squeeze(1)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_idr += loss.item()
+            test_counts_pred_idr.append(log1p_counts)
+            test_counts_true_idr.append(true_counts)
+
+        test_counts_pred_idr = torch.cat(test_counts_pred_idr, dim=0)
+        test_counts_true_idr = torch.cat(test_counts_true_idr, dim=0)
+        test_pearson_idr = counts_pearson(test_counts_pred_idr, test_counts_true_idr)
+        test_spearman_idr = counts_spearman(test_counts_pred_idr, test_counts_true_idr)
+        test_loss_idr /= len(test_idr_dataloader)
+
+        test_loss_neg = 0
+        test_counts_pred_neg = []
+        test_counts_true_neg = []
+        test_neg_dataloader = DataLoader(neg_dataset, batch_size=batch_size, num_workers=num_workers,
+                                            pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq, track) in enumerate(tqdm(test_neg_dataloader, disable=(not progress_bar), desc="test_neg", ncols=120)):
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq).squeeze(1)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_neg += loss.item()
+            test_counts_pred_neg.append(log1p_counts)
+            test_counts_true_neg.append(true_counts)
+
+        test_counts_pred_neg = torch.cat(test_counts_pred_neg, dim=0)
+        test_counts_true_neg = torch.cat(test_counts_true_neg, dim=0)
+        test_pearson_neg = counts_pearson(test_counts_pred_neg, test_counts_true_neg)
+        test_spearman_neg = counts_spearman(test_counts_pred_neg, test_counts_true_neg)
+        test_loss_neg /= len(test_neg_dataloader)
+
+        test_loss_all = (test_loss_pos + test_loss_neg) / 2
+        test_counts_pred_all = torch.cat([test_counts_pred_pos, test_counts_pred_neg], dim=0)
+        test_counts_true_all = torch.cat([test_counts_true_pos, test_counts_true_neg], dim=0)
+        test_pearson_all = counts_pearson(test_counts_pred_all, test_counts_true_all)
+        test_spearman_all = counts_spearman(test_counts_pred_all, test_counts_true_all)
+
+        test_counts_pred_cls = torch.cat([test_counts_pred_idr, test_counts_pred_neg], dim=0)
+        test_labels = torch.cat([torch.ones_like(test_counts_pred_idr), torch.zeros_like(test_counts_pred_neg)], dim=0)
+        test_auroc = roc_auc_score(test_labels.numpy(force=True), test_counts_pred_cls.numpy(force=True))
+        test_auprc = average_precision_score(test_labels.numpy(force=True), test_counts_pred_cls.numpy(force=True))
+
+        metrics = {
+            "test_loss_pos": test_loss_pos,
+            "test_loss_idr": test_loss_idr,
+            "test_loss_neg": test_loss_neg,
+            "test_loss_all": test_loss_all,
+            "test_pearson_pos": test_pearson_pos,
+            "test_pearson_idr": test_pearson_idr,
+            "test_pearson_neg": test_pearson_neg,
+            "test_pearson_all": test_pearson_all,
+            "test_spearman_pos": test_spearman_pos,
+            "test_spearman_idr": test_spearman_idr,
+            "test_spearman_neg": test_spearman_neg,
+            "test_spearman_all": test_spearman_all,
+            "test_auroc": test_auroc,
+            "test_auprc": test_auprc,
+        }
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
@@ -310,10 +421,11 @@ class DNABERT2LoRAModel(HFClassifierModel):
         model_name = f"zhihan1996/{model_name}"
         with NoModule("triton"):
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-            config = BertConfig.from_pretrained("zhihan1996/DNABERT-2-117M")
+            config = BertConfig.from_pretrained(model_name)
             config.num_labels = num_labels
             model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, config=config)
-            model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+            model.bert.embeddings = LoRAModule(model.bert.embeddings, lora_rank, lora_alpha, lora_dropout)
+            model.bert.encoder = LoRAModule(model.bert.encoder, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
 
@@ -338,7 +450,8 @@ class GENALMLoRAModel(HFClassifierModel):
         cls = getattr(importlib.import_module(gena_module_name), 'BertForSequenceClassification')
         model = cls.from_pretrained(model_name, num_labels=num_labels)
 
-        model.bert = LoRAModule(model.bert, lora_rank, lora_alpha, lora_dropout)
+        model.bert.embeddings = LoRAModule(model.bert.embeddings, lora_rank, lora_alpha, lora_dropout)
+        model.bert.encoder = LoRAModule(model.bert.encoder, lora_rank, lora_alpha, lora_dropout)
 
         super().__init__(tokenizer, model)
 

@@ -2,6 +2,8 @@
 import os
 import math
 import heapq
+import hashlib
+import warnings
 
 import numpy as np
 import torch
@@ -17,7 +19,7 @@ from ncls import NCLS
 # from scipy.stats import wilcoxon
 from tqdm import tqdm
 
-from ..utils import one_hot_encode
+from ..utils import copy_if_not_exists
 
 class AssayEmbeddingsDataset(IterableDataset):
     _elements_dtypes = {
@@ -30,7 +32,7 @@ class AssayEmbeddingsDataset(IterableDataset):
         "elem_relative_end": pl.UInt32
     }
 
-    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1):
+    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1, cache_dir=None):
         super().__init__()
 
         self.elements_df_all = self._load_elements(elements_tsv, chroms)
@@ -39,6 +41,21 @@ class AssayEmbeddingsDataset(IterableDataset):
         self.bounds = bounds
         self.crop = crop
         self.downsample_ratio = downsample_ratio
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+
+            embeddings_h5_abs = os.path.abspath(embeddings_h5)
+            embeddings_h5_hash = hashlib.sha256(embeddings_h5_abs.encode('utf-8')).hexdigest()
+            embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".h5")
+            copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
+            self.embeddings_h5 = embeddings_h5_cache_path
+
+            bw_path_abs = os.path.abspath(assay_bw)
+            bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
+            copy_if_not_exists(assay_bw, bw_cache_path)
+            self.assay_bw = bw_cache_path
 
         self.next_epoch = 0
         self._set_epoch()
@@ -245,12 +262,20 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
     log_file = os.path.join(out_dir, "train.log")
     log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
 
+    model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
     if resume_from is not None:
-        # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
         resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
         start_epoch = resume_from + 1
         checkpoint_resume = torch.load(resume_checkpoint_path)
-        model.load_state_dict(checkpoint_resume)
+        model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
     else:
         start_epoch = 0
 
@@ -258,9 +283,6 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
             f.flush()
-
-        model.to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
         for epoch in range(start_epoch, num_epochs):
             model.train()
