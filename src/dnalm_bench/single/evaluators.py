@@ -89,16 +89,37 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
         allele2_likelihoods = []
         
         for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
-            tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1 = self.tokenize(allele1)
-            tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2 = self.tokenize(allele2)
-            lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1)
-            lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2)
+            tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
+            tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
+            lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1)
+            lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2)
             for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                 allele1_likelihoods.append(lhood_allele1)
                 allele2_likelihoods.append(lhood_allele2)
-        data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
-        df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
-        df.write_csv(output_file, separator="\t")
+                data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
+                df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
+                df.write_csv(output_file, separator="\t")
+    
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
+        tokens = encoded["input_ids"]
+        offsets = encoded["offset_mapping"]
+        try:
+            attention_mask = encoded["attention_mask"]
+        except:
+            attention_mask = None
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+        else:
+            ends = attention_mask.sum(dim=1) 
+        return tokens, starts, ends, attention_mask, offsets
+    
+    
 
 
 class MaskedZeroShotScore(metaclass=ABCMeta):
@@ -107,7 +128,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
     def mask_token(self):
         pass
 
-    def score(self, tokens, starts, ends, attention_mask):
+    def score(self, tokens, starts, ends, attention_mask, offsets=None):
         # breakpoint()
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
@@ -121,6 +142,31 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
         out = lls.sum(dim=1).numpy(force=True)
 
         return out
+    
+class MaskedProbingScore(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def mask_token(self):
+        pass
+
+    def score(self, tokens, starts, ends, attention_mask, offsets):
+        tokens = tokens.to(device=self.device)
+        attention_mask = attention_mask.to(device=self.device)
+        offsets = offsets.to(device=self.device)
+        indices = self._offsets_to_indices(offsets, tokens)
+        indices = torch.from_numpy(indices).to(device=self.device)
+        with torch.no_grad():
+            try:
+                torch_outs = self.model(
+                    tokens,
+                    attention_mask=attention_mask,
+                    encoder_attention_mask=attention_mask
+                )
+            except:
+                torch_outs = self.model(tokens)
+        
+        probed_outs = self.probed_model(torch_outs.hidden_states, indices)
+        return probed_outs
     
 
 class CausalZeroShotScore(metaclass=ABCMeta):
@@ -216,13 +262,9 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def end_token(self):
         return None
     
-class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
-    def __init__(self, model_name, batch_size, num_workers, device):
-        model_name = f"zhihan1996/{model_name}"
-        with NoModule("triton"):
-            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
-            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator):
+    _idx_mode = "variable"
+    def __init__(self, tokenizer, model, batch_size, num_workers, device):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
@@ -232,6 +274,38 @@ class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
     @property
     def end_token(self):
         return 2
+    
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.int64)
+        for i, offset in enumerate(offsets):
+            for j, (start, end) in enumerate(offset):
+                gather_idx[i,start:end] = j
+        return gather_idx
+    
+class DNABERT2ZeroShotVariantEvaluator(DNABERT2VariantEvaluator, MaskedZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"zhihan1996/{model_name}"
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+class DNABERT2ProbingVariantEvaluator(DNABERT2VariantEvaluator, MaskedProbingScore):
+    def __init__(self, probed_model, model_path, model_name, batch_size, num_workers, device):
+        model_name = f"zhihan1996/{model_name}"
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        
+        model_checkpoint = torch.load(model_path)
+        probed_model.load_state_dict(model_checkpoint)
+        self.probed_model = probed_model
+        self.probed_model.to(device)
+
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 
 class GenaLMVariantEvaluator(VariantLikelihoodEvaluator, MaskedZeroShotScore):
