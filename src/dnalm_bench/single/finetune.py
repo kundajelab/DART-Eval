@@ -4,6 +4,7 @@ import hashlib
 import shutil
 import importlib
 import json
+import warnings
 
 import numpy as np
 import torch
@@ -187,12 +188,21 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
     log_file = os.path.join(out_dir, "train.log")
     log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
 
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+
     if resume_from is not None:
         # start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
         resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
         start_epoch = resume_from + 1
         checkpoint_resume = torch.load(resume_checkpoint_path)
         model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
     else:
         start_epoch = 0
 
@@ -200,9 +210,6 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
             f.flush()
-
-        model.to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
 
         for epoch in range(start_epoch, num_epochs):
             model.train()
@@ -293,6 +300,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+            optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
+            torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
 
 
 def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,

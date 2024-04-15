@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 import hashlib
 import shutil
 import importlib
+import warnings
 
 import numpy as np
 import torch
@@ -33,10 +34,20 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
     # print(one.shape) ####
 
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+
     if resume_from is not None:
-        start_epoch = int(resume_from.split("_")[-1].split(".")[0]) + 1
-        checkpoint_resume = torch.load(resume_from)
-        model.load_state_dict(checkpoint_resume)
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
+        model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
     else:
         start_epoch = 0
 
@@ -44,8 +55,6 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
         if resume_from is None:
             f.write("\t".join(log_cols) + "\n")
 
-        model.to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(start_epoch, num_epochs):
