@@ -389,8 +389,48 @@ class HDVariantEvaluator(VariantLikelihoodEvaluator, CausalZeroShotScore):
     def end_token(self):
         return 1
     
+class HDZeroShotVariantEvaluator(HDVariantEvaluator, CausalZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        super().__init__(model_name, batch_size, num_workers, device)
+
+class HDProbingVariantEvaluator(HDVariantEvaluator, CausalProbingScore):
+    def __init__(self, probed_model, model_path, model_name, batch_size, num_workers, device):
+        model_checkpoint = torch.load(model_path)
+        probed_model.load_state_dict(model_checkpoint)
+        self.probed_model = probed_model
+        self.probed_model.to(device)
+
+        super().__init__(model_name, batch_size, num_workers, device)
+
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        try:
+            attention_mask = encoded["attention_mask"]
+        except:
+            attention_mask = None
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+        else:
+            ends = attention_mask.sum(dim=1) 
+        return tokens, starts, ends, attention_mask, None
+    
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx)
+    
 class MistralVariantEvaluator(VariantLikelihoodEvaluator):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
+        model_name = f"RaphaelMourad/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
@@ -411,23 +451,16 @@ class MistralVariantEvaluator(VariantLikelihoodEvaluator):
     
 class MistralZeroShotVariantEvaluator(MistralVariantEvaluator, CausalZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
-        model_name = f"RaphaelMourad/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-        super().__init__(tokenizer, model, batch_size, num_workers, device)
+        super().__init__(model_name, batch_size, num_workers, device)
 
 class MistralProbingVariantEvaluator(MistralVariantEvaluator, CausalProbingScore):
     def __init__(self, probed_model, model_path, model_name, batch_size, num_workers, device):
-        model_name = f"RaphaelMourad/{model_name}"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-        
         model_checkpoint = torch.load(model_path)
         probed_model.load_state_dict(model_checkpoint)
         self.probed_model = probed_model
         self.probed_model.to(device)
 
-        super().__init__(tokenizer, model, batch_size, num_workers, device)
+        super().__init__(model_name, batch_size, num_workers, device)
 
 class NTVariantEvaluator(VariantLikelihoodEvaluator):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):

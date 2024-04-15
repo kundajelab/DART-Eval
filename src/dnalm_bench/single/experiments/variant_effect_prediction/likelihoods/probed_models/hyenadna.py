@@ -1,7 +1,7 @@
 import os
 import sys
 
-from .....evaluators import MistralProbingVariantEvaluator
+from .....evaluators import HDProbingVariantEvaluator
 from .....components import VariantDataset
 from .....training import CNNSlicedEmbeddingsPredictor
 
@@ -47,5 +47,5 @@ if __name__ == "__main__":
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    evaluator = MistralProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
+    evaluator = HDProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
     evaluator.evaluate(dataset, out_path, progress_bar=True)
