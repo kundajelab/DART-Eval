@@ -1,4 +1,5 @@
 import os
+import sys
 
 from torch.utils.data import DataLoader
 
@@ -6,10 +7,12 @@ from ...training import EmbeddingsDataset, CNNSequenceBaselineClassifier, train_
 
 
 if __name__ == "__main__":
+    resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
+
     model_name = "sequence_baseline"
-    embeddings_h5 = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/{model_name}.h5"
-    # embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50/{model_name}.h5"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
+    # embeddings_h5 = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
 
     batch_size = 2048
     # batch_size = 1024
@@ -64,7 +67,7 @@ if __name__ == "__main__":
     init_kernel_size = 41
 
 
-    seq_len = 500
+    seq_len = 350
 
     # n_layers_trunk = 7
 
@@ -74,11 +77,11 @@ if __name__ == "__main__":
 
     num_epochs = 150
 
-    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/{model_name}/v30"
+    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v0"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v30"
     os.makedirs(out_dir, exist_ok=True)
 
-    # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_500_jitter_50/{model_name}"
+    # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_350_jitter_0/{model_name}"
     cache_dir = None
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train, cache_dir=cache_dir)
@@ -87,7 +90,5 @@ if __name__ == "__main__":
     # model = CNNSequenceBaselineClassifier(n_filters, n_layers)
     # model = CNNSequenceBaselineClassifier(input_channels, hidden_channels, kernel_size, n_layers_trunk)
 
-    print(f"Parameter count: {sum(p.numel() for p in model.parameters())}")
-    train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
-    # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
-    #                  progress_bar=True, resume_from=os.path.join(out_dir, "checkpoint_77.pt"))
+    # print(f"Parameter count: {sum(p.numel() for p in model.parameters())}")
+    train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
