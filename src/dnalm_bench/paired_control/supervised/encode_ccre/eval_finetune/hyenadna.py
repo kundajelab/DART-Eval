@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     test_dataset = PairedControlDataset(genome_fa, elements_tsv, modes[eval_mode], seed)
 
-    model = HyenaDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
+    model = HyenaDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 2)
     checkpoint_resume = torch.load(checkpoint_path)
     # print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
