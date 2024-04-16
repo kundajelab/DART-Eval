@@ -71,7 +71,7 @@ if __name__ == "__main__":
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    model_dir =  f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v6"    
+    model_dir =  f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v8"    
     checkpoint_nums = {
         "GM12878": 35,
         # "H1ESC": 36,
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     model = HyenaDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
-    print(checkpoint_resume.keys()) ####
+    # print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
     metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
                                        num_workers, prefetch_factor, device, progress_bar=True)
