@@ -11,7 +11,7 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
     # chroms = ["chr22"]
     chroms = None
-    batch_size = 1024
+    batch_size = 512
     num_workers = 4
     seed = 0
     device = "cuda"
