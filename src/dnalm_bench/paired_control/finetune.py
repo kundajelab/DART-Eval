@@ -60,7 +60,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
         for epoch in range(start_epoch, num_epochs):
             optimizer.zero_grad()
             model.train()
-            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
                 # seq = seq.to(device)
                 # ctrl = ctrl.to(device)
                 
@@ -82,7 +82,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
             val_acc_paired = 0
             model.eval()
             with torch.no_grad():
-                for i, (seq, ctrl, _) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
+                for i, (seq, ctrl, _) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
                     # seq = seq.to(device)
                     # ctrl = ctrl.to(device)
 
