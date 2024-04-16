@@ -88,8 +88,8 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
                 seq_scores = self.score(seq_tokens, seq_starts, seq_ends, seq_attention_mask)
                 ctrl_scores = self.score(ctrl_tokens, ctrl_starts, ctrl_ends, ctrl_attention_mask)
 
-                for seq_score, ctrl_score in zip(seq_scores, ctrl_scores):
-                    f.write(f"{inds}\t{seq_score}\t{ctrl_score}\n")
+                for ind, seq_score, ctrl_score in zip(inds, seq_scores, ctrl_scores):
+                    f.write(f"{ind}\t{seq_score}\t{ctrl_score}\n")
                 f.flush()
 
                 diff_batch = seq_scores - ctrl_scores
