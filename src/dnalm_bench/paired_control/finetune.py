@@ -4,6 +4,7 @@ import hashlib
 import shutil
 import importlib
 import warnings
+import json
 
 import numpy as np
 import torch
@@ -15,6 +16,7 @@ import polars as pl
 import h5py
 import pyfaidx
 import pyBigWig
+from scipy.stats import wilcoxon
 
 from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule, copy_if_not_exists
@@ -107,85 +109,54 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
 
 
 
-def evaluate_finetuned_classifier(test_dataset, model, num_epochs, out_dir, batch_size,num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_workers, prefetch_factor, device, progress_bar=False):
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,
                                   pin_memory=True, prefetch_factor=prefetch_factor)
 
-
     zero = torch.tensor(0, dtype=torch.long, device=device)[None]
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
-    # print(one.shape) ####
 
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    
+    # os.makedirs(out_dir, exist_ok=True)
+    # scores_path = os.path.join(out_dir, "scores.tsv")
+    # metrics_path = os.path.join(out_dir, "metrics.json")
 
-    if resume_from is not None:
-        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
-        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
-        start_epoch = resume_from + 1
-        checkpoint_resume = torch.load(resume_checkpoint_path)
-        model.load_state_dict(checkpoint_resume, strict=False)
-        try:
-            optimizer_resume = torch.load(optimizer_checkpoint_path)
-            optimizer.load_state_dict(optimizer_resume)
-        except FileNotFoundError:
-            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
-    else:
-        start_epoch = 0
+    criterion = torch.nn.CrossEntropyLoss()
 
-    with open(log_file, "a") as f:
-        if resume_from is None:
-            f.write("\t".join(log_cols) + "\n")
+    # with open(scores_path, "w") as f:
+    #     f.write("idx\tseq_pos_logit\tseq_neg_logit\tctrl_pos_logit\tctrl_neg_logit\n")
 
-        criterion = torch.nn.CrossEntropyLoss()
+    metrics = {}
+    test_loss = 0
+    test_acc = 0
+    test_acc_paired = 0
+    for i, (seq, ctrl, inds) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
 
-        for epoch in range(start_epoch, num_epochs):
-            optimizer.zero_grad()
-            model.train()
-            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
-                # seq = seq.to(device)
-                # ctrl = ctrl.to(device)
-                
-                out_seq = model(seq)
-                loss_seq = criterion(out_seq, one.expand(out_seq.shape[0])) / accumulate
-                loss_seq.backward()
-                out_ctrl = model(ctrl)
-                loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0])) / accumulate
-                loss_ctrl.backward()
+        out_seq = model(seq)
+        out_ctrl = model(ctrl)
+        loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
+        loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
+        test_loss += (loss_seq + loss_ctrl).item()
+        test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
+        test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
 
-                if ((i + 1) % accumulate == 0):
-                    optimizer.step()
-                    optimizer.zero_grad()
+        # for ind, seq_logits, ctrl_logits in zip(inds, out_seq, out_ctrl):
+        #     f.write(f"{ind}\t{seq_logits[1]}\t{seq_logits[0]}\t{ctrl_logits[1]}\t{ctrl_logits[0]}\n")
+        # f.flush()
 
-            optimizer.step()
-        
-            val_loss = 0
-            val_acc = 0
-            val_acc_paired = 0
-            model.eval()
-            with torch.no_grad():
-                for i, (seq, ctrl, _) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
-                    # seq = seq.to(device)
-                    # ctrl = ctrl.to(device)
+    test_loss /= len(test_dataloader.dataset) * 2
+    test_acc /= len(test_dataloader.dataset) * 2
+    test_acc_paired /= len(test_dataloader.dataset)
 
-                    out_seq = model(seq)
-                    out_ctrl = model(ctrl)
-                    loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
-                    loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-                    val_loss += (loss_seq + loss_ctrl).item()
-                    val_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
-                    val_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
-            
-            val_loss /= len(val_dataloader.dataset) * 2
-            val_acc /= len(val_dataloader.dataset) * 2
-            val_acc_paired /= len(val_dataloader.dataset)
+    metrics["test_loss"] = test_loss
+    metrics["test_acc"] = test_acc
+    metrics["test_acc_paired"] = test_acc_paired
 
-            print(f"Epoch {epoch}: val_loss={val_loss}, val_acc={val_acc}, val_acc_paired={val_acc_paired}")
-            f.write(f"{epoch}\t{val_loss}\t{val_acc}\t{val_acc_paired}\n")
-            f.flush()
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
 
-            checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
-            torch.save(model.state_dict(), checkpoint_path)
+    return metrics
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
