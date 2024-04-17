@@ -1,6 +1,6 @@
-from .variant_tasks import load_embeddings_and_compute_cosine_distance, load_embeddings_and_compute_l1_distance
-from ...embeddings import NucleotideTransformerVariantEmbeddingExtractor
-from ...components import VariantDataset
+from ..variant_tasks import load_embeddings_and_compute_cosine_distance, load_embeddings_and_compute_l1_distance
+from ....embeddings import NucleotideTransformerVariantEmbeddingExtractor
+from ....components import VariantDataset
 import os
 import polars as pl
 
