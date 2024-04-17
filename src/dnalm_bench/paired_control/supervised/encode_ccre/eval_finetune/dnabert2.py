@@ -68,8 +68,8 @@ if __name__ == "__main__":
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    model_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v2"   
-    checkpoint_num = 17
+    model_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v3"   
+    checkpoint_num = 5
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/eval_ft/ccre_test_regions_350_jitter_0/{model_name}"    
