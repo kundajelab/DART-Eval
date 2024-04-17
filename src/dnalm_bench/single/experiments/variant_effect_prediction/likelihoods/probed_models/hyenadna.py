@@ -1,5 +1,6 @@
 import os
 import sys
+import polars as pl
 
 from .....evaluators import HDProbingVariantEvaluator
 from .....components import VariantDataset
@@ -9,7 +10,7 @@ from .....training import CNNSlicedEmbeddingsPredictor
 if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"
 
-    batch_size = 2048
+    batch_size = 1024
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -48,4 +49,8 @@ if __name__ == "__main__":
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     evaluator = HDProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
-    evaluator.evaluate(dataset, out_path, progress_bar=True)
+    counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, counts_df], how="horizontal")
+    scored_df.write_csv(out_path, separator="\t")

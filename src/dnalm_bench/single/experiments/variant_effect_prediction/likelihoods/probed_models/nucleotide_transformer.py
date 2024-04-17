@@ -4,6 +4,7 @@ import sys
 from .....evaluators import NTProbingVariantEvaluator
 from .....components import VariantDataset
 from .....training import CNNEmbeddingsPredictor
+import polars as pl
 
 
 if __name__ == "__main__":
@@ -48,4 +49,8 @@ if __name__ == "__main__":
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     evaluator = NTProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
-    evaluator.evaluate(dataset, out_path, progress_bar=True)
+    counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, counts_df], how="horizontal")
+    scored_df.write_csv(out_path, separator="\t")

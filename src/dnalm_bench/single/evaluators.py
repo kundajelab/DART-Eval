@@ -98,6 +98,7 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                 data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
                 df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
                 df.write_csv(output_file, separator="\t")
+        return df
     
     def tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
@@ -118,8 +119,6 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask, offsets
     
-    
-
 
 class MaskedZeroShotScore(metaclass=ABCMeta):
     @property
@@ -149,12 +148,12 @@ class MaskedProbingScore(metaclass=ABCMeta):
 
     def score(self, tokens, starts, ends, attention_mask, offsets):
         tokens = tokens.to(device=self.device)
-        attention_mask = attention_mask.to(device=self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device=self.device)
         if offsets is not None:
             offsets = offsets.to(device=self.device)
         indices = self._offsets_to_indices(offsets, tokens)
         indices = torch.from_numpy(indices).to(device=self.device)
-        
         with torch.no_grad():
             try:
                 torch_outs = self.model(
@@ -188,7 +187,8 @@ class CausalProbingScore(metaclass=ABCMeta):
     
     def score(self, tokens, starts, ends, attention_mask, offsets):
         tokens = tokens.to(device=self.device)
-        attention_mask = attention_mask.to(device=self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device=self.device)
         if offsets is not None:
             offsets = offsets.to(device=self.device)
         indices = self._offsets_to_indices(offsets, tokens)
@@ -203,10 +203,11 @@ class CausalProbingScore(metaclass=ABCMeta):
                 )
             except:
                 torch_outs = self.model(tokens, output_hidden_states=True)
-        if type(torch_outs.hidden_states) is tuple:
+        if type(torch_outs.hidden_states) is tuple or type(torch_outs.hidden_states) is list:
             last_hidden_state = torch_outs.hidden_states[-1]
         else:
             last_hidden_state = torch_outs.hidden_states
+
         probed_outs = self.probed_model(last_hidden_state, indices)
         return probed_outs
 
@@ -374,7 +375,7 @@ class GenaLMProbingVariantEvaluator(GenaLMVariantEvaluator, MaskedProbingScore):
 
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
-class HDVariantEvaluator(VariantLikelihoodEvaluator, CausalZeroShotScore):
+class HDVariantEvaluator(VariantLikelihoodEvaluator):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
@@ -408,23 +409,24 @@ class HDProbingVariantEvaluator(HDVariantEvaluator, CausalProbingScore):
         tokens = encoded["input_ids"]
         try:
             attention_mask = encoded["attention_mask"]
+            ends = attention_mask.sum(dim=1)
         except:
             attention_mask = None
+            ends = None
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
             starts = torch.tensor([0]*tokens.shape[0])
         if self.end_token is not None:
             ends = torch.where(tokens == self.end_token)[1]
-        else:
-            ends = attention_mask.sum(dim=1) 
+            
         return tokens, starts, ends, attention_mask, None
     
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
         slice_idx = [0, seqs.shape[1]]
         
-        return np.array(slice_idx)
+        return np.array([slice_idx] * seqs.shape[0])
     
 class MistralVariantEvaluator(VariantLikelihoodEvaluator):
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
