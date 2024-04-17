@@ -35,7 +35,7 @@ class PairedControlEmbeddingExtractor:
             ctrl_grp = out_f.create_group("ctrl")
 
             start = 0
-            for seqs, ctrls in tqdm(dataloader, disable=(not progress_bar)):
+            for seqs, ctrls, idx_orig in tqdm(dataloader, disable=(not progress_bar)):
                 end = start + len(seqs)
 
                 seq_tokens, seq_offsets = self.tokenize(seqs)

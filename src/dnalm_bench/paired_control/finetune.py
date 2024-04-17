@@ -4,6 +4,7 @@ import hashlib
 import shutil
 import importlib
 import warnings
+import json
 
 import numpy as np
 import torch
@@ -15,6 +16,7 @@ import polars as pl
 import h5py
 import pyfaidx
 import pyBigWig
+from scipy.stats import wilcoxon
 
 from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule, copy_if_not_exists
@@ -60,7 +62,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
         for epoch in range(start_epoch, num_epochs):
             optimizer.zero_grad()
             model.train()
-            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train")):
+            for i, (seq, ctrl, _) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
                 # seq = seq.to(device)
                 # ctrl = ctrl.to(device)
                 
@@ -82,7 +84,7 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
             val_acc_paired = 0
             model.eval()
             with torch.no_grad():
-                for i, (seq, ctrl, _) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val")):
+                for i, (seq, ctrl, _) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
                     # seq = seq.to(device)
                     # ctrl = ctrl.to(device)
 
@@ -104,6 +106,57 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+
+
+
+def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_workers, prefetch_factor, device, progress_bar=False):
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,
+                                  pin_memory=True, prefetch_factor=prefetch_factor)
+
+    zero = torch.tensor(0, dtype=torch.long, device=device)[None]
+    one = torch.tensor(1, dtype=torch.long, device=device)[None]
+
+    model.to(device)
+    
+    # os.makedirs(out_dir, exist_ok=True)
+    # scores_path = os.path.join(out_dir, "scores.tsv")
+    # metrics_path = os.path.join(out_dir, "metrics.json")
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    # with open(scores_path, "w") as f:
+    #     f.write("idx\tseq_pos_logit\tseq_neg_logit\tctrl_pos_logit\tctrl_neg_logit\n")
+
+    metrics = {}
+    test_loss = 0
+    test_acc = 0
+    test_acc_paired = 0
+    for i, (seq, ctrl, inds) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
+
+        out_seq = model(seq)
+        out_ctrl = model(ctrl)
+        loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
+        loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
+        test_loss += (loss_seq + loss_ctrl).item()
+        test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
+        test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
+
+        # for ind, seq_logits, ctrl_logits in zip(inds, out_seq, out_ctrl):
+        #     f.write(f"{ind}\t{seq_logits[1]}\t{seq_logits[0]}\t{ctrl_logits[1]}\t{ctrl_logits[0]}\n")
+        # f.flush()
+
+    test_loss /= len(test_dataloader.dataset) * 2
+    test_acc /= len(test_dataloader.dataset) * 2
+    test_acc_paired /= len(test_dataloader.dataset)
+
+    metrics["test_loss"] = test_loss
+    metrics["test_acc"] = test_acc
+    metrics["test_acc_paired"] = test_acc_paired
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
