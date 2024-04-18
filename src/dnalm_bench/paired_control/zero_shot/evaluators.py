@@ -200,7 +200,7 @@ class GenaLMEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
         return 2
 
 
-class HDEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
+class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
