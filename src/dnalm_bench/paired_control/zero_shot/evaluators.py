@@ -41,8 +41,12 @@ class CausalZeroShotScore(metaclass=ABCMeta):
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask)
-        clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
-                                 dtype=torch.float).to(device=self.device)
+        clip_mask = torch.zeros_like(lls)
+        for i in range(tokens.shape[1]):
+            clip_mask[:,i] = ((i >= starts) & (i < ends))
+
+        # clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
+        #                          dtype=torch.float).to(device=self.device)
 
         out = (lls * clip_mask).sum(1).numpy(force=True)
 
