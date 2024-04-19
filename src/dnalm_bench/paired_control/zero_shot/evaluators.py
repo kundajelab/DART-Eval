@@ -41,8 +41,12 @@ class CausalZeroShotScore(metaclass=ABCMeta):
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask)
-        clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
-                                 dtype=torch.float).to(device=self.device)
+        clip_mask = torch.zeros_like(lls)
+        for i in range(tokens.shape[1]):
+            clip_mask[:,i] = ((i >= starts) & (i < ends))
+
+        # clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
+        #                          dtype=torch.float).to(device=self.device)
 
         out = (lls * clip_mask).sum(1).numpy(force=True)
 
@@ -200,7 +204,7 @@ class GenaLMEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
         return 2
 
 
-class HDEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
+class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
