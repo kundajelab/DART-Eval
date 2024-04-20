@@ -74,10 +74,10 @@ if __name__ == "__main__":
     model_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v8"
     checkpoint_nums = {
         "GM12878": 13,
-        # "H1ESC": 5,
-        # "HEPG2": 12,
-        # "IMR90": 11,
-        # "K562": 19
+        "H1ESC": 10,
+        "HEPG2": 14,
+        "IMR90": 19,
+        "K562": 18
     }
     checkpoint_num = checkpoint_nums[cell_line]
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
