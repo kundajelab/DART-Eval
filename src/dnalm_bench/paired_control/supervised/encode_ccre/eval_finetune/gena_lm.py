@@ -3,7 +3,7 @@ import sys
 
 import torch
 
-from ....finetune import evaluate_finetuned_classifier, DNABERT2LoRAModel
+from ....finetune import evaluate_finetuned_classifier, GENALMLoRAModel
 from ....components import PairedControlDataset
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     test_dataset = PairedControlDataset(genome_fa, elements_tsv, modes[eval_mode], seed)
 
-    model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 2)
+    model = GENALMLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 2)
     checkpoint_resume = torch.load(checkpoint_path)
     # print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
