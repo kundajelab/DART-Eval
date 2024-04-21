@@ -86,19 +86,21 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
         allele1_likelihoods = []
         allele2_likelihoods = []
-        
-        for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
-            tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
-            tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
-            lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1)
-            lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2)
-            for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
-                allele1_likelihoods.append(lhood_allele1)
-                allele2_likelihoods.append(lhood_allele2)
-                data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
-                df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
-                df.write_csv(output_file, separator="\t")
-        return df
+
+        with open(output_file, "a") as f:
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
+                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
+                lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1)
+                lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2)
+                for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
+                    allele1_likelihoods.append(lhood_allele1)
+                    allele2_likelihoods.append(lhood_allele2)
+                    data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
+                    df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
+                    f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
+                    f.flush()
+            return df
     
     def tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
