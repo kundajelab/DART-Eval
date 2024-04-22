@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     model_path = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/checkpoint_149.pt"
 
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/likelihoods/variants/probed_models/{model_name}/{cell_line}/"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/probing/{model_name}/{cell_line}/"
     os.makedirs(out_dir, exist_ok=True)
 
     # variants_beds = ["/oak/stanford/groups/akundaje/anusri/variant-benchmakring/gm12878.dsqtls.benchmarking.tsv",
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     evaluator = GenaLMProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
+    print(out_path)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df

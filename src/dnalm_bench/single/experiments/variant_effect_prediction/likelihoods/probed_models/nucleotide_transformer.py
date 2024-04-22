@@ -10,7 +10,7 @@ import polars as pl
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    batch_size = 2048
+    batch_size = 32
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     model_path = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/checkpoint_149.pt"
 
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/likelihoods/variants/probed_models/{model_name}/{cell_line}/"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/probing/{model_name}/{cell_line}/"
     os.makedirs(out_dir, exist_ok=True)
 
     # variants_beds = ["/oak/stanford/groups/akundaje/anusri/variant-benchmakring/gm12878.dsqtls.benchmarking.tsv",
