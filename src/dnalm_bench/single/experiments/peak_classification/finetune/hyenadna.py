@@ -68,7 +68,7 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 45
+    num_epochs = 20
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
@@ -92,4 +92,4 @@ if __name__ == "__main__":
 
     train_finetuned_peak_classifier(train_dataset, val_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, wd, accumulate,
-                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=resume_checkpoint)
+                                    num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
