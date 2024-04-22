@@ -18,8 +18,8 @@ class SimpleSequence(Dataset):
                 "chr": pl.Utf8,
                 "input_start": pl.UInt32,
                 "input_end": pl.UInt32,
-                "elem_start": pl.UInt32,
-                "elem_end": pl.UInt32,
+                # "elem_start": pl.UInt32,
+                # "elem_end": pl.UInt32,
         }
 
         _seq_tokens = np.array([0, 1, 2, 3], dtype=np.int8)
@@ -68,7 +68,7 @@ class SimpleSequence(Dataset):
                 return self.elements_df.height
         
         def __getitem__(self, idx):
-                chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
+                chrom, start, end, _, _, _, _ = self.elements_df.row(idx)
 
                 # Extract the sequence
                 window = end - start
