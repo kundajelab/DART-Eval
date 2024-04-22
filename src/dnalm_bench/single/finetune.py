@@ -136,6 +136,85 @@ class ChromatinEndToEndDataset(Dataset):
         return torch.from_numpy(seq), torch.from_numpy(signal)
 
 
+class PeaksEndToEndDataset(Dataset):
+    _elements_dtypes = {
+        "chr": pl.Utf8,
+        "input_start": pl.UInt32,
+        "input_end": pl.UInt32,
+        "label": pl.Utf8,
+    }
+
+    def __init__(self, genome_fa, elements_tsv, chroms, classes, cache_dir=None):
+        super().__init__()
+
+        self.classes = classes
+        self.elements_df = self._load_elements(elements_tsv, chroms)
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+        
+            fa_path_abs = os.path.abspath(genome_fa)
+            fa_idx_path_abs = fa_path_abs + ".fai"
+            fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
+            fa_cache_path = os.path.join(cache_dir, fa_path_hash + ".fa")
+            fa_idx_cache_path = fa_cache_path + ".fai"
+            self._copy_if_not_exists(genome_fa, fa_cache_path)
+            genome_fa = fa_cache_path
+            try:
+                self._copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
+            except FileNotFoundError:
+                pass
+
+        self.genome_fa = genome_fa
+        fa = pyfaidx.Fasta(self.genome_fa) # Build index if needed
+        fa.close()
+
+    @classmethod
+    def _load_elements(cls, elements_file, chroms):
+        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+        
+        if chroms is not None:
+                df = df.filter(pl.col("chr").is_in(chroms))
+
+        df = df.collect()
+
+        return df
+
+    @staticmethod
+    def _copy_if_not_exists(src, dst):
+        try:
+            with open(dst, "xb") as f, open(src, "rb") as sf:
+                shutil.copyfileobj(sf, f)
+        except FileExistsError:
+            pass
+    
+    def __len__(self):
+        return self.elements_df.height
+    
+    def __getitem__(self, idx):
+        chrom, start, end, _, _, _, label = self.elements_df.row(idx)
+
+        seq = np.zeros((end - start, 4), dtype=np.int8)
+
+        fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
+
+        sequence_data = fa[chrom][max(0, start):end]
+        sequence = sequence_data.seq.upper()
+        start_adj = sequence_data.start
+        end_adj = sequence_data.end
+
+        a = start_adj - start
+        b = end_adj - start
+
+        seq[a:b,:] = one_hot_encode(sequence)
+
+        fa.close()
+
+        label_ind = self.classes[label]
+
+        return torch.from_numpy(seq), torch.tensor(label_ind)
+
+
 def log1pMSELoss(log_predicted_counts, true_counts):
     log_true = torch.log(true_counts+1)
     return torch.mean(torch.square(log_true - log_predicted_counts), dim=-1)
@@ -414,6 +493,107 @@ def evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, mo
         json.dump(metrics, f, indent=4)
 
     return metrics
+
+
+
+def train_finetuned_peak_classifier(train_dataset, val_dataset, model, 
+                                    num_epochs, out_dir, batch_size, lr, wd, accumulate,
+                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=None, seed=0):
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers,
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+
+    torch.manual_seed(seed)
+
+    os.makedirs(out_dir, exist_ok=True)
+    log_file = os.path.join(out_dir, "train.log")
+    log_cols = ["epoch", "val_loss", "val_acc"]
+
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+
+    if resume_from is not None:
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
+        model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
+    else:
+        start_epoch = 0
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    with open(log_file, "a") as f:
+        if resume_from is None:
+            f.write("\t".join(log_cols) + "\n")
+            f.flush()
+
+        for epoch in range(start_epoch, num_epochs):
+            model.train()
+            
+            optimizer.zero_grad()
+            for i, (seq, labels) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
+                # seq = seq.to(device)
+                labels = labels.to(device)
+                
+                fallback = False
+                try:
+                    pred = model(seq).squeeze(1)
+                    loss = criterion(pred, labels) / accumulate
+                    loss.backward()
+                except torch.cuda.OutOfMemoryError:
+                    fallback = True
+                    
+                if fallback:
+                    for j in range(seq.shape[0]):
+                        try:
+                            seq_j = seq[j:j+1]
+                            labels_j = labels[j:j+1]
+
+                            pred_j = model(seq_j).squeeze(1)
+                            loss_j = log1pMSELoss(pred_j, labels_j) / (accumulate * seq.shape[0])
+                            loss_j.backward()
+                        
+                        except torch.cuda.OutOfMemoryError:
+                            print(f"Failed to process sequence {i*j} due to OOM")
+
+                if ((i + 1) % accumulate == 0):
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+            optimizer.step()
+            
+            val_loss = 0
+            val_acc = 0
+            model.eval()
+            with torch.no_grad():
+                for i, (seq, labels) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
+                    labels = labels.to(device)
+                    
+                    pred = model(seq).squeeze(1)
+                    loss = log1pMSELoss(pred, labels)
+
+                    val_loss += loss.item()
+                    vall_acc += (pred.argmax(dim=1) == labels).sum().item()
+
+            val_loss /= len(val_dataloader.dataset)
+            val_acc /= len(val_dataloader.dataset)
+
+            print(f"Epoch {epoch}: val_loss={val_loss}, val_acc={val_acc}")
+            f.write(f"{epoch}\t{val_loss}\t{val_acc}\n")
+            f.flush()
+
+            checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
+            torch.save(model.state_dict(), checkpoint_path)
+            optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
+            torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
