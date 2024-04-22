@@ -1,9 +1,9 @@
 import os
 import sys
 
-from .....evaluators import MistralProbingVariantEvaluator
-from .....components import VariantDataset
-from .....training import CNNEmbeddingsPredictor
+from ....evaluators import MistralProbingVariantEvaluator
+from ....components import VariantDataset
+from ....training import CNNEmbeddingsPredictor
 
 
 if __name__ == "__main__":

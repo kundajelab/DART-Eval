@@ -1,8 +1,8 @@
 import os
 import sys
 
-from .....evaluators import DNABERT2VariantEvaluator
-from .....components import VariantDataset
+from ....evaluators import DNABERT2VariantEvaluator
+from ....components import VariantDataset
 
 
 if __name__ == "__main__":

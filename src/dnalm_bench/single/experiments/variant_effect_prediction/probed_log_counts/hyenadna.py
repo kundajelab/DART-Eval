@@ -1,16 +1,16 @@
 import os
 import sys
-
-from .....evaluators import NTProbingVariantEvaluator
-from .....components import VariantDataset
-from .....training import CNNEmbeddingsPredictor
 import polars as pl
+
+from ....evaluators import HDProbingVariantEvaluator
+from ....components import VariantDataset
+from ....training import CNNSlicedEmbeddingsPredictor
 
 
 if __name__ == "__main__":
-    model_name = "nucleotide-transformer-v2-500m-multi-species"
+    model_name = "hyenadna-large-1m-seqlen-hf"
 
-    batch_size = 32
+    batch_size = 16
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"]
     
-    input_channels = 1024
+    input_channels = 256
     hidden_channels = 32
     kernel_size = 8
 
@@ -47,10 +47,11 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{counts_tsv}")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    evaluator = NTProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
+    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    evaluator = HDProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df
     scored_df = pl.concat([df, counts_df], how="horizontal")
+    print(out_path)
     scored_df.write_csv(out_path, separator="\t")

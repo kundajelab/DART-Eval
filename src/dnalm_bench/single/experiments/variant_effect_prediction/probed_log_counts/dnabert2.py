@@ -1,16 +1,17 @@
 import os
 import sys
+
+from ....evaluators import DNABERT2ProbingVariantEvaluator
+from ....components import VariantDataset
+from ....training import CNNEmbeddingsPredictor
 import polars as pl
 
-from .....evaluators import HDProbingVariantEvaluator
-from .....components import VariantDataset
-from .....training import CNNSlicedEmbeddingsPredictor
-
-
 if __name__ == "__main__":
-    model_name = "hyenadna-large-1m-seqlen-hf"
+    model_name = "DNABERT-2-117M"
+    
+    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/likelihoods/{model_name}/"
 
-    batch_size = 16
+    batch_size = 32
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"]
     
-    input_channels = 256
+    input_channels = 768
     hidden_channels = 32
     kernel_size = 8
 
@@ -47,11 +48,10 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{counts_tsv}")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    evaluator = HDProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    evaluator = DNABERT2ProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df
     scored_df = pl.concat([df, counts_df], how="horizontal")
-    print(out_path)
     scored_df.write_csv(out_path, separator="\t")

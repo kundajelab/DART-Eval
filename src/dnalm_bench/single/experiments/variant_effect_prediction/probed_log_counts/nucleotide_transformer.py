@@ -1,16 +1,16 @@
 import os
 import sys
 
-from .....evaluators import GenaLMProbingVariantEvaluator
-from .....components import VariantDataset
-from .....training import CNNEmbeddingsPredictor
+from ....evaluators import NTProbingVariantEvaluator
+from ....components import VariantDataset
+from ....training import CNNEmbeddingsPredictor
 import polars as pl
 
 
 if __name__ == "__main__":
-    model_name = "gena-lm-bert-large-t2t"
+    model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    batch_size = 64
+    batch_size = 32
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -48,12 +48,9 @@ if __name__ == "__main__":
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    evaluator = GenaLMProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
-    print(out_path)
+    evaluator = NTProbingVariantEvaluator(model, model_path, model_name, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df
     scored_df = pl.concat([df, counts_df], how="horizontal")
     scored_df.write_csv(out_path, separator="\t")
-
-
