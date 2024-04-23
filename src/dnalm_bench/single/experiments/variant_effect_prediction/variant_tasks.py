@@ -205,13 +205,13 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
     likelihood = pd.read_csv(likelihood_data_path, sep="\t")
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
-        filtered_var_afr_caQTLs_df = likelihoods_data[(likelihoods_data["IsUsed"]==True) & (np.log10(likelihoods_data["pval"])<3)].copy(deep=True)
+        filtered_var_afr_caQTLs_df = likelihoods_data[(likelihoods_data["IsUsed"]==True)].copy(deep=True)
         filtered_var_afr_caQTLs_df["llm_logfc"] = np.log(filtered_var_afr_caQTLs_df["allele1_likelihoods"]/filtered_var_afr_caQTLs_df["allele2_likelihoods"])
 
         print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
-        filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[filtered_var_afr_caQTLs_df["label"]==1]
-        filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[filtered_var_afr_caQTLs_df["label"]==0]
-
+        filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>6)]
+        filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
+        print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
         control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2_likelihoods"]))
         sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2_likelihoods"]))
 
@@ -232,13 +232,13 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
 def sig_ctrl_variants_Afr_CaQTLs_probed_counts(counts_data_path):
     
     counts_data = pd.read_csv(counts_data_path, sep="\t")
-    filtered_var_afr_caQTLs_df = counts_data[(counts_data["IsUsed"]==True) & (np.log10(counts_data["pval"])<3)].copy(deep=True)
+    filtered_var_afr_caQTLs_df = counts_data[counts_data["IsUsed"]==True].copy(deep=True)
     filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele1_counts"]-filtered_var_afr_caQTLs_df["allele2_counts"]
 
     print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
-    filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[filtered_var_afr_caQTLs_df["label"]==1]
-    filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[filtered_var_afr_caQTLs_df["label"]==0]
-
+    filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
+    filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
+    print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
     control_counts = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2_likelihoods"]))
     sig_counts = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2_likelihoods"]))
 
