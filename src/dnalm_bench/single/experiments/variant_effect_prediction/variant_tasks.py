@@ -148,13 +148,13 @@ def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
         filtered_var_eu_caQTLs_df = likelihoods_data[(likelihoods_data["Inside_Peak"]==True) &
                                             (likelihoods_data["IsUsed"]==True)].copy(deep=True)
         
-        filtered_var_eu_caQTLs_df["llm_logfc"] = np.log(filtered_var_eu_caQTLs_df["allele1_likelihoods"]/filtered_var_eu_caQTLs_df["allele2_likelihoods"])
+        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele1_likelihoods"] - filtered_var_eu_caQTLs_df["allele2_likelihoods"]
 
         filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
         filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
 
-        ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_eucaqtls_df_ctrl["allele2_likelihoods"]))
-        sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1_likelihoods"]/filtered_var_eucaqtls_df_sig["allele2_likelihoods"]))
+        ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1"]/filtered_var_eucaqtls_df_ctrl["allele2"]))
+        sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1"]/filtered_var_eucaqtls_df_sig["allele2"]))
 
         print(len(ctrl_likelihoods), len(sig_likelihoods))
 
@@ -181,9 +181,10 @@ def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path):
 
     filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
     filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
+    print(filtered_var_eucaqtls_df_sig.shape, filtered_var_eucaqtls_df_ctrl.shape)
 
-    ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_eucaqtls_df_ctrl["allele2_likelihoods"]))
-    sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1_likelihoods"]/filtered_var_eucaqtls_df_sig["allele2_likelihoods"]))
+    ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_eucaqtls_df_ctrl["allele2"]))
+    sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1_likelihoods"]/filtered_var_eucaqtls_df_sig["allele2"]))
 
     print(len(ctrl_likelihoods), len(sig_likelihoods))
 
@@ -206,14 +207,14 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
         filtered_var_afr_caQTLs_df = likelihoods_data[(likelihoods_data["IsUsed"]==True)].copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = np.log(filtered_var_afr_caQTLs_df["allele1_likelihoods"]/filtered_var_afr_caQTLs_df["allele2_likelihoods"])
+        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele1_likelihoods"]-filtered_var_afr_caQTLs_df["allele2_likelihoods"]
 
         print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
         filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>6)]
         filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
         print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
-        control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2_likelihoods"]))
-        sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2_likelihoods"]))
+        control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2"]))
+        sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2"]))
 
         print(len(control_likelihoods), len(sig_likelihoods))
 
@@ -239,8 +240,8 @@ def sig_ctrl_variants_Afr_CaQTLs_probed_counts(counts_data_path):
     filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
     filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
     print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
-    control_counts = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2_likelihoods"]))
-    sig_counts = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2_likelihoods"]))
+    control_counts = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2"]))
+    sig_counts = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2"]))
 
     print(len(control_counts), len(sig_counts))
 

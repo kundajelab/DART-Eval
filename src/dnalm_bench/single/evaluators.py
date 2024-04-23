@@ -96,8 +96,8 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
                     allele2_likelihoods.append(lhood_allele2)
-                    data = {"allele1_likelihoods" : allele1_likelihoods, "allele2_likelihoods" : allele2_likelihoods}
-                    df = pl.DataFrame(data, schema={"allele1_likelihoods": pl.Float64, "allele2_likelihoods": pl.Float64})
+                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
                     f.flush()
             return df
