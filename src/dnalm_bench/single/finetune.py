@@ -311,6 +311,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     loss.backward()
                 except torch.cuda.OutOfMemoryError:
                     fallback = True
+                    warnings.warn(f"Batch {i} does not fit in memory, falling back to single sequence processing")
                     
                 if fallback:
                     for j in range(seq.shape[0]):
@@ -323,7 +324,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                             loss_j.backward()
                         
                         except torch.cuda.OutOfMemoryError:
-                            print(f"Failed to process sequence {i*j} due to OOM")
+                            warnings.warn(f"Failed to process sequence {i*j} due to OOM")
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
@@ -550,6 +551,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     loss.backward()
                 except torch.cuda.OutOfMemoryError:
                     fallback = True
+                    warnings.warn(f"Batch {i} does not fit in memory, falling back to single sequence processing")
                     
                 if fallback:
                     for j in range(seq.shape[0]):
@@ -562,7 +564,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                             loss_j.backward()
                         
                         except torch.cuda.OutOfMemoryError:
-                            print(f"Failed to process sequence {i*j} due to OOM")
+                            warnings.warn(f"Failed to process sequence {i*j} due to OOM")
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
