@@ -16,7 +16,7 @@ import polars as pl
 import h5py
 import pyfaidx
 import pyBigWig
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 
 from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule
@@ -583,7 +583,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     loss = criterion(pred, labels)
 
                     val_loss += loss.item()
-                    vall_acc += (pred.argmax(dim=1) == labels).sum().item()
+                    val_acc += (pred.argmax(dim=1) == labels).sum().item()
 
             val_loss /= len(val_dataloader.dataset)
             val_acc /= len(val_dataloader.dataset)
@@ -596,6 +596,60 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
             torch.save(model.state_dict(), checkpoint_path)
             optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
             torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
+
+
+def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size, 
+                                    num_workers, prefetch_factor, device, progress_bar=False, seed=0):
+
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+
+    torch.manual_seed(seed)
+
+    criterion = torch.nn.CrossEntropyLoss()
+            
+    test_loss = 0
+    pred_log_probs = []
+    labels = []
+    model.eval()
+    with torch.no_grad():
+        for i, (seq, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
+            labels = labels.to(device)
+            
+            pred = model(seq).squeeze(1)
+            loss = criterion(pred, labels)
+
+            test_loss += loss.item()
+            pred_log_probs.append(F.log_softmax(pred, dim=1))
+            labels.append(labels)
+
+    test_loss /= len(test_dataloader.dataset)
+
+    pred_log_probs = torch.cat(pred_log_probs, dim=0)
+    labels = torch.cat(labels, dim=0)
+    test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
+
+    metrics = {"test_loss": test_loss, "test_acc": test_acc}
+
+    for label_idx in range(pred_log_probs.shape[1]):
+        label_preds = pred_log_probs[:, label_idx]
+        label_labels = (labels == label_idx).float()
+        label_auroc = roc_auc_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
+        label_auprc = average_precision_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
+        label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_preds.argmax(dim=1).numpy(force=True))
+        label_acc = (label_preds.argmax(dim=1) == label_labels).sum().item() / len(label_labels)
+
+        metrics[f"label_{label_idx}_auroc"] = label_auroc
+        metrics[f"label_{label_idx}_auprc"] = label_auprc
+        metrics[f"label_{label_idx}_mcc"] = label_mcc
+        metrics[f"label_{label_idx}_acc"] = label_acc
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
+
+
 
     
 class DNABERT2LoRAModel(HFClassifierModel):
