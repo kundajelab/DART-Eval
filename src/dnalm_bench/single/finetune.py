@@ -560,7 +560,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                             labels_j = labels[j:j+1]
 
                             pred_j = model(seq_j).squeeze(1)
-                            loss_j = log1pMSELoss(pred_j, labels_j) / (accumulate * seq.shape[0])
+                            loss_j = criterion(pred_j, labels_j) / (accumulate * seq.shape[0])
                             loss_j.backward()
                         
                         except torch.cuda.OutOfMemoryError:
@@ -580,7 +580,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     labels = labels.to(device)
                     
                     pred = model(seq).squeeze(1)
-                    loss = log1pMSELoss(pred, labels)
+                    loss = criterion(pred, labels)
 
                     val_loss += loss.item()
                     vall_acc += (pred.argmax(dim=1) == labels).sum().item()
