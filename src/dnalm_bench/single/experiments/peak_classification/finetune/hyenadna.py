@@ -16,7 +16,7 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
-    batch_size = 24
+    batch_size = 128
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
@@ -58,13 +58,11 @@ if __name__ == "__main__":
 
     emb_channels = 256
 
-    crop = 557
-
     lora_rank = 8
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 4
+    accumulate = 1
     
     lr = 1e-4
     wd = 0.01
