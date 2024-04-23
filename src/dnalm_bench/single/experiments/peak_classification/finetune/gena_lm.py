@@ -17,7 +17,7 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
-    batch_size = 24
+    batch_size = 128
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
@@ -59,17 +59,15 @@ if __name__ == "__main__":
 
     emb_channels = 1024
 
-    crop = 557
-
     lora_rank = 8
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 4
+    accumulate = 1
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 25
+    num_epochs = 10
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
@@ -93,4 +91,4 @@ if __name__ == "__main__":
 
     train_finetuned_peak_classifier(train_dataset, val_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, wd, accumulate,
-                                    num_workers, prefetch_factor, device, progress_bar=False, resume_from=resume_checkpoint)
+                                    num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)

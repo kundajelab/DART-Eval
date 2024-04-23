@@ -311,6 +311,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     loss.backward()
                 except torch.cuda.OutOfMemoryError:
                     fallback = True
+                    warnings.warn(f"Batch {i} does not fit in memory, falling back to single sequence processing")
                     
                 if fallback:
                     for j in range(seq.shape[0]):
@@ -323,7 +324,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                             loss_j.backward()
                         
                         except torch.cuda.OutOfMemoryError:
-                            print(f"Failed to process sequence {i*j} due to OOM")
+                            warnings.warn(f"Failed to process sequence {i*j} due to OOM")
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
@@ -550,6 +551,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     loss.backward()
                 except torch.cuda.OutOfMemoryError:
                     fallback = True
+                    warnings.warn(f"Batch {i} does not fit in memory, falling back to single sequence processing")
                     
                 if fallback:
                     for j in range(seq.shape[0]):
@@ -558,11 +560,11 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                             labels_j = labels[j:j+1]
 
                             pred_j = model(seq_j).squeeze(1)
-                            loss_j = log1pMSELoss(pred_j, labels_j) / (accumulate * seq.shape[0])
+                            loss_j = criterion(pred_j, labels_j) / (accumulate * seq.shape[0])
                             loss_j.backward()
                         
                         except torch.cuda.OutOfMemoryError:
-                            print(f"Failed to process sequence {i*j} due to OOM")
+                            warnings.warn(f"Failed to process sequence {i*j} due to OOM")
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
@@ -578,7 +580,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     labels = labels.to(device)
                     
                     pred = model(seq).squeeze(1)
-                    loss = log1pMSELoss(pred, labels)
+                    loss = criterion(pred, labels)
 
                     val_loss += loss.item()
                     vall_acc += (pred.argmax(dim=1) == labels).sum().item()
