@@ -1,6 +1,6 @@
-from .variant_tasks import load_embeddings_and_compute_cosine_distance
-from ...embeddings import HyenaDNAVariantEmbeddingExtractor
-from ...components import VariantDataset
+from ..variant_tasks import load_embeddings_and_compute_cosine_distance
+from ....embeddings import HyenaDNAVariantEmbeddingExtractor
+from ....components import VariantDataset
 import os
 import polars as pl
 
@@ -24,8 +24,8 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, h5_file)
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    # extractor = HyenaDNAVariantEmbeddingExtractor(model_name, batch_size, num_workers, device)
-    # extractor.extract_embeddings(dataset, out_path, progress_bar=True)
+    extractor = HyenaDNAVariantEmbeddingExtractor(model_name, batch_size, num_workers, device)
+    extractor.extract_embeddings(dataset, out_path, progress_bar=True)
 
     cosine_distances  = load_embeddings_and_compute_cosine_distance(out_dir, h5_file=h5_file)
     print("Number of SNPs =", dataset.__len__())

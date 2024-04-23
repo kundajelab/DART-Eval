@@ -148,25 +148,21 @@ def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
         filtered_var_eu_caQTLs_df = likelihoods_data[(likelihoods_data["Inside_Peak"]==True) &
                                             (likelihoods_data["IsUsed"]==True)].copy(deep=True)
         
-        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele1_likelihoods"] - filtered_var_eu_caQTLs_df["allele2_likelihoods"]
+        print(filtered_var_eu_caQTLs_df.shape)
+        
+        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_likelihoods"] - filtered_var_eu_caQTLs_df["allele1_likelihoods"]
 
         filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
         filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
 
-        ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1"]/filtered_var_eucaqtls_df_ctrl["allele2"]))
-        sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1"]/filtered_var_eucaqtls_df_sig["allele2"]))
+        ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"])
+        sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])
 
         print(len(ctrl_likelihoods), len(sig_likelihoods))
 
         counts_ctrl, bins_ctrl = np.histogram(ctrl_likelihoods, bins=100)
-        # fractions_ctrol = counts_ctrl / counts_ctrl.sum()
-        # plt.hist(bins_ctrl[:-1], bins_ctrl, weights=fractions_ctrol, alpha=0.7, label="control")
 
         counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-        # fractions_sig = counts_sig / counts_sig.sum()
-        # plt.hist(bins_sig[:-1], bins_sig, weights=fractions_sig, alpha=0.7, label="significant")
-
-        # U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
         return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
     
@@ -176,27 +172,22 @@ def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path):
     counts_data = pd.read_csv(counts_data_path, sep="\t")
     filtered_var_eu_caQTLs_df = counts_data[(counts_data["Inside_Peak"]==True) &
                                         (counts_data["IsUsed"]==True)].copy(deep=True)
+
+    print(filtered_var_eu_caQTLs_df.shape)                                        
     
-    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele1_counts"] - filtered_var_eu_caQTLs_df["allele2_counts"]
+    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_counts"] - filtered_var_eu_caQTLs_df["allele1_counts"]
 
     filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
     filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
-    print(filtered_var_eucaqtls_df_sig.shape, filtered_var_eucaqtls_df_ctrl.shape)
 
-    ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_eucaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_eucaqtls_df_ctrl["allele2"]))
-    sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])# np.abs(np.log(filtered_var_eucaqtls_df_sig["allele1_likelihoods"]/filtered_var_eucaqtls_df_sig["allele2"]))
+    ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"])
+    sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])
 
     print(len(ctrl_likelihoods), len(sig_likelihoods))
 
     counts_ctrl, bins_ctrl = np.histogram(ctrl_likelihoods, bins=100)
-    # fractions_ctrol = counts_ctrl / counts_ctrl.sum()
-    # plt.hist(bins_ctrl[:-1], bins_ctrl, weights=fractions_ctrol, alpha=0.7, label="control")
 
     counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-    # fractions_sig = counts_sig / counts_sig.sum()
-    # plt.hist(bins_sig[:-1], bins_sig, weights=fractions_sig, alpha=0.7, label="significant")
-
-    # U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
     return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
 
@@ -207,24 +198,20 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
         filtered_var_afr_caQTLs_df = likelihoods_data[(likelihoods_data["IsUsed"]==True)].copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele1_likelihoods"]-filtered_var_afr_caQTLs_df["allele2_likelihoods"]
+        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_likelihoods"]-filtered_var_afr_caQTLs_df["allele1_likelihoods"]
 
         print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
-        filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>6)]
+        filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
         filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
-        print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
-        control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2"]))
-        sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2"]))
+        
+        control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"])
+        sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"]) 
 
         print(len(control_likelihoods), len(sig_likelihoods))
 
         counts_ctrl, bins_ctrl = np.histogram(control_likelihoods, bins=100)
-        # fractions_ctrol = counts_ctrl / counts_ctrl.sum()
-        # plt.hist(bins_ctrl[:-1], bins_ctrl, weights=fractions_ctrol, alpha=0.7, label="control")
 
         counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-        # fractions_sig = counts_sig / counts_sig.sum()
-        # plt.hist(bins_sig[:-1], bins_sig, weights=fractions_sig, alpha=0.7, label="significant")
 
         U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
@@ -234,24 +221,20 @@ def sig_ctrl_variants_Afr_CaQTLs_probed_counts(counts_data_path):
     
     counts_data = pd.read_csv(counts_data_path, sep="\t")
     filtered_var_afr_caQTLs_df = counts_data[counts_data["IsUsed"]==True].copy(deep=True)
-    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele1_counts"]-filtered_var_afr_caQTLs_df["allele2_counts"]
+    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_counts"] - filtered_var_afr_caQTLs_df["allele1_counts"]
 
     print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
     filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
     filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])<3)]
-    print(filtered_var_afrcaqtls_df_sig.shape, filtered_var_afrcaqtls_df_ctrl.shape)
-    control_counts = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"]) # np.abs(np.log(filtered_var_afrcaqtls_df_ctrl["allele1_likelihoods"]/filtered_var_afrcaqtls_df_ctrl["allele2"]))
-    sig_counts = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  # np.abs(np.log(filtered_var_afrcaqtls_df_sig["allele1_likelihoods"]/filtered_var_afrcaqtls_df_sig["allele2"]))
+    
+    control_counts = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"])
+    sig_counts = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"])  
 
     print(len(control_counts), len(sig_counts))
 
     counts_ctrl, bins_ctrl = np.histogram(control_counts, bins=100)
-    # fractions_ctrol = counts_ctrl / counts_ctrl.sum()
-    # plt.hist(bins_ctrl[:-1], bins_ctrl, weights=fractions_ctrol, alpha=0.7, label="control")
 
     counts_sig, bins_sig = np.histogram(sig_counts, bins=100)
-    # fractions_sig = counts_sig / counts_sig.sum()
-    # plt.hist(bins_sig[:-1], bins_sig, weights=fractions_sig, alpha=0.7, label="significant")
 
     U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
@@ -263,9 +246,8 @@ def variants_Afr_ASB_CaQTLs(likelihood_data_path):
     likelihood = pd.read_csv(likelihood_data_path, sep="\t")
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
-        # filtered_var_afr_caQTLs_df = likelihoods_data[likelihoods_data["IsUsed"]==True].copy(deep=True)
         filtered_var_afr_caQTLs_df = likelihoods_data.copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = np.log(filtered_var_afr_caQTLs_df["allele1_likelihoods"]/filtered_var_afr_caQTLs_df["allele2_likelihoods"])
+        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_likelihoods"] - filtered_var_afr_caQTLs_df["allele1_likelihoods"]
 
     return filtered_var_afr_caQTLs_df
 
@@ -273,7 +255,7 @@ def variants_Afr_ASB_CaQTLs_probed_counts(counts_data_path):
     counts_data = pd.read_csv(counts_data_path, sep="\t")
     filtered_var_afr_caQTLs_df = counts_data.copy(deep=True)
     print(filtered_var_afr_caQTLs_df.columns)
-    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele1_counts"] - filtered_var_afr_caQTLs_df["allele2_counts"]
+    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_counts"] - filtered_var_afr_caQTLs_df["allele1_counts"]
 
     return filtered_var_afr_caQTLs_df
 
@@ -289,8 +271,7 @@ def beta_logfc(filtered_df, title, ylabel="LogFC Scores"):
     pearson_corr, _ = pearsonr(x, y)
     spearman_corr, _ = spearmanr(x, y)
 
-    # Add the correlation coefficients to the plot
-    plt.subplots_adjust(top=0.9)  # Adjust the top edge of the subplot to make room for the text
+    plt.subplots_adjust(top=0.9)
     plt.xlabel("Significant caQTL Betas")
     plt.ylabel(ylabel)
     g.figure.suptitle(f'{title}\nPearson: {pearson_corr:.4f} --- Spearman: {spearman_corr:.4f}', 
@@ -307,8 +288,7 @@ def effect_size_logfc(filtered_df, title):
     pearson_corr, _ = pearsonr(x, y)
     spearman_corr, _ = spearmanr(x, y)
 
-    # Add the correlation coefficients to the plot
-    plt.subplots_adjust(top=0.9)  # Adjust the top edge of the subplot to make room for the text
+    plt.subplots_adjust(top=0.9) 
     plt.xlabel("Significant Allele-Specific Binding LogFC")
     plt.ylabel("LogFC Scores")
     g.figure.suptitle(f'{title}\nPearson: {pearson_corr:.4f} --- Spearman: {spearman_corr:.4f}', 

@@ -65,11 +65,6 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
             lls = -F.cross_entropy(logits, tokens, reduction="none")
         return lls
 
-    # @abstractmethod
-    # def score(self, tokens, starts, ends, attention_mask):
-    #     pass
-
-
     def evaluate(self, dataset, output_file, progress_bar=True):
         out_file_obj = open(output_file, "w")
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
@@ -166,11 +161,13 @@ class MaskedProbingScore(metaclass=ABCMeta):
                 )
             except:
                 torch_outs = self.model(tokens, output_hidden_states=True)
-        if type(torch_outs.hidden_states) is tuple:
-            hidden_states = torch_outs.hidden_states[-1]
+        
+        if self._hidden_states == "all":
+            last_hidden_state = torch_outs.hidden_states[-1]
         else:
-            hidden_states = torch_outs.hidden_states
-        probed_outs = self.probed_model(hidden_states, indices)
+            last_hidden_state = torch_outs.hidden_states
+
+        probed_outs = self.probed_model(last_hidden_state, indices)
         return probed_outs
     
 
@@ -205,7 +202,12 @@ class CausalProbingScore(metaclass=ABCMeta):
                 )
             except:
                 torch_outs = self.model(tokens, output_hidden_states=True)
-        if type(torch_outs.hidden_states) is tuple or type(torch_outs.hidden_states) is list:
+        # if type(torch_outs.hidden_states) is tuple or type(torch_outs.hidden_states) is list:
+        #     last_hidden_state = torch_outs.hidden_states[-1]
+        # else:
+        #     last_hidden_state = torch_outs.hidden_states
+
+        if self._hidden_states == "all":
             last_hidden_state = torch_outs.hidden_states[-1]
         else:
             last_hidden_state = torch_outs.hidden_states
@@ -292,7 +294,7 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
         return None
     
 class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator):
-    _idx_mode = "variable"
+    _hidden_states = "last"
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
@@ -337,7 +339,7 @@ class DNABERT2ProbingVariantEvaluator(DNABERT2VariantEvaluator, MaskedProbingSco
         super().__init__(tokenizer, model, batch_size, num_workers, device)
     
 class GenaLMVariantEvaluator(VariantLikelihoodEvaluator):
-    _idx_mode = "variable"
+    _hidden_states = "all"
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
@@ -378,6 +380,7 @@ class GenaLMProbingVariantEvaluator(GenaLMVariantEvaluator, MaskedProbingScore):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
 class HDVariantEvaluator(VariantLikelihoodEvaluator):
+    _hidden_states = "all"
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
@@ -467,6 +470,7 @@ class MistralProbingVariantEvaluator(MistralVariantEvaluator, CausalProbingScore
         super().__init__(model_name, batch_size, num_workers, device)
 
 class NTVariantEvaluator(VariantLikelihoodEvaluator):
+    _hidden_states = "all"
     def __init__(self, tokenizer, model, batch_size, num_workers, device):
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
