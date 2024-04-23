@@ -583,7 +583,7 @@ def train_finetuned_peak_classifier(train_dataset, val_dataset, model,
                     loss = criterion(pred, labels)
 
                     val_loss += loss.item()
-                    vall_acc += (pred.argmax(dim=1) == labels).sum().item()
+                    val_acc += (pred.argmax(dim=1) == labels).sum().item()
 
             val_loss /= len(val_dataloader.dataset)
             val_acc /= len(val_dataloader.dataset)
