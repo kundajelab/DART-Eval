@@ -7,15 +7,16 @@ import numpy as np
 
 from .....embedding_clustering import EmbeddingCluster, load_embeddings_and_labels
 
-embedding_dir = sys.argv[1]
-out_dir = sys.argv[2]
+embedding_file = sys.argv[1]
+label_file = sys.arg[2]
+out_dir = sys.argv[3]
 
 os.makedirs(out_dir, exist_ok=True)
 
 cluster_metric = adjusted_rand_score
 
 print("Loading embeddings and labels")
-embeddings, labels, categories = load_embeddings_and_labels(embedding_dir)
+embeddings, labels, categories = load_embeddings_and_labels(embedding_file, label_file)
 print(embeddings.shape)
 
 cluster_obj = KMeans(n_clusters=len(np.unique(labels)))
