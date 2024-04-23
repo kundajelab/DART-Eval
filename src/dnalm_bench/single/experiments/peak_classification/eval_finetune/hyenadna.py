@@ -4,14 +4,13 @@ import sys
 import torch
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-from ....finetune import PeaksEndToEndDataset, train_finetuned_peak_classifier, DNABERT2LoRAModel
+from ....finetune import PeaksEndToEndDataset, eval_finetuned_peak_classifier, HyenaDNALoRAModel
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
-    resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "DNABERT-2-117M"
+    model_name = "hyenadna-large-1m-seqlen-hf"
     # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
@@ -57,7 +56,9 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    emb_channels = 768
+    modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
+
+    emb_channels = 256
 
     lora_rank = 8
     lora_alpha = 2 * lora_rank
@@ -65,18 +66,21 @@ if __name__ == "__main__":
 
     accumulate = 1
     
-    # lr = 5e-5
     lr = 1e-4
     wd = 0.01
-    num_epochs = 15
+    num_epochs = 20
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification_ft/{model_name}/v0"    
-
+    out_dir = f"/home/atwang/dnalm_bench_data/predictor_eval/peak_classification_ft/{model_name}"
     os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
+    model_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification_ft/{model_name}/v0"
+    checkpoint_num = -1
+    checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
+    
     classes = {
         "GM12878": 0,
         "H1ESC": 1,
@@ -85,11 +89,14 @@ if __name__ == "__main__":
         "K562": 4
     } 
 
-    train_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_train, classes, cache_dir=cache_dir)
-    val_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_val, classes, cache_dir=cache_dir)
+    test_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, modes[eval_mode], classes, cache_dir=cache_dir)
 
-    model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, len(classes))
+    model = HyenaDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, len(classes))
+    checkpoint_resume = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint_resume, strict=False)
 
-    train_finetuned_peak_classifier(train_dataset, val_dataset, model, 
-                                    num_epochs, out_dir, batch_size, lr, wd, accumulate,
-                                    num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    metrics = eval_finetuned_peak_classifier(test_dataset, model, batch_size, out_path,
+                                    num_workers, prefetch_factor, device, progress_bar=True)
+    
+    for k, v in metrics.items():
+        print(f"{k}: {v}")
