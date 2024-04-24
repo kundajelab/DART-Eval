@@ -633,7 +633,7 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
 
     metrics = {"test_loss": test_loss, "test_acc": test_acc}
 
-    for label_idx in range(pred_log_probs.shape[1]):
+    for label, label_idx in test_dataloader.dataset.classes.items():
         label_preds = pred_log_probs[:, label_idx]
         label_pred_bin = (pred_log_probs.argmax(dim=1) == label_idx).float()
         label_labels = (labels == label_idx).float()
@@ -642,10 +642,10 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
         label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_pred_bin.numpy(force=True))
         label_acc = (label_pred_bin == label_labels).sum().item() / len(label_labels)
 
-        metrics[f"label_{test_dataloader.classes[label_idx]}_auroc"] = label_auroc
-        metrics[f"label_{test_dataloader.classes[label_idx]}_auprc"] = label_auprc
-        metrics[f"label_{test_dataloader.classes[label_idx]}_mcc"] = label_mcc
-        metrics[f"label_{test_dataloader.classes[label_idx]}_acc"] = label_acc
+        metrics[f"label_{label}_auroc"] = label_auroc
+        metrics[f"label_{label}_auprc"] = label_auprc
+        metrics[f"label_{label}_mcc"] = label_mcc
+        metrics[f"label_{label}_acc"] = label_acc
 
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
