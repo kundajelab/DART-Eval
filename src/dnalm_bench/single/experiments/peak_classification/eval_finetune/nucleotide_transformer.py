@@ -95,7 +95,7 @@ if __name__ == "__main__":
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
 
-    metrics = eval_finetuned_peak_classifier(test_dataset, model, batch_size, out_path,
+    metrics = eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
                                     num_workers, prefetch_factor, device, progress_bar=True)
     
     for k, v in metrics.items():
