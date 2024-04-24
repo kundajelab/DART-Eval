@@ -132,41 +132,42 @@ class VariantDataset(Dataset):
                 # 1-indexed position
                 pos = int(pos) - 1
                 # Extract the sequence
-                window = 500
+                window = 2000
+                sequence_extension = int(window / 2)
                 allele1_seq = np.zeros((window, 4), dtype=np.int8)
                 allele2_seq = np.zeros((window, 4), dtype=np.int8)
                 fa = pyfaidx.Fasta(self.genome_fa, one_based_attributes=False)
 
-                # extend the sequence by -249 on the left of pos and +250 on the right of pos
-                allele1_sequence_data = fa[chrom][pos-250:pos+250] # check if pos+250 goes outside chrom
+                # extend the sequence by -249 on the left of pos and +sequence_extension on the right of pos
+                allele1_sequence_data = fa[chrom][pos-sequence_extension:pos+sequence_extension] # check if pos+250 goes outside chrom
                 start_adj = allele1_sequence_data.start
                 end_adj = allele1_sequence_data.end
                 allele1_sequence_data = str(allele1_sequence_data.seq)
-                allele2_sequence_data = str(fa[chrom][pos-250:pos].seq)
+                allele2_sequence_data = str(fa[chrom][pos-sequence_extension:pos].seq)
                 fa_chrom_pos = str(fa[chrom][pos]).upper()
                 if fa_chrom_pos==allele1: # allele1 is the reference allele
                         allele2_sequence_data += allele2
-                        allele2_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
+                        allele2_sequence_data += str(fa[chrom][pos+1:pos+sequence_extension].seq)
                 elif fa_chrom_pos==allele2:
                         allele1_sequence_data, allele2_sequence_data = allele2_sequence_data, allele1_sequence_data # allele2 is the reference allele
                         allele1_sequence_data += allele1
-                        allele1_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
+                        allele1_sequence_data += str(fa[chrom][pos+1:pos+sequence_extension].seq)
                 else: # allele1 and allele2 both do not appear in the reference genome
                         print(chrom, pos, allele1, allele2, " not in reference. In reference, it appears as ", fa_chrom_pos)
                         # still score the SNP by replacing chrom:pos with allele1 and allele2 respectively
-                        allele1_sequence_data = str(fa[chrom][pos-250:pos].seq)
-                        allele2_sequence_data = str(fa[chrom][pos-250:pos].seq) 
+                        allele1_sequence_data = str(fa[chrom][pos-sequence_extension:pos].seq)
+                        allele2_sequence_data = str(fa[chrom][pos-sequence_extension:pos].seq) 
                         allele1_sequence_data += allele1
                         allele2_sequence_data += allele2
-                        allele1_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
-                        allele2_sequence_data += str(fa[chrom][pos+1:pos+250].seq)
+                        allele1_sequence_data += str(fa[chrom][pos+1:pos+sequence_extension].seq)
+                        allele2_sequence_data += str(fa[chrom][pos+1:pos+sequence_extension].seq)
 
                 allele1_sequence = allele1_sequence_data.upper()
                 allele2_sequence = allele2_sequence_data.upper()
 
                 fa.close()
-                a = start_adj - (pos - 250)
-                b = end_adj - (pos - 250)
+                a = start_adj - (pos - sequence_extension)
+                b = end_adj - (pos - sequence_extension)
                 allele1_seq[a:b,:] = one_hot_encode(allele1_sequence)
                 allele2_seq[a:b,:] = one_hot_encode(allele2_sequence)
                 return torch.from_numpy(allele1_seq), torch.from_numpy(allele2_seq)

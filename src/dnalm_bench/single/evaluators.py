@@ -86,8 +86,8 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
                 tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
                 tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
-                lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1)
-                lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2)
+                lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
+                lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
                     allele2_likelihoods.append(lhood_allele2)
@@ -123,7 +123,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
     def mask_token(self):
         pass
 
-    def score(self, tokens, starts, ends, attention_mask, offsets):
+    def score(self, tokens, starts, ends, attention_mask, offsets, seqs):
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
         lls = torch.zeros(tokens.shape[:2], device=self.device)
@@ -143,7 +143,7 @@ class MaskedProbingScore(metaclass=ABCMeta):
     def mask_token(self):
         pass
 
-    def score(self, tokens, starts, ends, attention_mask, offsets):
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
         tokens = tokens.to(device=self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
@@ -172,7 +172,7 @@ class MaskedProbingScore(metaclass=ABCMeta):
     
 
 class CausalZeroShotScore(metaclass=ABCMeta):
-    def score(self, tokens, starts, ends, attention_mask):
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
         tokens = tokens.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
@@ -184,7 +184,7 @@ class CausalZeroShotScore(metaclass=ABCMeta):
     
 class CausalProbingScore(metaclass=ABCMeta):
     
-    def score(self, tokens, starts, ends, attention_mask, offsets):
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
         tokens = tokens.to(device=self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
@@ -202,10 +202,6 @@ class CausalProbingScore(metaclass=ABCMeta):
                 )
             except:
                 torch_outs = self.model(tokens, output_hidden_states=True)
-        # if type(torch_outs.hidden_states) is tuple or type(torch_outs.hidden_states) is list:
-        #     last_hidden_state = torch_outs.hidden_states[-1]
-        # else:
-        #     last_hidden_state = torch_outs.hidden_states
 
         if self._hidden_states == "all":
             last_hidden_state = torch_outs.hidden_states[-1]
@@ -215,6 +211,28 @@ class CausalProbingScore(metaclass=ABCMeta):
         probed_outs = self.probed_model(last_hidden_state, indices)
         return probed_outs
 
+class FinetunedScore(metaclass=ABCMeta):
+    def evaluate(self, dataset, output_file, progress_bar=True):
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        allele1_likelihoods = []
+        allele2_likelihoods = []
+
+        with open(output_file, "a") as f:
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+                lls_allele1 = self.score(None, None, None, None, None, allele1)
+                lls_allele2 =self.score(None, None, None, None, None, allele2)
+                for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
+                    allele1_likelihoods.append(lhood_allele1)
+                    allele2_likelihoods.append(lhood_allele2)
+                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+                    f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
+                    f.flush()
+            return df
+
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
+        log1p_counts = self.model(seq).squeeze(1)
+        return log1p_counts.numpy(force=True)
 
 class DNABERT2Evaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -530,3 +548,8 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, MaskedProbingScore):
         else:
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask, None
+    
+class FinetunedVariantEvaluator(FinetunedScore):
+    def __init__(self, model, batch_size, num_workers, device):
+        self.model = model
+        super().__init__(None, model, batch_size, num_workers, device)

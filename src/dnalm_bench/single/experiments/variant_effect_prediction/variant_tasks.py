@@ -175,7 +175,7 @@ def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path):
 
     print(filtered_var_eu_caQTLs_df.shape)                                        
     
-    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_counts"] - filtered_var_eu_caQTLs_df["allele1_counts"]
+    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2"] - filtered_var_eu_caQTLs_df["allele1"]
 
     filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
     filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
