@@ -606,6 +606,8 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
 
     torch.manual_seed(seed)
 
+    model.to(device)
+
     criterion = torch.nn.CrossEntropyLoss()
             
     test_loss = 0
@@ -616,7 +618,7 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
         for i, (seq, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
             labels = labels.to(device)
             
-            pred = model(seq).squeeze(1)
+            pred = model(seq)
             loss = criterion(pred, labels)
 
             test_loss += loss.item()
