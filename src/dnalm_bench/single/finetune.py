@@ -606,6 +606,8 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
 
     torch.manual_seed(seed)
 
+    model.to(device)
+
     criterion = torch.nn.CrossEntropyLoss()
             
     test_loss = 0
@@ -613,15 +615,15 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
     labels = []
     model.eval()
     with torch.no_grad():
-        for i, (seq, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
-            labels = labels.to(device)
+        for i, (seq, labels_batch) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
+            labels_batch = labels_batch.to(device)
             
-            pred = model(seq).squeeze(1)
-            loss = criterion(pred, labels)
+            pred = model(seq)
+            loss = criterion(pred, labels_batch)
 
             test_loss += loss.item()
             pred_log_probs.append(F.log_softmax(pred, dim=1))
-            labels.append(labels)
+            labels.append(labels_batch)
 
     test_loss /= len(test_dataloader.dataset)
 
@@ -631,18 +633,19 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
 
     metrics = {"test_loss": test_loss, "test_acc": test_acc}
 
-    for label_idx in range(pred_log_probs.shape[1]):
+    for label, label_idx in test_dataloader.dataset.classes.items():
         label_preds = pred_log_probs[:, label_idx]
+        label_pred_bin = (pred_log_probs.argmax(dim=1) == label_idx).float()
         label_labels = (labels == label_idx).float()
         label_auroc = roc_auc_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
         label_auprc = average_precision_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
-        label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_preds.argmax(dim=1).numpy(force=True))
-        label_acc = (label_preds.argmax(dim=1) == label_labels).sum().item() / len(label_labels)
+        label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_pred_bin.numpy(force=True))
+        label_acc = (label_pred_bin == label_labels).sum().item() / len(label_labels)
 
-        metrics[f"label_{label_idx}_auroc"] = label_auroc
-        metrics[f"label_{label_idx}_auprc"] = label_auprc
-        metrics[f"label_{label_idx}_mcc"] = label_mcc
-        metrics[f"label_{label_idx}_acc"] = label_acc
+        metrics[f"label_{label}_auroc"] = label_auroc
+        metrics[f"label_{label}_auprc"] = label_auprc
+        metrics[f"label_{label}_mcc"] = label_mcc
+        metrics[f"label_{label}_acc"] = label_acc
 
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
