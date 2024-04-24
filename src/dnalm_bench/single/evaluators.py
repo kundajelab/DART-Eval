@@ -84,6 +84,7 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
 
         with open(output_file, "a") as f:
             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+                torch.cuda.empty_cache()
                 tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
                 tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
                 lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
@@ -95,6 +96,8 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                     df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
                     f.flush()
+                tokens_allele1 = tokens_allele1.to("cpu")
+                tokens_allele2 = tokens_allele2.to("cpu")
             return df
     
     def tokenize(self, seqs):
