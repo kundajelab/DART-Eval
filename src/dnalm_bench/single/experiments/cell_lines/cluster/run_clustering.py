@@ -8,7 +8,7 @@ import numpy as np
 from .....embedding_clustering import EmbeddingCluster, load_embeddings_and_labels
 
 embedding_file = sys.argv[1]
-label_file = sys.arg[2]
+label_file = sys.argv[2]
 out_dir = sys.argv[3]
 
 os.makedirs(out_dir, exist_ok=True)
