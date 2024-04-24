@@ -166,16 +166,17 @@ def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
 
         return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
     
-def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path):
+def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path, name="_counts"):
     threshold = 3
     
     counts_data = pd.read_csv(counts_data_path, sep="\t")
+    # counts_data = counts_data[200000:]
     filtered_var_eu_caQTLs_df = counts_data[(counts_data["Inside_Peak"]==True) &
                                         (counts_data["IsUsed"]==True)].copy(deep=True)
 
     print(filtered_var_eu_caQTLs_df.shape)                                        
     
-    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2"] - filtered_var_eu_caQTLs_df["allele1"]
+    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2"+name] - filtered_var_eu_caQTLs_df["allele1"+name]
 
     filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
     filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)

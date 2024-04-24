@@ -132,7 +132,7 @@ class VariantDataset(Dataset):
                 # 1-indexed position
                 pos = int(pos) - 1
                 # Extract the sequence
-                window = 2000
+                window = 2114
                 sequence_extension = int(window / 2)
                 allele1_seq = np.zeros((window, 4), dtype=np.int8)
                 allele2_seq = np.zeros((window, 4), dtype=np.int8)

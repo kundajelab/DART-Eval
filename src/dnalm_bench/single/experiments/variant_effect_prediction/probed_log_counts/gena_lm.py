@@ -10,7 +10,7 @@ import polars as pl
 if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
 
-    batch_size = 64
+    batch_size = 8
     num_workers = 4
     seed = 0
     device = "cuda"
