@@ -642,10 +642,10 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
         label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_pred_bin.numpy(force=True))
         label_acc = (label_pred_bin == label_labels).sum().item() / len(label_labels)
 
-        metrics[f"label_{label_idx}_auroc"] = label_auroc
-        metrics[f"label_{label_idx}_auprc"] = label_auprc
-        metrics[f"label_{label_idx}_mcc"] = label_mcc
-        metrics[f"label_{label_idx}_acc"] = label_acc
+        metrics[f"label_{test_dataloader.classes[label_idx]}_auroc"] = label_auroc
+        metrics[f"label_{test_dataloader.classes[label_idx]}_auprc"] = label_auprc
+        metrics[f"label_{test_dataloader.classes[label_idx]}_mcc"] = label_mcc
+        metrics[f"label_{test_dataloader.classes[label_idx]}_acc"] = label_acc
 
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
