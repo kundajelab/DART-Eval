@@ -615,15 +615,15 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
     labels = []
     model.eval()
     with torch.no_grad():
-        for i, (seq, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
-            labels = labels.to(device)
+        for i, (seq, labels_batch) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
+            labels_batch = labels_batch.to(device)
             
             pred = model(seq)
-            loss = criterion(pred, labels)
+            loss = criterion(pred, labels_batch)
 
             test_loss += loss.item()
             pred_log_probs.append(F.log_softmax(pred, dim=1))
-            labels.append(labels)
+            labels.append(labels_batch)
 
     test_loss /= len(test_dataloader.dataset)
 
