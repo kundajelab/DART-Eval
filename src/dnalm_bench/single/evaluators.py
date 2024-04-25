@@ -523,4 +523,4 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, ProbingScore):
 class FinetunedVariantEvaluator(FinetunedScore): 
     def __init__(self, model, batch_size, num_workers, device):
         self.model = model
-        super().__init__(None, model, batch_size, num_workers, device)
+        # super().__init__(None, model, batch_size, num_workers, device)
