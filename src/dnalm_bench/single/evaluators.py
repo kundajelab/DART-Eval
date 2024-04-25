@@ -520,7 +520,8 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, ProbingScore):
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask, None
     
-class FinetunedVariantEvaluator(FinetunedScore): 
+# class FinetunedVariantEvaluator(FinetunedScore): 
+class FinetunedVariantEvaluator: 
     def __init__(self, model, batch_size, num_workers, device):
         self.model = model
         # super().__init__(None, model, batch_size, num_workers, device)
