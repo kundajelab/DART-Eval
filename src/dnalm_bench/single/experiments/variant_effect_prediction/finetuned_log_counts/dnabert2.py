@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
 
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{variants_bed}.json")
+    out_path = os.path.join(out_dir, f"{dataset}.json")
 
     model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
