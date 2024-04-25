@@ -3,7 +3,7 @@ import sys
 
 import torch
 
-from ....finetune import NucleotideTransformerLoRAModel
+from ....finetune import HyenaDNALoRAModel
 from ....evaluators import FinetunedVariantEvaluator
 from ....components import VariantDataset
 import polars as pl
