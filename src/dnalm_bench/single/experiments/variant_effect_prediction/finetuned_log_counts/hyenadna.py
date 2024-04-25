@@ -52,7 +52,7 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{dataset}.json")
 
-    model = NucleotideTransformerLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
+    model = HyenaDNALoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
