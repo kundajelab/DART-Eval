@@ -181,29 +181,29 @@ class ProbingScore(metaclass=ABCMeta):
             
         return probed_outs
 
-class FinetunedScore(metaclass=ABCMeta):
-    def evaluate(self, dataset, output_file, progress_bar=True):
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-        allele1_likelihoods = []
-        allele2_likelihoods = []
+# class FinetunedScore(metaclass=ABCMeta):
+#     def evaluate(self, dataset, output_file, progress_bar=True):
+#         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+#         allele1_likelihoods = []
+#         allele2_likelihoods = []
 
-        with open(output_file, "a") as f:
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
-                lls_allele1 = self.score(None, None, None, None, None, allele1)
-                lls_allele2 =self.score(None, None, None, None, None, allele2)
-                for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
-                    allele1_likelihoods.append(lhood_allele1)
-                    allele2_likelihoods.append(lhood_allele2)
-                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
-                    f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
-                    f.flush()
-            return df
+#         with open(output_file, "a") as f:
+#             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
+#                 lls_allele1 = self.score(None, None, None, None, None, allele1)
+#                 lls_allele2 =self.score(None, None, None, None, None, allele2)
+#                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
+#                     allele1_likelihoods.append(lhood_allele1)
+#                     allele2_likelihoods.append(lhood_allele2)
+#                     data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+#                     df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+#                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
+#                     f.flush()
+#             return df
 
-    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
-        with torch.no_grad():
-            log1p_counts = self.model(seq).squeeze(1)
-        return log1p_counts.numpy(force=True)
+#     def score(self, tokens, starts, ends, attention_mask, offsets, seq):
+#         with torch.no_grad():
+#             log1p_counts = self.model(seq).squeeze(1)
+#         return log1p_counts.numpy(force=True)
 
 class DNABERT2Evaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -524,3 +524,29 @@ class FinetunedVariantEvaluator(FinetunedScore):
     def __init__(self, model, batch_size, num_workers, device):
         self.model = model
         # super().__init__(None, model, batch_size, num_workers, device)
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.device = device
+
+    def evaluate(self, dataset, output_file, progress_bar=True):
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        allele1_likelihoods = []
+        allele2_likelihoods = []
+
+        with open(output_file, "a") as f:
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
+                lls_allele1 = self.score(None, None, None, None, None, allele1)
+                lls_allele2 =self.score(None, None, None, None, None, allele2)
+                for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
+                    allele1_likelihoods.append(lhood_allele1)
+                    allele2_likelihoods.append(lhood_allele2)
+                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+                    f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
+                    f.flush()
+            return df
+
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
+        with torch.no_grad():
+            log1p_counts = self.model(seq).squeeze(1)
+        return log1p_counts.numpy(force=True)
