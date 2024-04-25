@@ -22,13 +22,7 @@ if __name__ == "__main__":
     }
     genome_fa = genomes[dataset]
 
-    variants_beds = {
-        "gm12878.dsqtls": "/home/atwang/dnalm_bench_data/variant-benchmarking/gm12878.dsqtls.benchmarking.tsv", 
-        "Eu.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Eu.CaQTLS.tsv", 
-        "Afr.ASB.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Afr.ASB.CaQTLS.tsv", 
-        "Afr.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Afr.CaQTLS.tsv", 
-    }
-    variants_bed = variants_beds[dataset]
+    variants_bed = f"/home/atwang/dnalm_bench_data/variant-benchmarking/{dataset}.tsv" 
 
     cell_line = "GM12878"
     checkpoint_num = 5
