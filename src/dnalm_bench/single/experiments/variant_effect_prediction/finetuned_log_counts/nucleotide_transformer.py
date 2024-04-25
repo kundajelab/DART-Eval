@@ -59,6 +59,7 @@ if __name__ == "__main__":
     evaluator = FinetunedVariantEvaluator(model, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
-    # scored_df = pl.concat([df, counts_df], how="horizontal")
-    scored_df = df
+    df = dataset.elements_df
+    df = df.rename({"allele1": "allele1_", "allele2": "allele2_"})
+    scored_df = pl.concat([df, counts_df], how="horizontal")
     scored_df.write_csv(out_path, separator="\t")
