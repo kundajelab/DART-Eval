@@ -201,7 +201,8 @@ class FinetunedScore(metaclass=ABCMeta):
             return df
 
     def score(self, tokens, starts, ends, attention_mask, offsets, seq):
-        log1p_counts = self.model(seq).squeeze(1)
+        with torch.no_grad():
+            log1p_counts = self.model(seq).squeeze(1)
         return log1p_counts.numpy(force=True)
 
 class DNABERT2Evaluator(LikelihoodEvaluator, MaskedZeroShotScore):

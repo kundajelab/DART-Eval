@@ -10,13 +10,28 @@ import polars as pl
 
 
 if __name__ == "__main__":
+    dataset = sys.argv[1] #cell line name
+
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    variants_bed = sys.argv[1]
-    counts_tsv = sys.argv[2]
-    genome_fa = sys.argv[3]
-    cell_line = sys.argv[4]
-    checkpoint_num = sys.argv[5]
+    genomes = {
+        "gm12878.dsqtls": "/home/atwang/dnalm_bench_data/male.hg19.fa", 
+        "Eu.CaQTLS": "/home/atwang/dnalm_bench_data/male.hg19.fa",
+        "Afr.ASB.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
+        "Afr.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    }
+    genome_fa = genomes[dataset]
+
+    variants_beds = {
+        "gm12878.dsqtls": "/home/atwang/dnalm_bench_data/variant-benchmarking/gm12878.dsqtls.benchmarking.tsv", 
+        "Eu.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Eu.CaQTLS.tsv", 
+        "Afr.ASB.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Afr.ASB.CaQTLS.tsv", 
+        "Afr.CaQTLS": "/home/atwang/dnalm_bench_data/variant-benchmarking/Afr.CaQTLS.tsv", 
+    }
+    variants_bed = variants_beds[dataset]
+
+    cell_line = "GM12878"
+    checkpoint_num = 5
 
     chroms=None
 
