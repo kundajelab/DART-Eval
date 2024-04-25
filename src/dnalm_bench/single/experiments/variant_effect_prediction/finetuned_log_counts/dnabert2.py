@@ -61,5 +61,5 @@ if __name__ == "__main__":
 
     df = dataset.elements_df
     # scored_df = pl.concat([df, counts_df], how="horizontal")
-    scored_df = df
+    scored_df = counts_df
     scored_df.write_csv(out_path, separator="\t")
