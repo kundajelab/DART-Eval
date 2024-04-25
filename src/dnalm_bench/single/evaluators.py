@@ -528,6 +528,7 @@ class FinetunedVariantEvaluator:
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.device = device
+        self.model.to(self.device)
 
     def evaluate(self, dataset, output_file, progress_bar=True):
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
