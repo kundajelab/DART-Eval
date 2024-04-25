@@ -11,7 +11,7 @@ if __name__ == "__main__":
     
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/likelihoods/{model_name}/"
 
-    batch_size = 32
+    batch_size = 64
     num_workers = 4
     seed = 0
     device = "cuda"

@@ -10,7 +10,7 @@ import polars as pl
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    batch_size = 4
+    batch_size = 64
     num_workers = 4
     seed = 0
     device = "cuda"

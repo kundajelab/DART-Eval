@@ -3,7 +3,7 @@ import sys
 
 import torch
 
-from ....finetune import NucleotideTransformerLoRAModel
+from ....finetune import GENALMLoRAModel
 from ....evaluators import FinetunedVariantEvaluator
 from ....components import VariantDataset
 import polars as pl
@@ -12,7 +12,7 @@ import polars as pl
 if __name__ == "__main__":
     dataset = sys.argv[1]
 
-    model_name = "nucleotide-transformer-v2-500m-multi-species"
+    model_name = "gena-lm-bert-large-t2t"
 
     genomes = {
         "gm12878.dsqtls.benchmarking": "/home/atwang/dnalm_bench_data/male.hg19.fa", 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     variants_bed = f"/home/atwang/dnalm_bench_data/variant-benchmarking/{dataset}.tsv" 
 
     cell_line = "GM12878"
-    checkpoint_num = 5
+    checkpoint_num = 13
 
     chroms=None
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{dataset}.json")
 
-    model = NucleotideTransformerLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
+    model = GENALMLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
