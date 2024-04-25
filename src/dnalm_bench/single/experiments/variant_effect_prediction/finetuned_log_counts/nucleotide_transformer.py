@@ -15,7 +15,7 @@ if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
     genomes = {
-        "gm12878.dsqtls": "/home/atwang/dnalm_bench_data/male.hg19.fa", 
+        "gm12878.dsqtls.benchmarking": "/home/atwang/dnalm_bench_data/male.hg19.fa", 
         "Eu.CaQTLS": "/home/atwang/dnalm_bench_data/male.hg19.fa",
         "Afr.ASB.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
         "Afr.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
