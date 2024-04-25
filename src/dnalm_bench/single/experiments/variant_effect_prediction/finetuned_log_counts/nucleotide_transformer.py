@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     chroms=None
 
-    batch_size = 128
+    batch_size = 256
     num_workers = 4
     prefetch_factor = 2
     seed = 0
