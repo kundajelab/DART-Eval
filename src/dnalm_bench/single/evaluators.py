@@ -188,7 +188,7 @@ class FinetunedScore(metaclass=ABCMeta):
         allele2_likelihoods = []
 
         with open(output_file, "a") as f:
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
                 lls_allele1 = self.score(None, None, None, None, None, allele1)
                 lls_allele2 =self.score(None, None, None, None, None, allele2)
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
@@ -520,7 +520,7 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, ProbingScore):
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask, None
     
-class FinetunedVariantEvaluator(FinetunedScore):
+class FinetunedVariantEvaluator(FinetunedScore): 
     def __init__(self, model, batch_size, num_workers, device):
         self.model = model
         super().__init__(None, model, batch_size, num_workers, device)

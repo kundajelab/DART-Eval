@@ -62,7 +62,7 @@ if __name__ == "__main__":
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    evaluator = FinetunedVariantEvaluator(model, model_name, batch_size, num_workers, device)
+    evaluator = FinetunedVariantEvaluator(model, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df
