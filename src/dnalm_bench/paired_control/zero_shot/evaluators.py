@@ -157,7 +157,7 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
             ends = torch.where(tokens == self.end_token)[1]
         else:
             ends = attention_mask.sum(dim=1) 
-        print(starts, ends) ####
+        print(tokens, starts, ends) ####
         return tokens, starts, ends, attention_mask 
 
     def model_fwd(self, tokens, attention_mask):
