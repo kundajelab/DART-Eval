@@ -24,8 +24,9 @@ if __name__ == "__main__":
     batch_size = 12
     accumulate = 8
     # num_workers = 4
-    prefetch_factor = 2
+    # prefetch_factor = 2
     num_workers = 0 ####
+    # prefetch_factor = None
     seed = 0
     device = "cuda"
 
