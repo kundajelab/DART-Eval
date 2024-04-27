@@ -1,6 +1,6 @@
 import os
 
-from ..evaluators import PairedControlDataset, HDEvaluator
+from ..evaluators import PairedControlDataset, CaduceusEvaluator
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     device = "cuda"
 
     dataset = PairedControlDataset(genome_fa, elements_tsv, chroms, seed)
-    evaluator = HDEvaluator(model_name, dataset, batch_size, num_workers, device)
+    evaluator = CaduceusEvaluator(model_name, dataset, batch_size, num_workers, device)
     metrics = evaluator.evaluate(out_dir, progress_bar=True)
 
     for k, v in metrics.items():
