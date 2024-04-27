@@ -17,8 +17,7 @@ if __name__ == "__main__":
     elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 128
-    # num_workers = 4
-    num_workers = 0
+    num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
     seed = 0
