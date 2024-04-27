@@ -1,7 +1,7 @@
 import os
 import sys
 
-import torch
+from torch.utils.data import DataLoader ####
 
 from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, CaduceusLoRAModel
 
@@ -23,10 +23,10 @@ if __name__ == "__main__":
 
     batch_size = 12
     accumulate = 8
-    # num_workers = 4
-    # prefetch_factor = 2
-    num_workers = 0 ####
-    prefetch_factor = None
+    num_workers = 4
+    prefetch_factor = 2
+    # num_workers = 0 ####
+    # prefetch_factor = None
     seed = 0
     device = "cuda"
 
@@ -89,6 +89,12 @@ if __name__ == "__main__":
     train_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_train, crop, cache_dir=cache_dir, downsample_ratio=10)
     val_pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_val, crop, cache_dir=cache_dir)
     val_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_val, crop, cache_dir=cache_dir)
+
+    val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True) ####
+    for batch in val_pos_dataloader:
+        print(batch) ####
+        
 
     model = CaduceusLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
