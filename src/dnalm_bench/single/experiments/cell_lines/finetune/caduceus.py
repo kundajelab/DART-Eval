@@ -90,11 +90,10 @@ if __name__ == "__main__":
     val_pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_val, crop, cache_dir=cache_dir)
     val_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_val, crop, cache_dir=cache_dir)
 
-    val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
-                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True) ####
-    for batch in val_pos_dataloader:
-        print(batch) ####
-        
+    # val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
+    #                             pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True) ####
+    # for batch in val_pos_dataloader:
+    #     print(batch) ####
 
     model = CaduceusLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
