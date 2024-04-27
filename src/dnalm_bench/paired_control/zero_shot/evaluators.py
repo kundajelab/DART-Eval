@@ -227,6 +227,34 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
             logits = torch_outs.logits.swapaxes(1, 2)
             lls = -F.cross_entropy(logits, tokens, reduction="none")
         return lls
+    
+
+
+class CaduceusEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
+    def __init__(self, model_name, dataset, batch_size, num_workers, device):
+        model_name = f"kuleshov-group/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, dataset, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+
+    def model_fwd(self, tokens, attention_mask):
+        print(tokens) ####
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = -F.cross_entropy(logits, tokens, reduction="none")
+        return lls
+
 
 
 class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
