@@ -22,6 +22,7 @@ if __name__ == "__main__":
     assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
 
     batch_size = 1
+    accumulate = 96
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
@@ -68,8 +69,6 @@ if __name__ == "__main__":
     lora_rank = 8
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
-
-    accumulate = 6
     
     lr = 1e-4
     wd = 0.01
