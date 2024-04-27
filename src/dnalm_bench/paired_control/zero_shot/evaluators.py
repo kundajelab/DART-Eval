@@ -239,14 +239,14 @@ class CaduceusEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
 
     @property
     def start_token(self):
-        return None
+        return 3
     
     @property
     def end_token(self):
         return 1
 
     def model_fwd(self, tokens, attention_mask):
-        print(tokens) ####
+        # print(tokens) ####
         with torch.no_grad():
             torch_outs = self.model(
                 tokens
