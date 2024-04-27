@@ -230,11 +230,11 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     
 
 
-class CaduceusEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
+class CaduceusEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
         model_name = f"kuleshov-group/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
-        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, dataset, batch_size, num_workers, device)
 
     @property
