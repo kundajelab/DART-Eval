@@ -282,7 +282,7 @@ class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
             )
             logits = torch_outs.logits.swapaxes(1, 2)
             lls = torch.zeros(tokens_out.shape[:2], device=self.device)
-            lls[:,1:] = -F.cross_entropy(logits[:,:-1], tokens_out[:,1:], reduction="none")
+            lls[:,1:] = -F.cross_entropy(logits[:,:,:-1], tokens_out[:,1:], reduction="none")
         return lls
 
 
