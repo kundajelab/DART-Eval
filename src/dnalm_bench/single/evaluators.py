@@ -485,11 +485,13 @@ class NTVariantEvaluator(VariantLikelihoodEvaluator):
     
     def tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        offsets = None
-        attention_mask = encoded.get("attention_mask")
-
+        # print(tokens.shape) ####
+        try:
+            attention_mask = encoded["attention_mask"]
+        except:
+            attention_mask = None
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
@@ -498,7 +500,8 @@ class NTVariantEvaluator(VariantLikelihoodEvaluator):
             ends = torch.where(tokens == self.end_token)[1]
         else:
             ends = attention_mask.sum(dim=1) 
-        return tokens, starts, ends, attention_mask, offsets
+        return tokens, starts, ends, attention_mask, None
+    
     
 class NTZeroShotVariantEvaluator(NTVariantEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -520,25 +523,7 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, ProbingScore):
 
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
-        tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
-        try:
-            attention_mask = encoded["attention_mask"]
-        except:
-            attention_mask = None
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-        else:
-            ends = attention_mask.sum(dim=1) 
-        return tokens, starts, ends, attention_mask, None
-    
+
 # class FinetunedVariantEvaluator(FinetunedScore): 
 class FinetunedVariantEvaluator: 
     def __init__(self, model, batch_size, num_workers, device):

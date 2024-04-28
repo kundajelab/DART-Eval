@@ -38,7 +38,7 @@ if __name__ == "__main__":
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"]
     
     
-    batch_size = 64
+    batch_size = 512
     num_workers = 4
     seed = 0
     device = "cuda"
