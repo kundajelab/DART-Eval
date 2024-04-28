@@ -5,12 +5,14 @@ from ....evaluators import NTProbingVariantEvaluator
 from ....components import VariantDataset
 from ....training import CNNEmbeddingsPredictor
 import polars as pl
+import pandas as pd
+import numpy as np
 
 
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    batch_size = 64
+    batch_size = 512
     num_workers = 4
     seed = 0
     device = "cuda"
@@ -21,7 +23,11 @@ if __name__ == "__main__":
     genome_fa = sys.argv[3]
     cell_line = sys.argv[4]
 
-    model_path = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/checkpoint_149.pt"
+    train_log = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
+
+    model_path = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/checkpoint_{checkpoint_num}.pt"
 
     out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/probing/{model_name}/{cell_line}/"
     os.makedirs(out_dir, exist_ok=True)
