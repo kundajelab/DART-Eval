@@ -283,22 +283,6 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def end_token(self):
         return None
 
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
-        tokens = encoded["input_ids"]
-        offsets = None
-        attention_mask = encoded.get("attention_mask")
-
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-        else:
-            ends = attention_mask.sum(dim=1) 
-        return tokens, starts, ends, attention_mask, offsets
     
 class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator):
     _hidden_states = "last"
@@ -498,6 +482,23 @@ class NTVariantEvaluator(VariantLikelihoodEvaluator):
             inds[i*6:(i+1)*6] = i + 1
         inds[(i+1)*6:] = np.arange(i+2, i+(seq_len%6)+2)
         return np.array([inds] * seqs.shape[0])
+    
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        offsets = None
+        attention_mask = encoded.get("attention_mask")
+
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+        else:
+            ends = attention_mask.sum(dim=1) 
+        return tokens, starts, ends, attention_mask, offsets
     
 class NTZeroShotVariantEvaluator(NTVariantEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
