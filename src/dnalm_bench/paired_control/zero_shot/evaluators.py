@@ -233,7 +233,6 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
         with torch.no_grad():
             torch_outs = self.model(
                 tokens_in,
-                attention_mask=attention_mask,
             )
             logits = torch_outs.logits.swapaxes(1, 2)
             lls = torch.zeros(tokens_out.shape[:2], device=self.device)
