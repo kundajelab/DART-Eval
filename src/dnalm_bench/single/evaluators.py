@@ -104,11 +104,12 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
         tokens = encoded["input_ids"]
-        offsets = encoded["offset_mapping"]
-        try:
-            attention_mask = encoded["attention_mask"]
-        except:
-            attention_mask = None
+        offsets = encoded.get("offset_mapping")
+        attention_mask = encoded.get("attention_mask")
+        # try:
+        #     attention_mask = encoded["attention_mask"]
+        # except:
+        #     attention_mask = None
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
