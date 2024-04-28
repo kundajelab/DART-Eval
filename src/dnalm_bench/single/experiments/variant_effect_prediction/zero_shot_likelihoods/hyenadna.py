@@ -1,7 +1,7 @@
 import os
 import sys
 
-from ....evaluators import HDVariantEvaluator
+from ....evaluators import HDZeroShotVariantEvaluator
 from ....components import VariantDataset
 
 
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{dataset}.tsv")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    evaluator = HDVariantEvaluator(model_name, batch_size, num_workers, device)
+    evaluator = HDZeroShotVariantEvaluator(model_name, batch_size, num_workers, device)
     evaluator.evaluate(dataset, out_path, progress_bar=True)

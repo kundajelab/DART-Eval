@@ -1,7 +1,7 @@
 import os
 import sys
 
-from ....evaluators import DNABERT2VariantEvaluator
+from ....evaluators import DNABERT2ZeroShotVariantEvaluator
 from ....components import VariantDataset
 
 
@@ -47,5 +47,5 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{dataset}.tsv")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    evaluator = DNABERT2VariantEvaluator(model_name, batch_size, num_workers, device)
+    evaluator = DNABERT2ZeroShotVariantEvaluator(model_name, batch_size, num_workers, device)
     evaluator.evaluate(dataset, out_path, progress_bar=True)
