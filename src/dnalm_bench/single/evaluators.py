@@ -92,23 +92,25 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
                     allele2_likelihoods.append(lhood_allele2)
-                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
                     f.flush()
-                tokens_allele1 = tokens_allele1.to("cpu")
-                tokens_allele2 = tokens_allele2.to("cpu")
+                # tokens_allele1 = tokens_allele1.to("cpu")
+                # tokens_allele2 = tokens_allele2.to("cpu")
+            data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+            df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+
             return df
     
     def tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
         tokens = encoded["input_ids"]
-        offsets = encoded["offset_mapping"]
-        try:
-            attention_mask = encoded["attention_mask"]
-        except:
-            attention_mask = None
+        offsets = encoded.get("offset_mapping")
+        attention_mask = encoded.get("attention_mask")
+        # try:
+        #     attention_mask = encoded["attention_mask"]
+        # except:
+        #     attention_mask = None
         if self.start_token is not None:
             starts = torch.where(tokens == self.start_token)[1] + 1 
         else:
@@ -281,6 +283,7 @@ class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     @property
     def end_token(self):
         return None
+
     
 class DNABERT2VariantEvaluator(VariantLikelihoodEvaluator):
     _hidden_states = "last"
@@ -376,6 +379,25 @@ class HDVariantEvaluator(VariantLikelihoodEvaluator):
         model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        try:
+            attention_mask = encoded["attention_mask"]
+            ends = attention_mask.sum(dim=1)
+        except:
+            attention_mask = None
+            ends = None
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+            
+        return tokens, starts, ends, attention_mask, None
+
     @property
     def start_token(self):
         return None
@@ -396,25 +418,6 @@ class HDProbingVariantEvaluator(HDVariantEvaluator, ProbingScore):
         self.probed_model.to(device)
 
         super().__init__(model_name, batch_size, num_workers, device)
-
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
-        tokens = encoded["input_ids"]
-        try:
-            attention_mask = encoded["attention_mask"]
-            ends = attention_mask.sum(dim=1)
-        except:
-            attention_mask = None
-            ends = None
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-            
-        return tokens, starts, ends, attention_mask, None
     
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
@@ -481,6 +484,26 @@ class NTVariantEvaluator(VariantLikelihoodEvaluator):
         inds[(i+1)*6:] = np.arange(i+2, i+(seq_len%6)+2)
         return np.array([inds] * seqs.shape[0])
     
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        # print(tokens.shape) ####
+        try:
+            attention_mask = encoded["attention_mask"]
+        except:
+            attention_mask = None
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+        else:
+            ends = attention_mask.sum(dim=1) 
+        return tokens, starts, ends, attention_mask, None
+    
+    
 class NTZeroShotVariantEvaluator(NTVariantEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"InstaDeepAI/{model_name}"
@@ -501,25 +524,7 @@ class NTProbingVariantEvaluator(NTVariantEvaluator, ProbingScore):
 
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
-        tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
-        try:
-            attention_mask = encoded["attention_mask"]
-        except:
-            attention_mask = None
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-        else:
-            ends = attention_mask.sum(dim=1) 
-        return tokens, starts, ends, attention_mask, None
-    
+
 # class FinetunedVariantEvaluator(FinetunedScore): 
 class FinetunedVariantEvaluator: 
     def __init__(self, model, batch_size, num_workers, device):

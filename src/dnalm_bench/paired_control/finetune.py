@@ -239,3 +239,28 @@ class HyenaDNALoRAModel(HFClassifierModel):
         logits = torch_outs.logits
 
         return logits
+
+
+class CaduceusLoRAModel(HFClassifierModel):
+    def __init__(self, model_name, lora_rank, lora_alpha, lora_dropout, num_labels):
+        model_name = f"kuleshov-group/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, trust_remote_code=True, num_labels=num_labels)
+        model.caduceus = LoRAModule(model.caduceus, lora_rank, lora_alpha, lora_dropout)
+
+        super().__init__(tokenizer, model)
+
+    def _tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+
+        return tokens.to(self.device), None
+    
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+
+        torch_outs = self.model(tokens)
+        logits = torch_outs.logits
+
+        return logits

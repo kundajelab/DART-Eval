@@ -5,3 +5,4 @@ __pycache__
 scratch.txt
 src/minlora/
 misc/
+.vscode/
