@@ -28,7 +28,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
             clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
             masked_tokens = tokens.clone()
             masked_tokens[:,i,...] = self.mask_token
-            lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
+            lls[:,i] = self.model_fwd(masked_tokens, attention_mask, tokens)[:,i] * clip_mask
 
         out = lls.sum(dim=1).numpy(force=True)
 
@@ -40,7 +40,7 @@ class CausalZeroShotScore(metaclass=ABCMeta):
         tokens = tokens.to(device=self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
-        lls = self.model_fwd(tokens, attention_mask)
+        lls = self.model_fwd(tokens, attention_mask, tokens)
         clip_mask = torch.zeros_like(lls)
         for i in range(tokens.shape[1]):
             clip_mask[:,i] = ((i >= starts) & (i < ends))
@@ -160,14 +160,14 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
         # print(tokens, starts, ends) ####
         return tokens, starts, ends, attention_mask 
 
-    def model_fwd(self, tokens, attention_mask):
+    def model_fwd(self, tokens_masked, attention_mask, tokens_unmasked):
         with torch.no_grad():
             torch_outs = self.model(
-                tokens,
+                tokens_masked,
                 attention_mask=attention_mask,
             )
             logits = torch_outs.logits.swapaxes(1, 2)
-            lls = -F.cross_entropy(logits, tokens, reduction="none")
+            lls = -F.cross_entropy(logits, tokens_unmasked, reduction="none")
         return lls
     
 
