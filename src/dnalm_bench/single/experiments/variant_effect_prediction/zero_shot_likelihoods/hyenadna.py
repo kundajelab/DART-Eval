@@ -9,7 +9,7 @@ if __name__ == "__main__":
     dataset = sys.argv[1]
 
     model_name = "hyenadna-large-1m-seqlen-hf"
-    batch_size = 64
+    batch_size = 512
     num_workers = 4
     seed = 0
     device = "cuda"
