@@ -42,7 +42,7 @@ class CausalZeroShotScore(metaclass=ABCMeta):
             attention_mask = attention_mask.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask, tokens)
         clip_mask = torch.zeros_like(lls)
-        for i in range(tokens.shape[1]):
+        for i in range(lls.shape[1]):
             clip_mask[:,i] = ((i >= starts) & (i < ends))
 
         # clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
@@ -66,7 +66,7 @@ class ZeroShotPairedControlEvaluator(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def model_fwd(self, tokens, attention_mask):
+    def model_fwd(self, tokens_masked, attention_mask, tokens_unmasked):
         pass
 
     # @abstractmethod
@@ -160,14 +160,14 @@ class HFZeroShotEvaluator(ZeroShotPairedControlEvaluator, metaclass=ABCMeta):
         # print(tokens, starts, ends) ####
         return tokens, starts, ends, attention_mask 
 
-    def model_fwd(self, tokens_masked, attention_mask, tokens_unmasked):
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
         with torch.no_grad():
             torch_outs = self.model(
-                tokens_masked,
+                tokens_in,
                 attention_mask=attention_mask,
             )
             logits = torch_outs.logits.swapaxes(1, 2)
-            lls = -F.cross_entropy(logits, tokens_unmasked, reduction="none")
+            lls = -F.cross_entropy(logits, tokens_out, reduction="none")
         return lls
     
 
@@ -229,6 +229,17 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
             lls = -F.cross_entropy(logits, tokens, reduction="none")
         return lls
     
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+                attention_mask=attention_mask,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
+    
 
 
 class CaduceusEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
@@ -272,6 +283,17 @@ class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     @property
     def end_token(self):
         return 2
+    
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+                attention_mask=attention_mask,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
 
 
 class NTEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
