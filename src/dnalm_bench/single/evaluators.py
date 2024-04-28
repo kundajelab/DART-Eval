@@ -378,6 +378,25 @@ class HDVariantEvaluator(VariantLikelihoodEvaluator):
         model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+        try:
+            attention_mask = encoded["attention_mask"]
+            ends = attention_mask.sum(dim=1)
+        except:
+            attention_mask = None
+            ends = None
+        if self.start_token is not None:
+            starts = torch.where(tokens == self.start_token)[1] + 1 
+        else:
+            starts = torch.tensor([0]*tokens.shape[0])
+        if self.end_token is not None:
+            ends = torch.where(tokens == self.end_token)[1]
+            
+        return tokens, starts, ends, attention_mask, None
+
     @property
     def start_token(self):
         return None
@@ -398,25 +417,6 @@ class HDProbingVariantEvaluator(HDVariantEvaluator, ProbingScore):
         self.probed_model.to(device)
 
         super().__init__(model_name, batch_size, num_workers, device)
-
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
-        tokens = encoded["input_ids"]
-        try:
-            attention_mask = encoded["attention_mask"]
-            ends = attention_mask.sum(dim=1)
-        except:
-            attention_mask = None
-            ends = None
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-            
-        return tokens, starts, ends, attention_mask, None
     
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
