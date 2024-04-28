@@ -219,15 +219,6 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
     @property
     def end_token(self):
         return 1
-
-    def model_fwd(self, tokens, attention_mask):
-        with torch.no_grad():
-            torch_outs = self.model(
-                tokens
-            )
-            logits = torch_outs.logits.swapaxes(1, 2)
-            lls = -F.cross_entropy(logits, tokens, reduction="none")
-        return lls
     
     def model_fwd(self, tokens_in, attention_mask, tokens_out):
         with torch.no_grad():
