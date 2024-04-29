@@ -188,10 +188,10 @@ class VariantEmbeddingEvaluator(LikelihoodEvaluator):
         with open(output_file, "a") as f:
             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
                 torch.cuda.empty_cache()
-                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
-                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
-                embs_allele1 = self.embed(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
-                embs_allele2 = self.embed(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
+                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1 = self.tokenize(allele1)
+                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2 = self.tokenize(allele2)
+                embs_allele1 = self.embed(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, allele1)
+                embs_allele2 = self.embed(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, allele2)
                 for emb_allele1, emb_allele2 in zip(embs_allele1, embs_allele2):
                     dist = distance.cosine(emb_allele1, emb_allele2)
                     allele1_embeddings.append(emb_allele1)
@@ -208,7 +208,7 @@ class VariantEmbeddingEvaluator(LikelihoodEvaluator):
 
         return df, allele1_embeddings, allele2_embeddings
     
-    def embed(self, tokens, starts, ends, attention_mask, offsets, seq):
+    def embed(self, tokens, starts, ends, attention_mask, seq):
         tokens = tokens.to(device=self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(device=self.device)
