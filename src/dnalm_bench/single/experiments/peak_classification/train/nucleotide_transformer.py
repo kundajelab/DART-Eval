@@ -3,19 +3,15 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
+from ....training import PeaksEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 
 
 if __name__ == "__main__":
-    cell_line = sys.argv[1] #cell line name
-    resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "nucleotide-transformer-v2-500m-multi-species"
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    nonpeaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
-    peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
+    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
+    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
     num_workers = 4
@@ -67,10 +63,10 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3"   
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
     os.makedirs(out_dir, exist_ok=True)
 
-    peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)
+    train_dataset = PeaksEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)
     nonpeaks_train_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_train, assay_bw, crop=crop, downsample_ratio=10)
     train_dataset = InterleavedIterableDataset([peaks_train_datset, nonpeaks_train_dataset])
 

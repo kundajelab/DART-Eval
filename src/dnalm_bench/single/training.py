@@ -489,12 +489,13 @@ def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir
             model.train()
             
             optimizer.zero_grad()
-            for i, (seq, labels) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
-                # seq = seq.to(device)
+            for i, (seq_emb, seq_inds, labels) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
+                seq_emb = seq_emb.to(device)
+                seq_inds = seq_inds.to(device)
                 labels = labels.to(device)
 
                 optimizer.zero_grad()
-                pred = model(seq).squeeze(1)
+                pred = model(seq_emb, seq_inds)
                 loss = criterion(pred, labels)
                 loss.backward()
                 optimizer.step()
@@ -503,10 +504,12 @@ def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir
             val_acc = 0
             model.eval()
             with torch.no_grad():
-                for i, (seq, labels) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
+                for i, (seq_emb, seq_inds, labels) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
+                    seq_emb = seq_emb.to(device)
+                    seq_inds = seq_inds.to(device)
                     labels = labels.to(device)
                     
-                    pred = model(seq).squeeze(1)
+                    pred = model(seq_emb, seq_inds)
                     loss = criterion(pred, labels)
 
                     val_loss += loss.item()
