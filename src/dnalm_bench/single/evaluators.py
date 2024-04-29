@@ -201,7 +201,7 @@ class VariantEmbeddingEvaluator(LikelihoodEvaluator):
                     f.flush()
                 
         data = {"cosine_distance": dists}
-        df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+        df = pl.DataFrame(data, schema={"cosine_distance": pl.Float64})
 
         allele1_embeddings = np.stack(allele1_embeddings)
         allele2_embeddings = np.stack(allele2_embeddings)
