@@ -183,7 +183,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
     def mask_token(self):
         pass
 
-    def score(self, tokens, starts, ends, attention_mask, offsets, seqs):
+    def score(self, tokens, starts, ends, attention_mask):
         tokens = tokens.to(device=self.device)
         attention_mask = attention_mask.to(device=self.device)
         lls = torch.zeros(tokens.shape[:2], device=self.device)
@@ -198,7 +198,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
         return out
 
 class CausalZeroShotScore(metaclass=ABCMeta):
-    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
+    def score(self, tokens, starts, ends, attention_mask):
         tokens = tokens.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask, tokens)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
