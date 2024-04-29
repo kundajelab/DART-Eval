@@ -166,6 +166,7 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
     def score(self, tokens_in, tokens_out, starts, ends, attention_mask, seq):
         tokens_in = tokens_in.to(device=self.device)
         tokens_out = tokens_out.to(device=self.device)
+        attention_mask = attention_mask.to(device=self.device)
         lls = self.model_fwd(tokens_in, attention_mask, tokens_out)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
                                  dtype=torch.float).to(device=self.device)
