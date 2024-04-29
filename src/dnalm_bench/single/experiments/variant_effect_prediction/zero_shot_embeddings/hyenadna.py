@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/likelihoods/{model_name}/"
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/likelihoods/variants/{model_name}/"
-    out_dir = f"/home/atwang/dnalm_bench_data/likelihoods/variants/{model_name}/"
+    out_dir = f"/home/atwang/dnalm_bench_data/embeddings/variants/{model_name}/"
     os.makedirs(out_dir, exist_ok=True)
     
     # variants_beds = ["/oak/stanford/groups/akundaje/anusri/variant-benchmakring/gm12878.dsqtls.benchmarking.tsv",

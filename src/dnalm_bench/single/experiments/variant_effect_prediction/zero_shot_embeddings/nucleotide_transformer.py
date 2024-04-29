@@ -48,7 +48,7 @@ if __name__ == "__main__":
     evaluator = NTVariantEmbeddingEvaluator(model_name, batch_size, num_workers, device)
 
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/likelihoods/variants/{model_name}/"
-    out_dir = f"/home/atwang/dnalm_bench_data/likelihoods/variants/{model_name}/"
+    out_dir = f"/home/atwang/dnalm_bench_data/embeddings/variants/{model_name}/"
     os.makedirs(out_dir, exist_ok=True)
 
     # for variants_bed, likelihood_tsv, genome_fa in zip(variants_beds, likelihood_tsvs, genome_fas):
