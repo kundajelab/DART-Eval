@@ -51,18 +51,28 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask 
 
-    def model_fwd(self, tokens, attention_mask):
+    # def model_fwd(self, tokens, attention_mask):
+    #     with torch.no_grad():
+    #         try:
+    #             torch_outs = self.model(
+    #                 tokens,
+    #                 attention_mask=attention_mask,
+    #                 encoder_attention_mask=attention_mask
+    #             )
+    #         except:
+    #             torch_outs = self.model(tokens)
+    #         logits = torch_outs.logits.swapaxes(1, 2)
+    #         lls = -F.cross_entropy(logits, tokens, reduction="none")
+    #     return lls
+    
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
         with torch.no_grad():
-            try:
-                torch_outs = self.model(
-                    tokens,
-                    attention_mask=attention_mask,
-                    encoder_attention_mask=attention_mask
-                )
-            except:
-                torch_outs = self.model(tokens)
+            torch_outs = self.model(
+                tokens_in,
+                attention_mask=attention_mask,
+            )
             logits = torch_outs.logits.swapaxes(1, 2)
-            lls = -F.cross_entropy(logits, tokens, reduction="none")
+            lls = -F.cross_entropy(logits, tokens_out, reduction="none")
         return lls
 
     def evaluate(self, dataset, output_file, progress_bar=True):
@@ -133,22 +143,30 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
                 torch.cuda.empty_cache()
                 tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
                 tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
-                lls_allele1 = self.score(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
-                lls_allele2 = self.score(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
+
+                diffs = tokens_allele1 != tokens_allele2
+                tokens_masked = tokens_allele1.clone()
+                tokens_masked[diffs] = self.mask_token
+
+                lls_allele1 = self.score(tokens_masked, tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
+                lls_allele2 = self.score(tokens_masked, tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
+
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
                     allele2_likelihoods.append(lhood_allele2)
                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
                     f.flush()
-            data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-            df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+
+        data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+        df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
 
         return df
 
 
-    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
-        tokens = tokens.to(device=self.device)
-        lls = self.model_fwd(tokens, attention_mask)
+    def score(self, tokens_in, tokens_out, starts, ends, attention_mask, offsets, seq):
+        tokens_in = tokens_in.to(device=self.device)
+        tokens_out = tokens_out.to(device=self.device)
+        lls = self.model_fwd(tokens_in, attention_mask, tokens_out)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
                                  dtype=torch.float).to(device=self.device)
 
@@ -171,7 +189,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
             clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
             masked_tokens = tokens.clone()
             masked_tokens[:,i,...] = self.mask_token
-            lls[:,i] = self.model_fwd(masked_tokens, attention_mask)[:,i] * clip_mask
+            lls[:,i] = self.model_fwd(masked_tokens, attention_mask, tokens)[:,i] * clip_mask
 
         out = lls.sum(dim=1).numpy(force=True)
 
@@ -180,7 +198,7 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
 class CausalZeroShotScore(metaclass=ABCMeta):
     def score(self, tokens, starts, ends, attention_mask, offsets, seq):
         tokens = tokens.to(device=self.device)
-        lls = self.model_fwd(tokens, attention_mask)
+        lls = self.model_fwd(tokens, attention_mask, tokens)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
                                  dtype=torch.float).to(device=self.device)
 
@@ -612,3 +630,45 @@ class FinetunedVariantEvaluator:
         with torch.no_grad():
             log1p_counts = self.model(seq).squeeze(1)
         return log1p_counts.numpy(force=True)
+
+
+class HDVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+
+
+class NTVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 3
+    
+    @property
+    def end_token(self):
+        return None
