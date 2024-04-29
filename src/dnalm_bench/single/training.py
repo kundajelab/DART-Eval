@@ -202,6 +202,128 @@ class InterleavedIterableDataset(IterableDataset):
                 heapq.heappush(heap, updated_record)
 
 
+class PeaksEmbeddingsDataset(IterableDataset):
+    _elements_dtypes = {
+        "chr": pl.Utf8,
+        "input_start": pl.UInt32,
+        "input_end": pl.UInt32,
+        "label": pl.Utf8,
+    }
+
+    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1, cache_dir=None):
+        super().__init__()
+
+        self.elements_df = self._load_elements(elements_tsv, chroms)
+        self.embeddings_h5 = embeddings_h5
+        self.assay_bw = assay_bw
+        self.bounds = bounds
+        self.crop = crop
+        self.downsample_ratio = downsample_ratio
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+
+            embeddings_h5_abs = os.path.abspath(embeddings_h5)
+            embeddings_h5_hash = hashlib.sha256(embeddings_h5_abs.encode('utf-8')).hexdigest()
+            embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".h5")
+            copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
+            self.embeddings_h5 = embeddings_h5_cache_path
+
+            bw_path_abs = os.path.abspath(assay_bw)
+            bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
+            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
+            copy_if_not_exists(assay_bw, bw_cache_path)
+            self.assay_bw = bw_cache_path
+
+    @classmethod
+    def _load_elements(cls, elements_file, chroms):
+        df = (
+            pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+            .with_row_count(name="region_idx")
+        )
+        
+        if chroms is not None:
+            df = df.filter(pl.col("chr").is_in(chroms))
+
+        df = df.collect()
+
+        return df
+
+    def __len__(self):
+        return self.elements_df.height
+
+    def __iter__(self):
+        worker_info = get_worker_info()
+        if self.bounds is not None:
+            start, end = self.bounds
+        elif worker_info is None:
+            start = 0
+            end = len(self)
+        else:
+            per_worker = int(math.ceil(len(self) / float(worker_info.num_workers)))
+            start = worker_info.id * per_worker
+            end = min(start + per_worker, len(self))
+
+        df_sub = self.elements_df.slice(start, end - start)
+        valid_inds = df_sub.get_column('region_idx').to_numpy().astype(np.int32)
+        region_idx_to_row = {v: i for i, v in enumerate(valid_inds)}
+        query_struct = NCLS(valid_inds, valid_inds + 1, valid_inds)
+
+        bw = pyBigWig.open(self.assay_bw)
+
+        chunk_start = 0
+        with h5py.File(self.embeddings_h5) as h5:
+            chunk_ranges = []
+            for name in h5["seq"].keys():
+                if name.startswith("emb_"):
+                    chunk_start, chunk_end = map(int, name.split("_")[1:])
+                    chunk_ranges.append((chunk_start, chunk_end))
+
+            chunk_ranges.sort()
+
+            if "idx_fix" in h5["seq"]:
+                idx_seq_dset = h5["seq/idx_fix"][:].astype(np.int64)
+                idx_seq_fixed = True
+            else:
+                idx_seq_fixed = False
+
+            for chunk_start, chunk_end in chunk_ranges:
+                chunk_range = list(query_struct.find_overlap(chunk_start, chunk_end))
+                if len(chunk_range) == 0:
+                    continue
+
+                seq_chunk = h5[f"seq/emb_{chunk_start}_{chunk_end}"][:]
+
+                if not idx_seq_fixed:
+                    idx_seq_chunk = h5["seq/idx_var"][chunk_start:chunk_end]
+
+                for i, _, _ in chunk_range:
+                    # print(worker_info.id, i, "a") ####
+                    i_rel = i - chunk_start
+                    if idx_seq_fixed:
+                        seq_inds = idx_seq_dset
+                    else:
+                        seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
+
+                    # print(worker_info.id, i, "b") ####
+                    seq_emb = seq_chunk[i_rel]
+
+                    # print(df_sub[i]) ####
+                    # print(worker_info.id, i, "c") ####
+                    _, chrom, region_start, region_end, _, _, _, _ = self.elements_df.row(region_idx_to_row[i])
+                    # print(chrom, region_start, region_end) ####
+
+                    # print(worker_info.id, i, "d") ####
+                    track = np.nan_to_num(bw.values(chrom, region_start, region_end, numpy=True))
+                    if self.crop > 0:
+                        track = track[self.crop:-self.crop]
+
+                    # print(worker_info.id, i, "e") ####
+                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.from_numpy(track)
+
+        bw.close()
+
+
 def log1pMSELoss(log_predicted_counts, true_counts):
     log_true = torch.log(true_counts+1)
     return torch.mean(torch.square(log_true - log_predicted_counts), dim=-1)
@@ -340,6 +462,82 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+
+
+
+def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
+                                  pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
+
+    os.makedirs(out_dir, exist_ok=True)
+    log_file = os.path.join(out_dir, "train.log")
+    log_cols = ["epoch", "val_loss", "val_pearson_all", "val_spearman_all", "val_pearson_peaks", "val_spearman_peaks"]
+
+    model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    if resume_from is not None:
+        resume_checkpoint_path = os.path.join(out_dir, f"checkpoint_{resume_from}.pt")
+        optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{resume_from}.pt")
+        start_epoch = resume_from + 1
+        checkpoint_resume = torch.load(resume_checkpoint_path)
+        model.load_state_dict(checkpoint_resume, strict=False)
+        try:
+            optimizer_resume = torch.load(optimizer_checkpoint_path)
+            optimizer.load_state_dict(optimizer_resume)
+        except FileNotFoundError:
+            warnings.warn(f"Optimizer checkpoint not found at {optimizer_checkpoint_path}")
+    else:
+        start_epoch = 0
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    with open(log_file, "a") as f:
+        if resume_from is None:
+            f.write("\t".join(log_cols) + "\n")
+            f.flush()
+
+        for epoch in range(start_epoch, num_epochs):
+            model.train()
+            
+            optimizer.zero_grad()
+            for i, (seq, labels) in enumerate(tqdm(train_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
+                # seq = seq.to(device)
+                labels = labels.to(device)
+
+                optimizer.zero_grad()
+                pred = model(seq).squeeze(1)
+                loss = criterion(pred, labels)
+                loss.backward()
+                optimizer.step()
+            
+            val_loss = 0
+            val_acc = 0
+            model.eval()
+            with torch.no_grad():
+                for i, (seq, labels) in enumerate(tqdm(val_dataloader, disable=(not progress_bar), desc="val", ncols=120)):
+                    labels = labels.to(device)
+                    
+                    pred = model(seq).squeeze(1)
+                    loss = criterion(pred, labels)
+
+                    val_loss += loss.item()
+                    val_acc += (pred.argmax(dim=1) == labels).sum().item()
+
+            val_loss /= len(val_dataloader.dataset)
+            val_acc /= len(val_dataloader.dataset)
+
+            print(f"Epoch {epoch}: val_loss={val_loss}, val_acc={val_acc}")
+            f.write(f"{epoch}\t{val_loss}\t{val_acc}\n")
+            f.flush()
+
+            checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
+            torch.save(model.state_dict(), checkpoint_path)
+            optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
+            torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
+
     
 
 class CNNEmbeddingsPredictorBase(torch.nn.Module):
