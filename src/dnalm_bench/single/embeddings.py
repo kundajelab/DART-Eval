@@ -9,7 +9,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoMod
 from scipy.stats import wilcoxon
 from tqdm import tqdm
 import h5py
-from ..embeddings import HFEmbeddingExtractor
+from ..embeddings import HFEmbeddingExtractor, SequenceBaselineEmbeddingExtractor
 from ..utils import onehot_to_chars, NoModule
 
 
@@ -132,7 +132,17 @@ class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
                 allele2_grp.create_dataset(f"emb_{start}_{end}", data=allele2_token_emb.numpy(force=True))
 
                 start = end
-        os.rename(out_path + ".tmp", out_path)       
+        os.rename(out_path + ".tmp", out_path)      
+
+
+class SequenceBaselineSimpleEmbeddingExtractor(SequenceBaselineEmbeddingExtractor, SimpleEmbeddingExtractor):
+    _idx_mode = "fixed"
+
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx) 
 
     
 class DNABERT2EmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):

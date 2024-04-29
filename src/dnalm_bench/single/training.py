@@ -572,4 +572,27 @@ class CNNSlicedEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
         seq_embeddings = embs[mask].reshape(embs.shape[0], -1, embs.shape[2])
 
         return seq_embeddings
+    
+
+class CNNSequenceBaselinePredictor(torch.nn.Module):
+    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels):
+        super().__init__()
+
+        self.iconv = torch.nn.Conv1d(4, emb_channels, kernel_size=init_kernel_size, padding='same')
+        self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
+        self.pos_proj = torch.nn.Linear(pos_channels, emb_channels)
+        
+        self.trunk = CNNEmbeddingsPredictorBase(emb_channels, hidden_channels, kernel_size)
+
+    def forward(self, x, _):
+        x = x.swapaxes(1, 2)
+        x = self.iconv(x)
+        x = x.swapaxes(1, 2)
+        p = self.pos_proj(self.pos_emb)
+        x = F.relu(x + p)
+
+        x = self.trunk(x, None)
+
+        return x
+    
 
