@@ -733,6 +733,8 @@ class NTVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
 
 
 class NTVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "all"
+
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"InstaDeepAI/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -749,6 +751,8 @@ class NTVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     
 
 class HDVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "all"
+
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"LongSafari/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
@@ -775,6 +779,8 @@ class HDVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
 
 
 class GenaLMVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "all"
+
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"AIRI-Institute/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -791,6 +797,8 @@ class GenaLMVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     
 
 class DNABERT2VariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "last"
+
     def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"zhihan1996/{model_name}"
         with NoModule("triton"):
