@@ -210,15 +210,13 @@ class PeaksEmbeddingsDataset(IterableDataset):
         "label": pl.Utf8,
     }
 
-    def __init__(self, embeddings_h5, elements_tsv, chroms, assay_bw, bounds=None, crop=0, downsample_ratio=1, cache_dir=None):
+    def __init__(self, embeddings_h5, elements_tsv, chroms, classes, bounds=None, cache_dir=None):
         super().__init__()
 
+        self.classes = classes
         self.elements_df = self._load_elements(elements_tsv, chroms)
         self.embeddings_h5 = embeddings_h5
-        self.assay_bw = assay_bw
         self.bounds = bounds
-        self.crop = crop
-        self.downsample_ratio = downsample_ratio
 
         if cache_dir is not None:
             os.makedirs(cache_dir, exist_ok=True)
@@ -228,12 +226,6 @@ class PeaksEmbeddingsDataset(IterableDataset):
             embeddings_h5_cache_path = os.path.join(cache_dir, embeddings_h5_hash + ".h5")
             copy_if_not_exists(embeddings_h5, embeddings_h5_cache_path)
             self.embeddings_h5 = embeddings_h5_cache_path
-
-            bw_path_abs = os.path.abspath(assay_bw)
-            bw_path_hash = hashlib.sha256(bw_path_abs.encode('utf-8')).hexdigest()
-            bw_cache_path = os.path.join(cache_dir, bw_path_hash + ".bw")
-            copy_if_not_exists(assay_bw, bw_cache_path)
-            self.assay_bw = bw_cache_path
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
@@ -310,16 +302,10 @@ class PeaksEmbeddingsDataset(IterableDataset):
 
                     # print(df_sub[i]) ####
                     # print(worker_info.id, i, "c") ####
-                    _, chrom, region_start, region_end, _, _, _, _ = self.elements_df.row(region_idx_to_row[i])
-                    # print(chrom, region_start, region_end) ####
+                    _, chrom, start, end, _, _, _, label = self.elements_df.row(region_idx_to_row[i])
+                    label_ind = self.classes[label]
 
-                    # print(worker_info.id, i, "d") ####
-                    track = np.nan_to_num(bw.values(chrom, region_start, region_end, numpy=True))
-                    if self.crop > 0:
-                        track = track[self.crop:-self.crop]
-
-                    # print(worker_info.id, i, "e") ####
-                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.from_numpy(track)
+                    yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.tensor(label_ind)
 
         bw.close()
 
