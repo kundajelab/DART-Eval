@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoModelForCausalLM, BertConfig
-from scipy.stats import wilcoxon
+from scipy.spatial import distance
 from tqdm import tqdm
 from ..utils import NoModule, onehot_to_chars
 import polars as pl
@@ -78,7 +78,7 @@ class LikelihoodEvaluator(metaclass=ABCMeta):
     def evaluate(self, dataset, output_file, progress_bar=True):
         out_file_obj = open(output_file, "w")
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-        for seqs in tqdm(dataloader, disable=(not progress_bar)):
+        for seqs in tqdm(dataloader, disable=(not progress_bar), ncols=120):
             tokens, starts, ends, attention_mask = self.tokenize(seqs)
             lls = self.score(tokens, starts, ends, attention_mask)
             for lhood in lls.flatten():
@@ -93,7 +93,7 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
         allele2_likelihoods = []
 
         with open(output_file, "a") as f:
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
                 torch.cuda.empty_cache()
                 tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
                 tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
@@ -106,30 +106,31 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                     f.flush()
                 # tokens_allele1 = tokens_allele1.to("cpu")
                 # tokens_allele2 = tokens_allele2.to("cpu")
-            data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-            df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
 
-            return df
+        data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
+        df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+
+        return df
     
-    def tokenize(self, seqs):
-        seqs_str = onehot_to_chars(seqs)
-        encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
-        tokens = encoded["input_ids"]
-        offsets = encoded.get("offset_mapping")
-        attention_mask = encoded.get("attention_mask")
-        # try:
-        #     attention_mask = encoded["attention_mask"]
-        # except:
-        #     attention_mask = None
-        if self.start_token is not None:
-            starts = torch.where(tokens == self.start_token)[1] + 1 
-        else:
-            starts = torch.tensor([0]*tokens.shape[0])
-        if self.end_token is not None:
-            ends = torch.where(tokens == self.end_token)[1]
-        else:
-            ends = attention_mask.sum(dim=1) 
-        return tokens, starts, ends, attention_mask, offsets
+    # def tokenize(self, seqs):
+    #     seqs_str = onehot_to_chars(seqs)
+    #     encoded = self.tokenizer.batch_encode_plus(seqs_str, return_tensors="pt", padding=True, return_offsets_mapping=True)
+    #     tokens = encoded["input_ids"]
+    #     offsets = encoded.get("offset_mapping")
+    #     attention_mask = encoded.get("attention_mask")
+    #     # try:
+    #     #     attention_mask = encoded["attention_mask"]
+    #     # except:
+    #     #     attention_mask = None
+    #     if self.start_token is not None:
+    #         starts = torch.where(tokens == self.start_token)[1] + 1 
+    #     else:
+    #         starts = torch.tensor([0]*tokens.shape[0])
+    #     if self.end_token is not None:
+    #         ends = torch.where(tokens == self.end_token)[1]
+    #     else:
+    #         ends = attention_mask.sum(dim=1) 
+    #     return tokens, starts, ends, attention_mask, offsets
 
 
 class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
@@ -139,7 +140,7 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
         allele2_likelihoods = []
 
         with open(output_file, "a") as f:
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
                 torch.cuda.empty_cache()
                 tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1 = self.tokenize(allele1)
                 tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2 = self.tokenize(allele2)
@@ -175,7 +176,62 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
         out = (lls * clip_mask).sum(1).numpy(force=True)
 
         return out
+
+
+class VariantEmbeddingEvaluator(LikelihoodEvaluator):
+    def evaluate(self, dataset, output_file, progress_bar=True):
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        allele1_embeddings = []
+        allele2_embeddings = []
+        dists = []
+
+        with open(output_file, "a") as f:
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
+                torch.cuda.empty_cache()
+                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
+                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
+                embs_allele1 = self.embed(tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
+                embs_allele2 = self.embed(tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
+                for emb_allele1, emb_allele2 in zip(embs_allele1, embs_allele2):
+                    dist = distance.cosine(emb_allele1, emb_allele2)
+                    allele1_embeddings.append(emb_allele1)
+                    allele2_embeddings.append(emb_allele2)
+                    dists.append(dist)
+                    f.write(f"{dist}\n")
+                    f.flush()
+                
+        data = {"cosine_distance": dists}
+        df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+
+        allele1_embeddings = np.stack(allele1_embeddings)
+        allele2_embeddings = np.stack(allele2_embeddings)
+
+        return df, allele1_embeddings, allele2_embeddings
     
+    def embed(self, tokens, starts, ends, attention_mask, offsets, seq):
+        tokens = tokens.to(device=self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device=self.device)
+
+        with torch.no_grad():
+            try:
+                torch_outs = self.model(
+                    tokens,
+                    attention_mask=attention_mask,
+                    output_hidden_states=True
+                )
+            except:
+                torch_outs = self.model(tokens, output_hidden_states=True)
+
+            if self._hidden_states == "all":
+                last_hidden_state = torch_outs.hidden_states[-1]
+            else:
+                last_hidden_state = torch_outs.hidden_states
+
+        embeddings = last_hidden_state.mean(dim=1).numpy(force=True)
+            
+        return embeddings
+
 
 class MaskedZeroShotScore(metaclass=ABCMeta):
     @property
@@ -245,7 +301,7 @@ class FinetunedScore(metaclass=ABCMeta):
         allele2_likelihoods = []
 
         with open(output_file, "a") as f:
-            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
+            for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar), ncols=120):
                 lls_allele1 = self.score(None, None, None, None, None, allele1)
                 lls_allele2 =self.score(None, None, None, None, None, allele2)
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
@@ -674,3 +730,63 @@ class NTVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
     @property
     def end_token(self):
         return None
+
+
+class NTVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"InstaDeepAI/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 3
+    
+    @property
+    def end_token(self):
+        return None
+    
+
+class HDVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+
+
+class GenaLMVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"AIRI-Institute/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+
+class DNABERT2VariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"zhihan1996/{model_name}"
+        with NoModule("triton"):
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
+            model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
