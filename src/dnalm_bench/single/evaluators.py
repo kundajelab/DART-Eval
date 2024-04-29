@@ -781,6 +781,14 @@ class GenaLMVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
 
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
+    
 
 class DNABERT2VariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     def __init__(self, model_name, batch_size, num_workers, device):
@@ -790,3 +798,12 @@ class DNABERT2VariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
             config = BertConfig.from_pretrained(model_name, trust_remote_code=True)
             model = AutoModelForMaskedLM.from_pretrained(model_name, config=config, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
+    
