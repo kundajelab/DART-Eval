@@ -141,15 +141,15 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
         with open(output_file, "a") as f:
             for allele1, allele2 in tqdm(dataloader, disable=(not progress_bar)):
                 torch.cuda.empty_cache()
-                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1 = self.tokenize(allele1)
-                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2 = self.tokenize(allele2)
+                tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1 = self.tokenize(allele1)
+                tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2 = self.tokenize(allele2)
 
                 diffs = tokens_allele1 != tokens_allele2
                 tokens_masked = tokens_allele1.clone()
                 tokens_masked[diffs] = self.mask_token
 
-                lls_allele1 = self.score(tokens_masked, tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, offsets_allele1, allele1)
-                lls_allele2 = self.score(tokens_masked, tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, offsets_allele2, allele2)
+                lls_allele1 = self.score(tokens_masked, tokens_allele1, starts_allele1, ends_allele1, attention_mask_allele1, allele1)
+                lls_allele2 = self.score(tokens_masked, tokens_allele2, starts_allele2, ends_allele2, attention_mask_allele2, allele2)
 
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
@@ -163,7 +163,7 @@ class VariantSingleTokenLikelihoodEvaluator(LikelihoodEvaluator):
         return df
 
 
-    def score(self, tokens_in, tokens_out, starts, ends, attention_mask, offsets, seq):
+    def score(self, tokens_in, tokens_out, starts, ends, attention_mask, seq):
         tokens_in = tokens_in.to(device=self.device)
         tokens_out = tokens_out.to(device=self.device)
         lls = self.model_fwd(tokens_in, attention_mask, tokens_out)
