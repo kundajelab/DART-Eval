@@ -96,8 +96,8 @@ class VariantLikelihoodEvaluator(LikelihoodEvaluator):
                     f.flush()
                 # tokens_allele1 = tokens_allele1.to("cpu")
                 # tokens_allele2 = tokens_allele2.to("cpu")
-            data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-            df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+            data = {"allele1_scores" : allele1_likelihoods, "allele2_scores" : allele2_likelihoods}
+            df = pl.DataFrame(data, schema={"allele1_scores": pl.Float64, "allele2_scores": pl.Float64})
 
             return df
     
@@ -178,9 +178,7 @@ class ProbingScore(metaclass=ABCMeta):
                 last_hidden_state = torch_outs.hidden_states[-1]
             else:
                 last_hidden_state = torch_outs.hidden_states
-
             probed_outs = self.probed_model(last_hidden_state, indices)
-            
         return probed_outs
 
 class FinetunedScore(metaclass=ABCMeta):
@@ -547,8 +545,8 @@ class FinetunedVariantEvaluator:
                 for lhood_allele1, lhood_allele2 in zip(lls_allele1.flatten(), lls_allele2.flatten()):
                     allele1_likelihoods.append(lhood_allele1)
                     allele2_likelihoods.append(lhood_allele2)
-                    data = {"allele1" : allele1_likelihoods, "allele2" : allele2_likelihoods}
-                    df = pl.DataFrame(data, schema={"allele1": pl.Float64, "allele2": pl.Float64})
+                    data = {"allele1_scores" : allele1_likelihoods, "allele2_scores" : allele2_likelihoods}
+                    df = pl.DataFrame(data, schema={"allele1_scores": pl.Float64, "allele2_scores": pl.Float64})
                     f.write(f"{lhood_allele1}\t{lhood_allele2}\n")
                     f.flush()
             return df

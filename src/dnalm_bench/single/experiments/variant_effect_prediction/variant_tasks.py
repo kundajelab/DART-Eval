@@ -150,7 +150,7 @@ def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
         
         print(filtered_var_eu_caQTLs_df.shape)
         
-        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_likelihoods"] - filtered_var_eu_caQTLs_df["allele1_likelihoods"]
+        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_scores"] - filtered_var_eu_caQTLs_df["allele1_scores"]
 
         filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
         filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
@@ -166,7 +166,7 @@ def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
 
         return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
     
-def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path, name="_counts"):
+def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path, name="_scores"):
     threshold = 3
     
     counts_data = pd.read_csv(counts_data_path, sep="\t")
@@ -174,7 +174,8 @@ def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path, name="_counts"):
     filtered_var_eu_caQTLs_df = counts_data[(counts_data["Inside_Peak"]==True) &
                                         (counts_data["IsUsed"]==True)].copy(deep=True)
 
-    print(filtered_var_eu_caQTLs_df.shape)                                        
+    print(filtered_var_eu_caQTLs_df.shape)      
+    print(filtered_var_eu_caQTLs_df.columns)                                  
     
     filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2"+name] - filtered_var_eu_caQTLs_df["allele1"+name]
 
@@ -199,7 +200,7 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
         filtered_var_afr_caQTLs_df = likelihoods_data[(likelihoods_data["IsUsed"]==True)].copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_likelihoods"]-filtered_var_afr_caQTLs_df["allele1_likelihoods"]
+        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"]-filtered_var_afr_caQTLs_df["allele1_scores"]
 
         print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
         filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
@@ -221,8 +222,9 @@ def sig_ctrl_variants_Afr_CaQTLs(likelihood_data_path):
 def sig_ctrl_variants_Afr_CaQTLs_probed_counts(counts_data_path):
     
     counts_data = pd.read_csv(counts_data_path, sep="\t")
+    print(counts_data.columns)
     filtered_var_afr_caQTLs_df = counts_data[counts_data["IsUsed"]==True].copy(deep=True)
-    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_counts"] - filtered_var_afr_caQTLs_df["allele1_counts"]
+    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"] - filtered_var_afr_caQTLs_df["allele1_scores"]
 
     print("unique label values", np.unique(filtered_var_afr_caQTLs_df["label"]))
     filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1) & (-np.log10(filtered_var_afr_caQTLs_df["pval"])>=3)]
@@ -248,7 +250,7 @@ def variants_Afr_ASB_CaQTLs(likelihood_data_path):
     if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
         likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
         filtered_var_afr_caQTLs_df = likelihoods_data.copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_likelihoods"] - filtered_var_afr_caQTLs_df["allele1_likelihoods"]
+        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"] - filtered_var_afr_caQTLs_df["allele1_scores"]
 
     return filtered_var_afr_caQTLs_df
 
@@ -256,7 +258,7 @@ def variants_Afr_ASB_CaQTLs_probed_counts(counts_data_path):
     counts_data = pd.read_csv(counts_data_path, sep="\t")
     filtered_var_afr_caQTLs_df = counts_data.copy(deep=True)
     print(filtered_var_afr_caQTLs_df.columns)
-    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_counts"] - filtered_var_afr_caQTLs_df["allele1_counts"]
+    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"] - filtered_var_afr_caQTLs_df["allele1_scores"]
 
     return filtered_var_afr_caQTLs_df
 

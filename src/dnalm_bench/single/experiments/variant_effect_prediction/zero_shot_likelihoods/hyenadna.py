@@ -3,6 +3,7 @@ import sys
 
 from ....evaluators import HDZeroShotVariantEvaluator
 from ....components import VariantDataset
+import polars as pl
 
 
 if __name__ == "__main__":
@@ -46,5 +47,11 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{dataset}.tsv")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
+    
     evaluator = HDZeroShotVariantEvaluator(model_name, batch_size, num_workers, device)
-    evaluator.evaluate(dataset, out_path, progress_bar=True)
+    score_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, score_df], how="horizontal")
+    print(out_path)
+    scored_df.write_csv(out_path, separator="\t")

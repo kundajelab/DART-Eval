@@ -48,4 +48,9 @@ if __name__ == "__main__":
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     evaluator = DNABERT2ZeroShotVariantEvaluator(model_name, batch_size, num_workers, device)
-    evaluator.evaluate(dataset, out_path, progress_bar=True)
+    score_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, score_df], how="horizontal")
+    print(out_path)
+    scored_df.write_csv(out_path, separator="\t")

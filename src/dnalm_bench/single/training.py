@@ -356,6 +356,7 @@ class CNNEmbeddingsPredictorBase(torch.nn.Module):
         return embs
 
     def forward(self, embs, inds):
+        torch.cuda.synchronize()
         x = self._detokenize(embs, inds)
         x = x.swapaxes(1, 2)
         x = F.relu(self.conv1(x))
@@ -364,7 +365,6 @@ class CNNEmbeddingsPredictorBase(torch.nn.Module):
         x = x.sum(dim=2)
         x = self.fc1(x)
         x = x.squeeze(-1)
-
         return x
     
 class CNNEmbeddingsPredictor(CNNEmbeddingsPredictorBase):

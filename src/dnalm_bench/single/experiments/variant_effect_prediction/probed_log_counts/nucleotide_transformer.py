@@ -12,7 +12,7 @@ import numpy as np
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
 
-    batch_size = 512
+    batch_size = 256
     num_workers = 4
     seed = 0
     device = "cuda"
