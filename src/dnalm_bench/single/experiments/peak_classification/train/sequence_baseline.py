@@ -88,5 +88,5 @@ if __name__ == "__main__":
     train_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_train, classes)
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
-    model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels)
+    model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=len(classes))
     train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)

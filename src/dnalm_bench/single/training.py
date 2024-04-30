@@ -536,13 +536,13 @@ def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir
     
 
 class CNNEmbeddingsPredictorBase(torch.nn.Module):
-    def __init__(self, input_channels, hidden_channels, kernel_size):
+    def __init__(self, input_channels, hidden_channels, kernel_size, out_channels=1):
         super().__init__()
 
         self.conv1 = torch.nn.Conv1d(input_channels, hidden_channels, 1, padding=1)
         self.conv2 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
         self.conv3 = torch.nn.Conv1d(hidden_channels, hidden_channels, kernel_size, padding=1)
-        self.fc1 = torch.nn.Linear(hidden_channels, 1)
+        self.fc1 = torch.nn.Linear(hidden_channels, out_channels)
 
     @staticmethod
     def _detokenize(embs, inds):
@@ -581,14 +581,14 @@ class CNNSlicedEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
     
 
 class CNNSequenceBaselinePredictor(torch.nn.Module):
-    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels):
+    def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=1):
         super().__init__()
 
         self.iconv = torch.nn.Conv1d(4, emb_channels, kernel_size=init_kernel_size, padding='same')
         self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
         self.pos_proj = torch.nn.Linear(pos_channels, emb_channels)
         
-        self.trunk = CNNEmbeddingsPredictorBase(emb_channels, hidden_channels, kernel_size)
+        self.trunk = CNNEmbeddingsPredictorBase(emb_channels, hidden_channels, kernel_size, out_channels=out_channels)
 
     def forward(self, x, _):
         x = x.swapaxes(1, 2)
