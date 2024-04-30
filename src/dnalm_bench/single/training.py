@@ -446,6 +446,16 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
             torch.save(model.state_dict(), checkpoint_path)
 
 
+def _collate_batch_classifier(batch):
+    max_seq_len = max(seq_emb.shape[0] for seq_emb, _, _ in batch)
+    seq_embs = torch.zeros(len(batch), max_seq_len, batch[0][0].shape[1])
+    for i, (seq_emb, _, _) in enumerate(batch):
+        seq_embs[i,:seq_emb.shape[0]] = seq_emb
+
+    seq_inds = torch.stack([seq_inds for _, seq_inds, _ in batch])
+    labels = torch.stack([label for _, _, label in batch])
+
+    return seq_embs, seq_inds, labels
 
 def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
