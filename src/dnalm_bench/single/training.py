@@ -261,8 +261,6 @@ class PeaksEmbeddingsDataset(IterableDataset):
         region_idx_to_row = {v: i for i, v in enumerate(valid_inds)}
         query_struct = NCLS(valid_inds, valid_inds + 1, valid_inds)
 
-        bw = pyBigWig.open(self.assay_bw)
-
         chunk_start = 0
         with h5py.File(self.embeddings_h5) as h5:
             chunk_ranges = []
@@ -306,8 +304,6 @@ class PeaksEmbeddingsDataset(IterableDataset):
                     label_ind = self.classes[label]
 
                     yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.tensor(label_ind)
-
-        bw.close()
 
 
 def log1pMSELoss(log_predicted_counts, true_counts):
