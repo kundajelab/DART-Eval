@@ -458,9 +458,9 @@ def _collate_batch_classifier(batch):
     return seq_embs, seq_inds, labels
 
 def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch_classifier, 
                                   pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch_classifier, 
                                 pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False)
 
     os.makedirs(out_dir, exist_ok=True)
