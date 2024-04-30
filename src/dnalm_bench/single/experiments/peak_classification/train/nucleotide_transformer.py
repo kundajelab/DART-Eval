@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, train_predictor
+from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, train_peak_classifier
 
 
 if __name__ == "__main__":
@@ -78,4 +78,4 @@ if __name__ == "__main__":
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
