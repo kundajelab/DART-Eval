@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+import polars as pl
 
 from ....evaluators import HDVariantEmbeddingEvaluator
 from ....components import VariantDataset
@@ -45,13 +46,18 @@ if __name__ == "__main__":
     #               "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"]
     # for variants_bed, likelihood_tsv, genome_fa in zip(variants_beds, likelihood_tsvs, genome_fas):
     out_path = os.path.join(out_dir, f"{dataset}.tsv")
+    allele1_embeddings_path = os.path.join(out_dir, f"{dataset}_allele1_embeddings.npy")
+    allele2_embeddings_path = os.path.join(out_dir, f"{dataset}_allele2_embeddings.npy")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     evaluator = HDVariantEmbeddingEvaluator(model_name, batch_size, num_workers, device)
-    _, allele1_embeddings, allele2_embeddings = evaluator.evaluate(dataset, out_path, progress_bar=True)
+    score_df, allele1_embeddings, allele2_embeddings = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, score_df], how="horizontal")
+    print(out_path)
+    scored_df.write_csv(out_path, separator="\t")
 
     # Save embeddings
-    allele1_embeddings_path = os.path.join(out_dir, f"{dataset}_allele1_embeddings.npy")
-    allele2_embeddings_path = os.path.join(out_dir, f"{dataset}_allele2_embeddings.npy")
     np.save(allele1_embeddings_path, allele1_embeddings)
     np.save(allele2_embeddings_path, allele2_embeddings)

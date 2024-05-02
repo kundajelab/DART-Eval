@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+import polars as pl
 
 from ....evaluators import NTVariantEmbeddingEvaluator
 from ....components import VariantDataset
@@ -55,11 +56,16 @@ if __name__ == "__main__":
     # print(likelihood_tsv)
 
     out_path = os.path.join(out_dir, f"{dataset}.tsv")
-    dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)  
-    _, allele1_embeddings, allele2_embeddings = evaluator.evaluate(dataset, out_path, progress_bar=True)
-
-    # Save embeddings
     allele1_embeddings_path = os.path.join(out_dir, f"{dataset}_allele1_embeddings.npy")
     allele2_embeddings_path = os.path.join(out_dir, f"{dataset}_allele2_embeddings.npy")
+    dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)  
+    score_df, allele1_embeddings, allele2_embeddings = evaluator.evaluate(dataset, out_path, progress_bar=True)
+
+    df = dataset.elements_df
+    scored_df = pl.concat([df, score_df], how="horizontal")
+    print(out_path)
+    scored_df.write_csv(out_path, separator="\t")
+
+    # Save embeddings
     np.save(allele1_embeddings_path, allele1_embeddings)
     np.save(allele2_embeddings_path, allele2_embeddings)
