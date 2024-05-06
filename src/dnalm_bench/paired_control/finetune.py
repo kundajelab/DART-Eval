@@ -144,8 +144,8 @@ def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_
             # test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
             test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
 
-    pred_log_probs = torch.cat(pred_log_probs, dim=0)
-    labels = torch.cat(labels, dim=0)
+    pred_log_probs = torch.cat(pred_log_probs, dim=0).numpy(force=True)
+    labels = torch.cat(labels, dim=0).numpy(force=True)
     
     test_loss /= len(test_dataloader.dataset) * 2
     # test_acc /= len(test_dataloader.dataset) * 2
