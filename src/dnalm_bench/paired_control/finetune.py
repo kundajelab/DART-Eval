@@ -134,8 +134,8 @@ def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_
 
         out_seq = model(seq)
         out_ctrl = model(ctrl)
-        pred_log_probs.append(F.log_softmax(out_seq, dim=1))
-        pred_log_probs.append(F.log_softmax(out_ctrl, dim=1))
+        pred_log_probs.append(F.log_softmax(out_seq, dim=1).to("cpu"))
+        pred_log_probs.append(F.log_softmax(out_ctrl, dim=1).to("cpu"))
         labels.append(one.expand(out_seq.shape[0]))
         labels.append(zero.expand(out_ctrl.shape[0]))
         loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
