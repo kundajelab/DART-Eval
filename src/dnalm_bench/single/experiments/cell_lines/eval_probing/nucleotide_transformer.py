@@ -79,7 +79,7 @@ if __name__ == "__main__":
     checkpoint_num = checkpoint_nums[cell_line]
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictor_eval/cell_line_2114_ft/{model_name}/{cell_line}" 
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictor_eval/cell_line_2114_probing/{model_name}/{cell_line}" 
 
     os.makedirs(out_dir, exist_ok=True)
 
