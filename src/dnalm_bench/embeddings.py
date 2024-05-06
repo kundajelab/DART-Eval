@@ -55,7 +55,7 @@ class HFEmbeddingExtractor(EmbeddingExtractor, metaclass=ABCMeta):
                 tokens,
                 output_hidden_states=True
             )
-            if len(torch_outs.hidden_states) == self.batch_size:
+            if torch.is_tensor(torch_outs.hidden_states):
                 embs = torch_outs.hidden_states
             else:
                 embs = torch_outs.hidden_states[-1]
