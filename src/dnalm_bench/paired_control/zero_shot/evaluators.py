@@ -231,7 +231,6 @@ class HDEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
         return lls
     
 
-
 class CaduceusEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, dataset, batch_size, num_workers, device):
         model_name = f"kuleshov-group/{model_name}"
@@ -247,16 +246,15 @@ class CaduceusEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
     def end_token(self):
         return 1
 
-    def model_fwd(self, tokens, attention_mask):
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
         # print(tokens) ####
         with torch.no_grad():
             torch_outs = self.model(
-                tokens
+                tokens_in
             )
             logits = torch_outs.logits.swapaxes(1, 2)
-            lls = -F.cross_entropy(logits, tokens, reduction="none")
+            lls = -F.cross_entropy(logits, tokens_out, reduction="none")
         return lls
-
 
 
 class MistralEvaluator(HFZeroShotEvaluator, CausalZeroShotScore):
