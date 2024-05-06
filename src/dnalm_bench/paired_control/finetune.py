@@ -131,18 +131,18 @@ def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_
     pred_log_probs = []
     labels = []
     for i, (seq, ctrl, inds) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
-
-        out_seq = model(seq)
-        out_ctrl = model(ctrl)
-        pred_log_probs.append(F.log_softmax(out_seq, dim=1).to("cpu"))
-        pred_log_probs.append(F.log_softmax(out_ctrl, dim=1).to("cpu"))
-        labels.append(one.expand(out_seq.shape[0]).to("cpu"))
-        labels.append(zero.expand(out_ctrl.shape[0]).to("cpu"))
-        loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
-        loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
-        test_loss += (loss_seq + loss_ctrl).item()
-        # test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
-        test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
+        with torch.no_grad():
+            out_seq = model(seq)
+            out_ctrl = model(ctrl)
+            pred_log_probs.append(F.log_softmax(out_seq, dim=1))
+            pred_log_probs.append(F.log_softmax(out_ctrl, dim=1))
+            labels.append(one.expand(out_seq.shape[0]))
+            labels.append(zero.expand(out_ctrl.shape[0]))
+            loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
+            loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
+            test_loss += (loss_seq + loss_ctrl).item()
+            # test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
+            test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
 
     test_loss /= len(test_dataloader.dataset) * 2
     # test_acc /= len(test_dataloader.dataset) * 2
