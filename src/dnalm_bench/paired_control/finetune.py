@@ -13,10 +13,7 @@ from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertConfig, AutoModel
 from tqdm import tqdm
 import polars as pl
-import h5py
-import pyfaidx
-import pyBigWig
-from scipy.stats import wilcoxon
+from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 
 from ..finetune import HFClassifierModel, LoRAModule
 from ..utils import onehot_to_chars, one_hot_encode, NoModule, copy_if_not_exists
@@ -129,29 +126,39 @@ def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_
 
     metrics = {}
     test_loss = 0
-    test_acc = 0
+    # test_acc = 0
     test_acc_paired = 0
+    pred_log_probs = []
+    labels = []
     for i, (seq, ctrl, inds) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
 
         out_seq = model(seq)
         out_ctrl = model(ctrl)
+        pred_log_probs.append(F.log_softmax(out_seq, dim=1))
+        pred_log_probs.append(F.log_softmax(out_ctrl, dim=1))
+        labels.append(one.expand(out_seq.shape[0]))
+        labels.append(zero.expand(out_ctrl.shape[0]))
         loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
         loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
         test_loss += (loss_seq + loss_ctrl).item()
-        test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
+        # test_acc += (out_seq.argmax(1) == 1).sum().item() + (out_ctrl.argmax(1) == 0).sum().item()
         test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
 
-        # for ind, seq_logits, ctrl_logits in zip(inds, out_seq, out_ctrl):
-        #     f.write(f"{ind}\t{seq_logits[1]}\t{seq_logits[0]}\t{ctrl_logits[1]}\t{ctrl_logits[0]}\n")
-        # f.flush()
-
     test_loss /= len(test_dataloader.dataset) * 2
-    test_acc /= len(test_dataloader.dataset) * 2
+    # test_acc /= len(test_dataloader.dataset) * 2
     test_acc_paired /= len(test_dataloader.dataset)
+
+    test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / (len(test_dataloader.dataset) * 2)
+    test_auroc = roc_auc_score(labels, pred_log_probs)
+    test_auprc = average_precision_score(labels, pred_log_probs)
+    test_mcc = matthews_corrcoef(labels, pred_log_probs.argmax(dim=1))
 
     metrics["test_loss"] = test_loss
     metrics["test_acc"] = test_acc
     metrics["test_acc_paired"] = test_acc_paired
+    metrics["test_auroc"] = test_auroc
+    metrics["test_auprc"] = test_auprc
+    metrics["test_mcc"] = test_mcc
 
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
