@@ -12,9 +12,11 @@ if __name__ == "__main__":
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 
     cell_line = sys.argv[1] #cell line name
-    category = sys.argv[2] #peaks or nonpeaks
-    # elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_{category}.bed"
-    elements_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_{category}.bed"
+    category = sys.argv[2] #peaks, nonpeaks, or idr
+    if category == "idr":
+        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"
+    else:
+        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_{category}.bed"
     # chroms = ["chr22"]
     chroms = None
     batch_size = 512

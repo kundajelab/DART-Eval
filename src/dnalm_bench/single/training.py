@@ -1,22 +1,20 @@
-# from abc import ABCMeta, abstractmethod
 import os
 import math
 import heapq
 import hashlib
 import warnings
+import json
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import Dataset, DataLoader, IterableDataset, get_worker_info
 import polars as pl
-import pyfaidx
 import pyBigWig
 import h5py
 from ncls import NCLS
-# from scipy.stats import wilcoxon
+from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 from tqdm import tqdm
 
 from ..utils import copy_if_not_exists
@@ -444,6 +442,120 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+
+
+def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
+                                       num_workers, prefetch_factor, device, progress_bar=False, seed=0):
+
+    torch.manual_seed(seed)
+    
+    model.to(device)
+
+    model.eval()
+
+    with torch.no_grad():
+        test_loss_pos = 0
+        test_counts_pred_pos = []
+        test_counts_true_pos = []
+        test_pos_dataloader = DataLoader(pos_dataset, batch_size=batch_size, num_workers=num_workers,
+                                         pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_pos_dataloader, disable=(not progress_bar), desc="test_pos", ncols=120)):
+            seq_emb = seq_emb.to(device)
+            seq_inds = seq_inds.to(device)
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq_emb, seq_inds)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_pos += loss.item()
+            test_counts_pred_pos.append(log1p_counts)
+            test_counts_true_pos.append(true_counts)
+
+        test_counts_pred_pos = torch.cat(test_counts_pred_pos, dim=0)
+        test_counts_true_pos = torch.cat(test_counts_true_pos, dim=0)
+        test_pearson_pos = counts_pearson(test_counts_pred_pos, test_counts_true_pos)
+        test_spearman_pos = counts_spearman(test_counts_pred_pos, test_counts_true_pos)
+        test_loss_pos /= len(test_pos_dataloader)
+
+        test_loss_idr = 0
+        test_counts_pred_idr = []
+        test_counts_true_idr = []
+        test_idr_dataloader = DataLoader(idr_dataset, batch_size=batch_size, num_workers=num_workers,
+                                            pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_idr_dataloader, disable=(not progress_bar), desc="test_idr", ncols=120)):
+            seq_emb = seq_emb.to(device)
+            seq_inds = seq_inds.to(device)
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq_emb, seq_inds)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_pos += loss.item()
+            test_counts_pred_pos.append(log1p_counts)
+            test_counts_true_pos.append(true_counts)
+
+        test_counts_pred_idr = torch.cat(test_counts_pred_idr, dim=0)
+        test_counts_true_idr = torch.cat(test_counts_true_idr, dim=0)
+        test_pearson_idr = counts_pearson(test_counts_pred_idr, test_counts_true_idr)
+        test_spearman_idr = counts_spearman(test_counts_pred_idr, test_counts_true_idr)
+        test_loss_idr /= len(test_idr_dataloader)
+
+        test_loss_neg = 0
+        test_counts_pred_neg = []
+        test_counts_true_neg = []
+        test_neg_dataloader = DataLoader(neg_dataset, batch_size=batch_size, num_workers=num_workers,
+                                            pin_memory=True, prefetch_factor=prefetch_factor)
+        for i, (seq, track) in enumerate(tqdm(test_neg_dataloader, disable=(not progress_bar), desc="test_neg", ncols=120)):
+            track = track.to(device)
+            true_counts = track.sum(dim=1)
+            
+            log1p_counts = model(seq).squeeze(1)
+            loss = log1pMSELoss(log1p_counts, true_counts)
+
+            test_loss_neg += loss.item()
+            test_counts_pred_neg.append(log1p_counts)
+            test_counts_true_neg.append(true_counts)
+
+        test_counts_pred_neg = torch.cat(test_counts_pred_neg, dim=0)
+        test_counts_true_neg = torch.cat(test_counts_true_neg, dim=0)
+        test_pearson_neg = counts_pearson(test_counts_pred_neg, test_counts_true_neg)
+        test_spearman_neg = counts_spearman(test_counts_pred_neg, test_counts_true_neg)
+        test_loss_neg /= len(test_neg_dataloader)
+
+        test_loss_all = (test_loss_pos + test_loss_neg) / 2
+        test_counts_pred_all = torch.cat([test_counts_pred_pos, test_counts_pred_neg], dim=0)
+        test_counts_true_all = torch.cat([test_counts_true_pos, test_counts_true_neg], dim=0)
+        test_pearson_all = counts_pearson(test_counts_pred_all, test_counts_true_all)
+        test_spearman_all = counts_spearman(test_counts_pred_all, test_counts_true_all)
+
+        test_counts_pred_cls = torch.cat([test_counts_pred_idr, test_counts_pred_neg], dim=0)
+        test_labels = torch.cat([torch.ones_like(test_counts_pred_idr), torch.zeros_like(test_counts_pred_neg)], dim=0)
+        test_auroc = roc_auc_score(test_labels.numpy(force=True), test_counts_pred_cls.numpy(force=True))
+        test_auprc = average_precision_score(test_labels.numpy(force=True), test_counts_pred_cls.numpy(force=True))
+
+        metrics = {
+            "test_loss_pos": test_loss_pos,
+            "test_loss_idr": test_loss_idr,
+            "test_loss_neg": test_loss_neg,
+            "test_loss_all": test_loss_all,
+            "test_pearson_pos": test_pearson_pos,
+            "test_pearson_idr": test_pearson_idr,
+            "test_pearson_neg": test_pearson_neg,
+            "test_pearson_all": test_pearson_all,
+            "test_spearman_pos": test_spearman_pos,
+            "test_spearman_idr": test_spearman_idr,
+            "test_spearman_neg": test_spearman_neg,
+            "test_spearman_all": test_spearman_all,
+            "test_auroc": test_auroc,
+            "test_auprc": test_auprc,
+        }
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
 
 
 def _collate_batch_classifier(batch):
