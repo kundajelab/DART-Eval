@@ -295,10 +295,10 @@ def evaluate_probing_classifier(test_dataset, model, out_path, batch_size,num_wo
     test_loss /= len(test_dataloader.dataset) * 2
     test_acc_paired /= len(test_dataloader.dataset)
 
-    test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / (len(test_dataloader.dataset) * 2)
+    test_acc = (pred_log_probs.argmax(axis=1) == labels).sum().item() / (len(test_dataloader.dataset) * 2)
     test_auroc = roc_auc_score(labels, pred_log_probs)
     test_auprc = average_precision_score(labels, pred_log_probs)
-    test_mcc = matthews_corrcoef(labels, pred_log_probs.argmax(dim=1))
+    test_mcc = matthews_corrcoef(labels, pred_log_probs.argmax(axis=1))
 
     metrics["test_loss"] = test_loss
     metrics["test_acc"] = test_acc
