@@ -3,13 +3,13 @@ import sys
 
 import torch
 
-from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, eval_peak_classifier
+from ....training import PeaksEmbeddingsDataset, CNNSequenceBaselinePredictor, eval_peak_classifier
 
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "DNABERT-2-117M"
+    model_name = "hyenadna-large-1m-seqlen-hf"
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
@@ -55,9 +55,15 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 768
+    n_filters = 64
+
+    emb_channels = 256
     hidden_channels = 32
+    pos_channels = 1
     kernel_size = 8
+    init_kernel_size = 41
+
+    seq_len = 2114
 
     crop = 557
 
@@ -79,7 +85,7 @@ if __name__ == "__main__":
 
     test_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, modes[eval_mode], classes)
 
-    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
+    model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=len(classes))
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume)
         

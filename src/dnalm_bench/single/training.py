@@ -17,7 +17,7 @@ from ncls import NCLS
 from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 from tqdm import tqdm
 
-from ..utils import copy_if_not_exists
+from ..utils import copy_if_not_exists, log1mexp
 
 class AssayEmbeddingsDataset(IterableDataset):
     _elements_dtypes = {
@@ -645,7 +645,69 @@ def train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir
             optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
             torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
 
-    
+
+def eval_peak_classifier(test_dataset, model, out_path, batch_size, 
+                                    num_workers, prefetch_factor, device, progress_bar=False, seed=0):
+
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, 
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+
+    torch.manual_seed(seed)
+
+    model.to(device)
+
+    criterion = torch.nn.CrossEntropyLoss()
+            
+    test_loss = 0
+    pred_log_probs = []
+    labels = []
+    model.eval()
+    with torch.no_grad():
+        for i, (seq_emb, seq_inds, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
+            seq_emb = seq_emb.to(device)
+            seq_inds = seq_inds.to(device)
+            labels_batch = labels_batch.to(device)
+            
+            pred = model(seq_emb, seq_inds)
+            loss = criterion(pred, labels_batch)
+
+            test_loss += loss.item()
+            pred_log_probs.append(F.log_softmax(pred, dim=1))
+            labels.append(labels_batch)
+
+    test_loss /= len(test_dataloader.dataset)
+
+    pred_log_probs = torch.cat(pred_log_probs, dim=0)
+    log_probs_others = log1mexp(pred_log_probs)
+    pred_log_odds = pred_log_probs - log_probs_others
+    labels = torch.cat(labels, dim=0)
+    test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
+
+    metrics = {"test_loss": test_loss, "test_acc": test_acc}
+
+    for class_name, class_idx in test_dataloader.dataset.classes.items():
+        class_log_odds = pred_log_odds[:, class_idx]
+        class_preds = (class_log_odds >= 0).float()
+        class_labels = (labels == class_idx).float()
+
+        class_log_odds = class_log_odds.numpy(force=True)
+        class_preds = class_preds.numpy(force=True)
+        class_labels = class_labels.numpy(force=True)
+
+        class_auroc = roc_auc_score(class_labels, class_log_odds)
+        class_auprc = average_precision_score(class_labels, class_log_odds)
+        class_mcc = matthews_corrcoef(class_labels, class_preds)
+        class_acc = (class_preds == class_labels).sum().item() / len(class_labels)
+
+        metrics[f"class_{class_name}_auroc"] = class_auroc
+        metrics[f"class_{class_name}_auprc"] = class_auprc
+        metrics[f"class_{class_name}_mcc"] = class_mcc
+        metrics[f"class_{class_name}_acc"] = class_acc
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
 
 class CNNEmbeddingsPredictorBase(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size, out_channels=1):
