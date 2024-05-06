@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 768
+    input_channels = 256
     hidden_channels = 32
     kernel_size = 8
 
