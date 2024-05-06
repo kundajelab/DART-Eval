@@ -19,7 +19,7 @@ import pyBigWig
 from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 
 from ..finetune import HFClassifierModel, LoRAModule
-from ..utils import onehot_to_chars, one_hot_encode, NoModule
+from ..utils import onehot_to_chars, one_hot_encode, NoModule, log1mexp
 
 
 class ChromatinEndToEndDataset(Dataset):
@@ -628,24 +628,31 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
     test_loss /= len(test_dataloader.dataset)
 
     pred_log_probs = torch.cat(pred_log_probs, dim=0)
+    log_probs_others = log1mexp(pred_log_probs)
+    pred_log_odds = pred_log_probs - log_probs_others
     labels = torch.cat(labels, dim=0)
     test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
 
     metrics = {"test_loss": test_loss, "test_acc": test_acc}
 
-    for label, label_idx in test_dataloader.dataset.classes.items():
-        label_preds = pred_log_probs[:, label_idx]
-        label_pred_bin = (pred_log_probs.argmax(dim=1) == label_idx).float()
-        label_labels = (labels == label_idx).float()
-        label_auroc = roc_auc_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
-        label_auprc = average_precision_score(label_labels.numpy(force=True), label_preds.numpy(force=True))
-        label_mcc = matthews_corrcoef(label_labels.numpy(force=True), label_pred_bin.numpy(force=True))
-        label_acc = (label_pred_bin == label_labels).sum().item() / len(label_labels)
+    for class_name, class_idx in test_dataloader.dataset.classes.items():
+        class_log_odds = pred_log_odds[:, class_idx]
+        class_preds = (class_log_odds >= 0).float()
+        class_labels = (labels == class_idx).float()
 
-        metrics[f"label_{label}_auroc"] = label_auroc
-        metrics[f"label_{label}_auprc"] = label_auprc
-        metrics[f"label_{label}_mcc"] = label_mcc
-        metrics[f"label_{label}_acc"] = label_acc
+        class_log_odds = class_log_odds.numpy(force=True)
+        class_preds = class_preds.numpy(force=True)
+        class_labels = class_labels.numpy(force=True)
+
+        class_auroc = roc_auc_score(class_labels, class_log_odds)
+        class_auprc = average_precision_score(class_labels, class_log_odds)
+        class_mcc = matthews_corrcoef(class_labels, class_preds)
+        class_acc = (class_preds == class_labels).sum().item() / len(class_labels)
+
+        metrics[f"class_{class_name}_auroc"] = class_auroc
+        metrics[f"class_{class_name}_auprc"] = class_auprc
+        metrics[f"class_{class_name}_mcc"] = class_mcc
+        metrics[f"class_{class_name}_acc"] = class_acc
 
     with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)

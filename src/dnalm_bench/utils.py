@@ -1,7 +1,9 @@
 import sys
 import shutil
+import math
 
 import numpy as np
+import torch
 
 ALPHABET = np.array(["A","C","G","T"], dtype="S1")
 
@@ -84,3 +86,15 @@ def dinucleotide_shuffle(seq, rng):
     shuffled = (result[:,None] == SEQ_TOKENS[None,:]).astype(np.int8) # Convert tokens back to one-hot
 
     return shuffled
+
+def log1mexp(x):
+    """
+    Numerically accurate evaluation of log(1 - exp(x)) for x < 0.
+    See [Maechler2012accurate]_ for details.
+    """
+    mask = -math.log(2) < x  # x < 0
+    return torch.where(
+        mask,
+        (-x.expm1()).log(),
+        (-x.exp()).log1p(),
+    )
