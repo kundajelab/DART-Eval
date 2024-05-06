@@ -3,14 +3,14 @@ import sys
 
 import torch
 
-from ...training import EmbeddingsDataset, CNNEmbeddingsClassifier, evaluate_probing_classifier
+from ...training import EmbeddingsDataset, CNNSequenceBaselineClassifier, evaluate_probing_classifier
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "DNABERT-2-117M"
+    model_name = "nucleotide-transformer-v2-500m-multi-species"
 
     embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
@@ -56,9 +56,14 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 768
+    n_filters = 64
+    emb_channels = 256
     hidden_channels = 32
+    pos_channels = 1
     kernel_size = 8
+    init_kernel_size = 41
+
+    seq_len = 350
 
     model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v1"
     checkpoint_num = None
@@ -71,7 +76,7 @@ if __name__ == "__main__":
 
     test_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, modes[eval_mode])
 
-    model = CNNEmbeddingsClassifier(input_channels, hidden_channels, kernel_size)
+    model = CNNSequenceBaselineClassifier(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
     metrics = evaluate_probing_classifier(test_dataset, model, out_path, batch_size, num_workers, prefetch_factor, device, progress_bar=True)
