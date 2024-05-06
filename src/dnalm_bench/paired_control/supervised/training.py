@@ -14,6 +14,7 @@ import polars as pl
 import pyfaidx
 import h5py
 from ncls import NCLS
+from sklearn.metrics import roc_auc_score, average_precision_score, matthews_corrcoef
 # from scipy.stats import wilcoxon
 from tqdm import tqdm
 
@@ -242,6 +243,73 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
+
+
+def evaluate_probing_classifier(test_dataset, model, out_path, batch_size,num_workers, prefetch_factor, device, progress_bar=False):
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,
+                                  pin_memory=True, prefetch_factor=prefetch_factor)
+
+    zero = torch.tensor(0, dtype=torch.long, device=device)[None]
+    one = torch.tensor(1, dtype=torch.long, device=device)[None]
+
+    model.to(device)
+    
+    # os.makedirs(out_dir, exist_ok=True)
+    # scores_path = os.path.join(out_dir, "scores.tsv")
+    # metrics_path = os.path.join(out_dir, "metrics.json")
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    # with open(scores_path, "w") as f:
+    #     f.write("idx\tseq_pos_logit\tseq_neg_logit\tctrl_pos_logit\tctrl_neg_logit\n")
+
+    metrics = {}
+    test_loss = 0
+    # test_acc = 0
+    test_acc_paired = 0
+    pred_log_probs = []
+    labels = []
+    for i, (seq_emb, ctrl_emb, seq_inds, ctrl_inds) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="train", ncols=120)):
+        with torch.no_grad():
+            seq_emb = seq_emb.to(device)
+            ctrl_emb = ctrl_emb.to(device)
+            seq_inds = seq_inds.to(device)
+            ctrl_inds = ctrl_inds.to(device)
+
+            out_seq = model(seq_emb, seq_inds)
+            out_ctrl = model(ctrl_emb, ctrl_inds)
+
+            pred_log_probs.append(F.log_softmax(out_seq, dim=1))
+            pred_log_probs.append(F.log_softmax(out_ctrl, dim=1))
+            labels.append(one.expand(out_seq.shape[0]))
+            labels.append(zero.expand(out_ctrl.shape[0]))
+            loss_seq = criterion(out_seq, one.expand(out_seq.shape[0]))
+            loss_ctrl = criterion(out_ctrl, zero.expand(out_ctrl.shape[0]))
+            test_loss += (loss_seq + loss_ctrl).item()
+            test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
+
+    pred_log_probs = torch.cat(pred_log_probs, dim=0)
+    labels = torch.cat(labels, dim=0)
+
+    test_loss /= len(test_dataloader.dataset) * 2
+    test_acc_paired /= len(test_dataloader.dataset)
+
+    test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / (len(test_dataloader.dataset) * 2)
+    test_auroc = roc_auc_score(labels, pred_log_probs)
+    test_auprc = average_precision_score(labels, pred_log_probs)
+    test_mcc = matthews_corrcoef(labels, pred_log_probs.argmax(dim=1))
+
+    metrics["test_loss"] = test_loss
+    metrics["test_acc"] = test_acc
+    metrics["test_acc_paired"] = test_acc_paired
+    metrics["test_auroc"] = test_auroc
+    metrics["test_auprc"] = test_auprc
+    metrics["test_mcc"] = test_mcc
+
+    with open(out_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
 
 
 # class RMSNorm(torch.nn.Module):
