@@ -145,15 +145,15 @@ def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_
             test_acc_paired += ((out_seq - out_ctrl).argmax(1) == 1).sum().item()
 
     pred_log_probs = torch.cat(pred_log_probs, dim=0).numpy(force=True)
+    pred_logits = pred_log_probs[:,1] - pred_log_probs[:,0]
     labels = torch.cat(labels, dim=0).numpy(force=True)
-    
+
     test_loss /= len(test_dataloader.dataset) * 2
-    # test_acc /= len(test_dataloader.dataset) * 2
     test_acc_paired /= len(test_dataloader.dataset)
 
     test_acc = (pred_log_probs.argmax(axis=1) == labels).sum().item() / (len(test_dataloader.dataset) * 2)
-    test_auroc = roc_auc_score(labels, pred_log_probs)
-    test_auprc = average_precision_score(labels, pred_log_probs)
+    test_auroc = roc_auc_score(labels, pred_logits)
+    test_auprc = average_precision_score(labels, pred_logits)
     test_mcc = matthews_corrcoef(labels, pred_log_probs.argmax(axis=1))
 
     metrics["test_loss"] = test_loss
