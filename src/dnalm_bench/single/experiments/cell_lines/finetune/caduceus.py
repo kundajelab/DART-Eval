@@ -22,7 +22,7 @@ if __name__ == "__main__":
     assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
 
     batch_size = 12
-    accumulate = 8
+    accumulate = 32
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
     
-    lr = 1e-5
+    lr = 1e-4
     wd = 0.01
     num_epochs = 45
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v1" 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v10"
+    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v11"
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v0"        
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
 
