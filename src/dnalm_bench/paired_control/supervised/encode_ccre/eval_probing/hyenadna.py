@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import pandas as pd
+import numpy as np
 
 from ...training import EmbeddingsDataset, CNNSlicedEmbeddingsClassifier, evaluate_probing_classifier
 
@@ -61,7 +63,11 @@ if __name__ == "__main__":
     kernel_size = 8
 
     model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v1"
-    checkpoint_num = None
+
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
+    
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/encode_ccre/eval_probing/ccre_test_regions_350_jitter_0/{model_name}"    
