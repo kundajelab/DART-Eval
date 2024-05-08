@@ -662,13 +662,15 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
     pred_log_probs = []
     labels = []
     model.eval()
+    pred_logits = []
     with torch.no_grad():
-        for i, (seq_emb, seq_inds, labels) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
+        for i, (seq_emb, seq_inds, labels_batch) in enumerate(tqdm(test_dataloader, disable=(not progress_bar), desc="test", ncols=120)):
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
             labels_batch = labels_batch.to(device)
             
             pred = model(seq_emb, seq_inds)
+            pred_logits.append(pred)
             loss = criterion(pred, labels_batch)
 
             test_loss += loss.item()
@@ -683,6 +685,9 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
     labels = torch.cat(labels, dim=0)
     test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
 
+    pred_labels = pred_log_probs.argmax(dim=1)
+    print("pred labels", torch.unique(pred_labels))
+
     metrics = {"test_loss": test_loss, "test_acc": test_acc}
 
     for class_name, class_idx in test_dataloader.dataset.classes.items():
@@ -693,6 +698,13 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
         class_log_odds = class_log_odds.numpy(force=True)
         class_preds = class_preds.numpy(force=True)
         class_labels = class_labels.numpy(force=True)
+
+        print("class name", class_name)
+        print("unique class_preds", np.unique(class_preds))
+        print("unique values in pred_log_odds", torch.unique(pred_log_odds))
+        print("unique values in class_log_odds", np.unique(class_log_odds))
+        print("unique class labels", np.unique(class_labels))
+        print("unique multiclass labels", torch.unique(labels))
 
         class_auroc = roc_auc_score(class_labels, class_log_odds)
         class_auprc = average_precision_score(class_labels, class_log_odds)

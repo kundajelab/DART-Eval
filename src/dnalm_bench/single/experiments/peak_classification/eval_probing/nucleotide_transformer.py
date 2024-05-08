@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import pandas as pd
+import numpy as np
 
 from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, eval_peak_classifier
 
@@ -66,7 +68,11 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
     model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
-    checkpoint_num = None
+
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
+
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     classes = {
