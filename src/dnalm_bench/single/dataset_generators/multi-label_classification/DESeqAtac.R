@@ -16,7 +16,7 @@ print(cell_type)
 
 cts_unrounded <- as.matrix(read.csv("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/merged_counts_matrix.csv", row.names="peak"))
 cts <- round(cts_unrounded)
-coldata <- as.matrix(read.csv(sprintf("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/%s/%s_deseq_input_coldata.csv", cell_type, cell_type)))
+coldata <- as.matrix(read.csv(sprintf("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/%s_deseq_input_coldata.csv", cell_type)))
 
 dds <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,

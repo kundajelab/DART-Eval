@@ -681,12 +681,12 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
 
     pred_log_probs = torch.cat(pred_log_probs, dim=0)
     log_probs_others = log1mexp(pred_log_probs)
+    log_probs_others = torch.nan_to_num(log_probs_others, neginf=-999)
     pred_log_odds = pred_log_probs - log_probs_others
     labels = torch.cat(labels, dim=0)
     test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
 
     pred_labels = pred_log_probs.argmax(dim=1)
-    print("pred labels", torch.unique(pred_labels))
 
     metrics = {"test_loss": test_loss, "test_acc": test_acc}
 
@@ -698,13 +698,6 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
         class_log_odds = class_log_odds.numpy(force=True)
         class_preds = class_preds.numpy(force=True)
         class_labels = class_labels.numpy(force=True)
-
-        print("class name", class_name)
-        print("unique class_preds", np.unique(class_preds))
-        print("unique values in pred_log_odds", torch.unique(pred_log_odds))
-        print("unique values in class_log_odds", np.unique(class_log_odds))
-        print("unique class labels", np.unique(class_labels))
-        print("unique multiclass labels", torch.unique(labels))
 
         class_auroc = roc_auc_score(class_labels, class_log_odds)
         class_auprc = average_precision_score(class_labels, class_log_odds)

@@ -248,7 +248,7 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 
 def evaluate_probing_classifier(test_dataset, model, out_path, batch_size,num_workers, prefetch_factor, device, progress_bar=False):
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,
-                                  pin_memory=True, prefetch_factor=prefetch_factor)
+                                  pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch)
 
     zero = torch.tensor(0, dtype=torch.long, device=device)[None]
     one = torch.tensor(1, dtype=torch.long, device=device)[None]

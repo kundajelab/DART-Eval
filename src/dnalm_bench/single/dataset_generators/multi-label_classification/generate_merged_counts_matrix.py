@@ -14,9 +14,12 @@ for f in glob.glob(counts_matrices)[1:]:
 merged_df.to_csv("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/merged_counts_matrix.csv", index=False)
 
 sample_names = list(merged_df.columns[1:])
+print(sample_names)
 
 def create_dataframe(samples, index):
     # Extract the main sample and its cell type
+    print(samples)
+    print(index)
     main_sample = samples[index]
     main_cell_type = main_sample.split('_')[0]
     print(main_cell_type)
@@ -30,6 +33,6 @@ def create_dataframe(samples, index):
 
     return df, main_cell_type
 
-for i in range(0, 14, 3):
+for i in range(0, len(sample_names), 3):
     df, cell_type = create_dataframe(sample_names, i)
     df.to_csv(f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/{cell_type}_deseq_input_coldata.csv", index=False)
