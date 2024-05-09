@@ -7,9 +7,9 @@ from ....components import SimpleSequence
 
 if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"
-    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    # genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 
     cell_line = sys.argv[1] #cell line name
     category = sys.argv[2] #peaks, nonpeaks, or idr
@@ -25,13 +25,15 @@ if __name__ == "__main__":
     device = "cuda"
 
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
-    # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
-    out_dir = f"/home/atwang/dnalm_bench_data/embeddings/cell_line_2114/{model_name}/"
+    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
+    # out_dir = f"/home/atwang/dnalm_bench_data/embeddings/cell_line_2114/{model_name}/"
     # out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50"
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{cell_line}_{category}.h5")
 
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
+    cache_dir = "/scratch/groups/akundaje/dnalm_benchmark/dnalm_bench_cache"
+    os.makedirs(cache_dir, exist_ok=True)
 
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed, cache_dir=cache_dir)
     extractor = HyenaDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)

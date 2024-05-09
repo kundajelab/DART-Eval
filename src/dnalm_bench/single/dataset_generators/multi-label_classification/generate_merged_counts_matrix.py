@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 from collections import Counter
 
-counts_matrices = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/*/*.csv"
+counts_matrices = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/*/ENCF*.csv"
 
 merged_df = pd.read_csv(glob.glob(counts_matrices)[0], header=0)
 for f in glob.glob(counts_matrices)[1:]:

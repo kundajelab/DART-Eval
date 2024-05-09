@@ -493,8 +493,8 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
             loss = log1pMSELoss(log1p_counts, true_counts)
 
             test_loss_pos += loss.item()
-            test_counts_pred_pos.append(log1p_counts)
-            test_counts_true_pos.append(true_counts)
+            test_counts_pred_idr.append(log1p_counts)
+            test_counts_true_idr.append(true_counts)
 
         test_counts_pred_idr = torch.cat(test_counts_pred_idr, dim=0)
         test_counts_true_idr = torch.cat(test_counts_true_idr, dim=0)
@@ -507,11 +507,13 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
         test_counts_true_neg = []
         test_neg_dataloader = DataLoader(neg_dataset, batch_size=batch_size, num_workers=num_workers,
                                             pin_memory=True, prefetch_factor=prefetch_factor)
-        for i, (seq, track) in enumerate(tqdm(test_neg_dataloader, disable=(not progress_bar), desc="test_neg", ncols=120)):
+        for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_neg_dataloader, disable=(not progress_bar), desc="test_neg", ncols=120)):
+            seq_emb = seq_emb.to(device)
+            seq_inds = seq_inds.to(device)
             track = track.to(device)
             true_counts = track.sum(dim=1)
             
-            log1p_counts = model(seq).squeeze(1)
+            log1p_counts = model(seq_emb, seq_inds)#.squeeze(1)  
             loss = log1pMSELoss(log1p_counts, true_counts)
 
             test_loss_neg += loss.item()

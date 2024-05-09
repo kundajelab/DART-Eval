@@ -3,7 +3,8 @@ import pandas as pd
 import sys
 
 # Load the peaks from a BED file
-peaks_file = '/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/accepted_peaks.tsv'
+# peaks_file = '/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/accepted_peaks.tsv'
+peaks_file = '/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/old_da_peaks.tsv'
 
 data_types = {
     'chrom': 'str',
