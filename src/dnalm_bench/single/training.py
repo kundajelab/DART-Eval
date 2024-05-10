@@ -492,7 +492,7 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
             log1p_counts = model(seq_emb, seq_inds)
             loss = log1pMSELoss(log1p_counts, true_counts)
 
-            test_loss_pos += loss.item()
+            test_loss_idr += loss.item()
             test_counts_pred_idr.append(log1p_counts)
             test_counts_true_idr.append(true_counts)
 
