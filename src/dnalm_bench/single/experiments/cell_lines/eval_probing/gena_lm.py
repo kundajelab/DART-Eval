@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import numpy as np
+import pandas as pd
 
 from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNEmbeddingsPredictor
 
@@ -69,14 +71,18 @@ if __name__ == "__main__":
     crop = 557
 
     model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3"
-    checkpoint_nums = {
-        "GM12878": None,
-        "H1ESC": None,
-        "HEPG2": None,
-        "IMR90": None,
-        "K562": None
-    }
-    checkpoint_num = checkpoint_nums[cell_line]
+    # checkpoint_nums = {
+    #     "GM12878": None,
+    #     "H1ESC": None,
+    #     "HEPG2": None,
+    #     "IMR90": None,
+    #     "K562": None
+    # }
+
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
+
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictor_eval/cell_line_2114_probing/{model_name}/{cell_line}" 

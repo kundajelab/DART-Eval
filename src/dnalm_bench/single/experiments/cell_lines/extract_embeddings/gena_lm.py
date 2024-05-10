@@ -7,8 +7,8 @@ from ....components import SimpleSequence
 
 if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
-    #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     cell_line = sys.argv[1] #cell line name
     category = sys.argv[2] #peaks, nonpeaks, or idr
     if category == "idr":
