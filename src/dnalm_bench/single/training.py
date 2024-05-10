@@ -458,7 +458,7 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
         test_counts_pred_pos = []
         test_counts_true_pos = []
         test_pos_dataloader = DataLoader(pos_dataset, batch_size=batch_size, num_workers=num_workers,
-                                         pin_memory=True, prefetch_factor=prefetch_factor)
+                                         pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch)
         for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_pos_dataloader, disable=(not progress_bar), desc="test_pos", ncols=120)):
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
@@ -482,7 +482,7 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
         test_counts_pred_idr = []
         test_counts_true_idr = []
         test_idr_dataloader = DataLoader(idr_dataset, batch_size=batch_size, num_workers=num_workers,
-                                            pin_memory=True, prefetch_factor=prefetch_factor)
+                                            pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch)
         for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_idr_dataloader, disable=(not progress_bar), desc="test_idr", ncols=120)):
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
@@ -506,7 +506,7 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
         test_counts_pred_neg = []
         test_counts_true_neg = []
         test_neg_dataloader = DataLoader(neg_dataset, batch_size=batch_size, num_workers=num_workers,
-                                            pin_memory=True, prefetch_factor=prefetch_factor)
+                                            pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch)
         for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_neg_dataloader, disable=(not progress_bar), desc="test_neg", ncols=120)):
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
