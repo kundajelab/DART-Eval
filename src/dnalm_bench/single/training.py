@@ -458,7 +458,7 @@ def evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch
         test_counts_pred_pos = []
         test_counts_true_pos = []
         test_pos_dataloader = DataLoader(pos_dataset, batch_size=batch_size, num_workers=num_workers,
-                                         pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch)
+                                         pin_memory=True, prefetch_factor=prefetch_factor, collate_fn=_collate_batch_classifier)
         for i, (seq_emb, seq_inds, track) in enumerate(tqdm(test_pos_dataloader, disable=(not progress_bar), desc="test_pos", ncols=120)):
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
