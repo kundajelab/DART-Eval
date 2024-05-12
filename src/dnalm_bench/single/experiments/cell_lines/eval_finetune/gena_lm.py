@@ -19,7 +19,7 @@ if __name__ == "__main__":
     nonpeaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
     assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
 
-    batch_size = 24
+    batch_size = 512
     num_workers = 4
     prefetch_factor = 2
     # num_workers = 0 ####
