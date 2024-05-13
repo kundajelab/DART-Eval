@@ -22,7 +22,7 @@ if __name__ == "__main__":
     assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
     # assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
 
-    batch_size = 2048
+    batch_size = 1024
     num_workers = 0
     prefetch_factor = None
     # num_workers = 0 ####
