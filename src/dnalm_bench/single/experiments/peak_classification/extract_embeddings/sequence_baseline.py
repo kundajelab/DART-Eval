@@ -16,8 +16,8 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_path = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
+    out_path = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification_sequence_baseline/{model_name}.h5"
 
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
-    extractor = SequenceBaselineSimpleEmbeddingExtractor(model_name, batch_size, num_workers, device)
+    extractor = SequenceBaselineSimpleEmbeddingExtractor(batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)

@@ -3,14 +3,14 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNSequenceBaselinePredictor, train_predictor
+from ....training import PeaksEmbeddingsDataset, CNNSequenceBaselinePredictor, train_predictor, train_peak_classifier
 
 
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "sequence_baseline"
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
+    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification_sequence_baseline/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 2048
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     kernel_size = 8
     init_kernel_size = 41
 
-    seq_len = 2114
+    seq_len = 500
 
     # lr = 5e-4
     lr = 1e-3
@@ -89,4 +89,4 @@ if __name__ == "__main__":
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
     model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=len(classes))
-    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
