@@ -16,7 +16,7 @@ if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
 
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    idr_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_idr.h5"
+    idr_h5 = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_idr.h5"
     nonpeaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
     peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
     idr_peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"

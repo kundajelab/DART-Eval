@@ -652,7 +652,8 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
                                     num_workers, prefetch_factor, device, progress_bar=False, seed=0):
 
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, 
-                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True,
+                                collate_fn=_collate_batch_classifier)
 
     torch.manual_seed(seed)
 
