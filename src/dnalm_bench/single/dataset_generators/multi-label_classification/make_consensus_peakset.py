@@ -7,7 +7,7 @@ import glob
 # HELPER FUNCTIONS
 ###
 def load_peaks(peak_file):
-	peak_df = pd.read_csv(peak_file, sep="\t", names=["chrom", "start", "end", "name", "score", "strand", "signal", "p", "q", "summit"], compression='gzip')
+	peak_df = pd.read_csv(peak_file, sep="\t", names=["chrom", "start", "end", "name", "score", "strand", "signal", "p", "q", "summit"])#, compression='gzip')
 	return peak_df
 
 def add_peak(accepted_peaks_dict, accepted_peaks_df, new_peak):
@@ -36,9 +36,15 @@ def peak_overlap(peaka, peakb):
 ###
 
 peaks_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/*/*narrowPeak.gz"
+peaks_dir = ["/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/GM12878/ENCFF748UZH.bed", 
+		 "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/HEPG2/ENCFF439EIO.bed",
+		 "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/IMR90/ENCFF243NTP.bed", 
+		 "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/K562/ENCFF333TAT.bed",
+		 "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/H1ESC/overlap.optimal_peak.bed"]
 peaks = []
 
-for f in glob.glob(peaks_dir):
+# for f in glob.glob(peaks_dir):
+for f in peaks_dir:
 	print(f)
 	peaks.append(load_peaks(f))
 
@@ -57,7 +63,7 @@ for index, row in peaks_combined.iterrows():
 accepted_peaks_df = accepted_peaks_df.sort_values(by=["chrom", "start"], ascending=[True, True])
 accepted_peaks_df = accepted_peaks_df.reset_index(drop=True)
 
-out_loc = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/accepted_peaks.tsv"
+out_loc = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/accepted_peaks_all.tsv"
 
 accepted_peaks_df.to_csv(out_loc, sep="\t", index=False)
 
