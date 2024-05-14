@@ -1,6 +1,7 @@
 import os
 import sys
-
+import pandas as pd
+import numpy as np
 import torch
 
 from ...training import EmbeddingsDataset, CNNSequenceBaselineClassifier, evaluate_probing_classifier
@@ -10,7 +11,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "nucleotide-transformer-v2-500m-multi-species"
+    model_name = "sequence_baseline"
 
     embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
@@ -65,8 +66,10 @@ if __name__ == "__main__":
 
     seq_len = 350
 
-    model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v1"
-    checkpoint_num = None
+    model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v30"
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/encode_ccre/eval_probing/ccre_test_regions_350_jitter_0/{model_name}"    
