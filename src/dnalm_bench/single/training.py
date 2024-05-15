@@ -717,44 +717,6 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
 
     return metrics
 
-class LargeCNNPredictorBase(torch.nn.Module):
-    def __init__(self, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
-        super().__init__()
-        self.n_residual_convs = n_residual_convs
-        self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=first_kernel_size)
-        self.irelu = torch.nn.ReLU()
-
-        self.rconvs = torch.nn.ModuleList([
-            torch.nn.Conv1d(n_filters, n_filters, kernel_size=residual_kernel_size, 
-                dilation=2**i) for i in range(n_residual_convs)
-        ])
-        self.rrelus = torch.nn.ModuleList([
-            torch.nn.ReLU() for i in range(n_residual_convs)
-        ])
-        self.output_layer = torch.nn.Linear(n_filters, output_channels)
-    @staticmethod
-    def _detokenize(embs, inds):
-        return embs
-        
-    def forward(self, embs, inds):
-        torch.cuda.synchronize()
-        x = self._detokenize(embs, inds)
-        x = x.swapaxes(1, 2)
-        
-        x = self.irelu(self.iconv(x))
-        
-        for i in range(self.n_residual_convs):
-            x_conv = self.rrelus[i](self.rconvs[i](x))
-            crop_amount = (x.shape[-1] - x_conv.shape[-1]) // 2
-            x_cropped = x[:,:,crop_amount:-crop_amount]
-            x = torch.add(x_cropped, x_conv)
-            
-        x = torch.mean(x, dim=-1)
-        
-        final_out = self.output_layer(x)
-        
-        return final_out
-
 
 class CNNEmbeddingsPredictorBase(torch.nn.Module):
     def __init__(self, input_channels, hidden_channels, kernel_size, out_channels=1):
@@ -800,6 +762,64 @@ class CNNSlicedEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
 
         return seq_embeddings
     
+class LargeCNNPredictorBase(torch.nn.Module):
+    def __init__(self, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
+        super().__init__()
+        self.n_residual_convs = n_residual_convs
+        self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=first_kernel_size)
+        self.irelu = torch.nn.ReLU()
+
+        self.rconvs = torch.nn.ModuleList([
+            torch.nn.Conv1d(n_filters, n_filters, kernel_size=residual_kernel_size, 
+                dilation=2**i) for i in range(n_residual_convs)
+        ])
+        self.rrelus = torch.nn.ModuleList([
+            torch.nn.ReLU() for i in range(n_residual_convs)
+        ])
+        self.output_layer = torch.nn.Linear(n_filters, output_channels)
+    @staticmethod
+    def _detokenize(embs, inds):
+        return embs
+        
+    def forward(self, embs, inds):
+        torch.cuda.synchronize()
+        x = self._detokenize(embs, inds)
+        x = x.swapaxes(1, 2)
+        
+        x = self.irelu(self.iconv(x))
+        
+        for i in range(self.n_residual_convs):
+            x_conv = self.rrelus[i](self.rconvs[i](x))
+            crop_amount = (x.shape[-1] - x_conv.shape[-1]) // 2
+            x_cropped = x[:,:,crop_amount:-crop_amount]
+            x = torch.add(x_cropped, x_conv)
+            
+        x = torch.mean(x, dim=-1)
+        
+        final_out = self.output_layer(x)
+        
+        return final_out
+
+class LargeCNNEmbeddingsPredictor(LargeCNNPredictorBase):
+    @staticmethod
+    def _detokenize(embs, inds):
+        gather_idx = inds[:,:,None].expand(-1,-1,embs.shape[2]).to(embs.device)
+        seq_embeddings = torch.gather(embs, 1, gather_idx)
+
+        return seq_embeddings
+
+class LargeCNNSlicedEmbeddingsPredictor(LargeCNNPredictorBase):
+    @staticmethod
+    def _detokenize(embs, inds):
+        positions = torch.arange(embs.shape[1], device=embs.device)
+        start_mask = positions[None,:] >= inds[:,0][:,None]
+        end_mask = positions[None,:] < inds[:,1][:,None]
+        mask = start_mask & end_mask
+        seq_embeddings = embs[mask].reshape(embs.shape[0], -1, embs.shape[2])
+
+        return seq_embeddings
+
+
 
 class CNNSequenceBaselinePredictor(torch.nn.Module):
     def __init__(self, emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=1):
