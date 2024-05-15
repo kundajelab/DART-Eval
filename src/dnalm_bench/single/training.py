@@ -652,7 +652,7 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
                                     num_workers, prefetch_factor, device, progress_bar=False, seed=0):
 
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, 
-                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True,
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=False,
                                 collate_fn=_collate_batch_classifier)
 
     torch.manual_seed(seed)
@@ -671,7 +671,6 @@ def eval_peak_classifier(test_dataset, model, out_path, batch_size,
             seq_emb = seq_emb.to(device)
             seq_inds = seq_inds.to(device)
             labels_batch = labels_batch.to(device)
-            
             pred = model(seq_emb, seq_inds)
             pred_logits.append(pred)
             loss = criterion(pred, labels_batch)

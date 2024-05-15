@@ -16,8 +16,10 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    # num_workers = 4
+    # prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -69,8 +71,8 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    # model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
-    model_dir = f"/oak/stanford/groups/akundaje/patelas/misc/probing/{model_name}/v0/"
+    model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1/"
+    # model_dir = f"/oak/stanford/groups/akundaje/patelas/misc/probing/{model_name}/v0/"
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])

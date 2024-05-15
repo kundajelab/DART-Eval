@@ -16,8 +16,10 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    # num_workers = 4
+    # prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
-
+    print(checkpoint_num)
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     classes = {
@@ -88,7 +90,8 @@ if __name__ == "__main__":
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume)
-        
+    
+    print(num_workers)
     metrics = eval_peak_classifier(test_dataset, model, out_path, batch_size,
                                     num_workers, prefetch_factor, device, progress_bar=True)
     

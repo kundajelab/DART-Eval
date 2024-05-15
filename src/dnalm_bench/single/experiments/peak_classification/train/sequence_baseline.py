@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNSequenceBaselinePredictor, train_predictor, train_peak_classifier
+from ....training import PeaksEmbeddingsDataset, LargeCNNSlicedEmbeddingsPredictor, train_predictor, train_peak_classifier
 
 
 if __name__ == "__main__":
@@ -13,10 +13,9 @@ if __name__ == "__main__":
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification_sequence_baseline/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
-    batch_size = 2048
-    # batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    batch_size = 512
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -54,28 +53,21 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    n_filters = 64
+    input_channels = 4
+    hidden_channels = 256
+    kernel_size = 3
+    residual_convs=5
 
-    emb_channels = 256
-    hidden_channels = 32
-    pos_channels = 1
-    kernel_size = 8
-    init_kernel_size = 41
-
-    seq_len = 500
-
-    # lr = 5e-4
+    # crop = 557
+    
     lr = 1e-3
-    # lr = 2e-3
-
     num_epochs = 150
 
-    # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v0"
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
+    # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
+    # out_dir = f"/oak/stanford/groups/akundaje/patelas/misc/probing/{model_name}/v0"
+    # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114/{model_name}/{cell_line}/v3"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1/"
     os.makedirs(out_dir, exist_ok=True)
-
-    # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_350_jitter_0/{model_name}"
-    cache_dir = None
 
     classes = {
         "GM12878": 0,
@@ -88,5 +80,5 @@ if __name__ == "__main__":
     train_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_train, classes)
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
-    model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=len(classes))
+    model = LargeCNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, residual_convs, len(classes))
     train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
