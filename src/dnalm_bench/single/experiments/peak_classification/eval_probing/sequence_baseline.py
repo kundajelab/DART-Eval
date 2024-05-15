@@ -62,6 +62,11 @@ if __name__ == "__main__":
     input_channels = 4
     hidden_channels = 32
     kernel_size = 8
+    emb_channels = 256
+    init_kernel_size = 41
+    pos_channels = 1
+
+    crop = 557
     seq_len = 500
 
     crop = 557

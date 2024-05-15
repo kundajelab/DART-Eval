@@ -60,9 +60,9 @@ if __name__ == "__main__":
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
     input_channels = 1024
-    hidden_channels = 256
-    kernel_size = 3
-    residual_convs=5
+    hidden_channels = 32
+    kernel_size = 8
+
 
     crop = 557
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     test_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, modes[eval_mode], classes)
 
-    model = LargeCNNEmbeddingsPredictor(input_channels, hidden_channels, residual_convs, len(classes))
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume)
     
