@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNSlicedEmbeddingsPredictor, train_predictor
+from ....training import PeaksEmbeddingsDataset, CNNSlicedEmbeddingsPredictor, train_predictor, train_peak_classifier
 
 
 if __name__ == "__main__":
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
-    batch_size = 2048
+    batch_size = 512
     num_workers = 0
     prefetch_factor = None
     # num_workers = 0 ####
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1"
     # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114/{model_name}/{cell_line}/v3"
  
     os.makedirs(out_dir, exist_ok=True)
@@ -80,4 +80,4 @@ if __name__ == "__main__":
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
     model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
-    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)

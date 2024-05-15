@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 import numpy as np
 
-from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, eval_peak_classifier
+from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, LargeCNNEmbeddingsPredictor, eval_peak_classifier
 
 
 if __name__ == "__main__":
@@ -60,8 +60,9 @@ if __name__ == "__main__":
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
     input_channels = 1024
-    hidden_channels = 32
-    kernel_size = 8
+    hidden_channels = 256
+    kernel_size = 3
+    residual_convs=5
 
     crop = 557
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
+    model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1"
 
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 
     test_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, modes[eval_mode], classes)
 
-    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
+    model = LargeCNNEmbeddingsPredictor(input_channels, hidden_channels, residual_convs, len(classes))
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume)
     

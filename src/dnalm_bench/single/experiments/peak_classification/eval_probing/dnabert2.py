@@ -16,8 +16,8 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"

@@ -14,8 +14,8 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     lr = 2e-3
     num_epochs = 150
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1"
     # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3"   
     os.makedirs(out_dir, exist_ok=True)
 

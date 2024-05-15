@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, train_peak_classifier
+from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, LargeCNNSlicedEmbeddingsPredictor, LargeCNNEmbeddingsPredictor, train_peak_classifier
 
 
 if __name__ == "__main__":
@@ -14,8 +14,10 @@ if __name__ == "__main__":
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
 
     batch_size = 1024
-    num_workers = 4
-    prefetch_factor = 2
+    # num_workers = 4
+    # prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     # num_workers = 0 ####
     seed = 0
     device = "cuda"
@@ -56,14 +58,16 @@ if __name__ == "__main__":
     input_channels = 1024
     hidden_channels = 32
     kernel_size = 8
+    seq_len = 500
 
-    crop = 557
+
+    # crop = 557
     
-    lr = 2e-3
+    lr = 1e-3
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v0"
+    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1"
     os.makedirs(out_dir, exist_ok=True)
 
     classes = {
