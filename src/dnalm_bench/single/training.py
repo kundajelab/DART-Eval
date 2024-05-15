@@ -763,10 +763,10 @@ class CNNSlicedEmbeddingsPredictor(CNNEmbeddingsPredictorBase):
         return seq_embeddings
     
 class LargeCNNPredictorBase(torch.nn.Module):
-    def __init__(self, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
+    def __init__(self, input_channels, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
         super().__init__()
         self.n_residual_convs = n_residual_convs
-        self.iconv = torch.nn.Conv1d(4, n_filters, kernel_size=first_kernel_size)
+        self.iconv = torch.nn.Conv1d(input_channels, n_filters, kernel_size=first_kernel_size)
         self.irelu = torch.nn.ReLU()
 
         self.rconvs = torch.nn.ModuleList([
@@ -799,6 +799,7 @@ class LargeCNNPredictorBase(torch.nn.Module):
         final_out = self.output_layer(x)
         
         return final_out
+
 
 class LargeCNNEmbeddingsPredictor(LargeCNNPredictorBase):
     @staticmethod
