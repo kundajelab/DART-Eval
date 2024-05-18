@@ -11,7 +11,9 @@ All data is available for download [here](INSERT Synapse link)
 ### Task 1: Prioritizing Known Regulatory Elements
 
 #### Dataset Generation:
-`python -m dnalm_bench.paired_control.dataset_generators.encode_ccre --ccre_bed $CCRE_BED --output_file $OUTPUT_FILE`
+`python -m dnalm_bench.paired_control.dataset_generators.encode_ccre --ccre_bed $CCRE_BED --output_file $OUTPUT_FILE` \
+
+To generate the exact dataset we used, set `max_jitter` to 0 and `input_size` to 350. 
 
 #### Extracting Embeddings: 
 `python -m dnalm_bench.paired_control.supervised.encode_ccre.extract_embeddings.$MODEL`
