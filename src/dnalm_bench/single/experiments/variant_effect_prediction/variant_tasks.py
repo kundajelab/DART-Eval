@@ -212,8 +212,10 @@ def sig_ctrl_variants_Afr_CaQTLs(scores_data_path):
 
     if "allele1_scores" in likelihoods.columns:
         columns = ["allele1_scores", "allele2_scores"]
-    else:
+    elif "cosine_distance" in likelihoods.columns:
         columns = ["cosine_distance"]
+    else:
+        columns = []
 
     scores = likelihoods[["chr_hg38", "pos_hg38", "allele1", "allele2"] + columns]
     if afr_caQTLs_df.shape[0] == scores.shape[0]:
@@ -245,8 +247,10 @@ def variants_Yoruba_LCL_dsQTLs(scores_data_path):
 
     if "allele1_scores" in likelihoods.columns:
         columns = ["allele1_scores", "allele2_scores"]
-    else:
+    elif "cosine_distance" in likelihoods.columns:
         columns = ["cosine_distance"]
+    else:
+        columns = []
 
     scores = likelihoods[["var.chrom", "var.pos", "var.allele1", "var.allele2"]+columns]
     if yoruba_dsQTLs_df.shape[0] == scores.shape[0]:
@@ -303,12 +307,12 @@ def variants_Afr_ASB_CaQTLs_probed_counts(counts_data_path):
 
     return filtered_var_afr_caQTLs_df
 
-def beta_logfc(filtered_df, title, ylabel="LogFC Scores"):
+def beta_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     if "Beta" in filtered_df.columns:
         x = filtered_df["Beta"]
     else:
         x = filtered_df["beta"]
-    y = filtered_df["llm_logfc"]
+    y = filtered_df[yaxis]
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
 
@@ -325,9 +329,9 @@ def beta_logfc(filtered_df, title, ylabel="LogFC Scores"):
 
     return pearson_corr, spearman_corr  
 
-def effect_size_logfc(filtered_df, title):
+def effect_size_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     x = filtered_df["meanLog2FC"]
-    y = filtered_df["llm_logfc"]
+    y = filtered_df[yaxis]
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
 
@@ -336,16 +340,16 @@ def effect_size_logfc(filtered_df, title):
 
     plt.subplots_adjust(top=0.9) 
     plt.xlabel("Significant Allele-Specific Binding LogFC")
-    plt.ylabel("LogFC Scores")
+    plt.ylabel(ylabel)
     g.figure.suptitle(f'{title}\nPearson: {pearson_corr:.4f} --- Spearman: {spearman_corr:.4f}', 
                 x=0.5, y=0.98, ha='center')
     plt.grid()
     plt.show()
     return pearson_corr, spearman_corr  
 
-def est_size_logfc(filtered_df, title, ylabel="LogFC Scores"):
+def est_size_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     x = filtered_df["obs.estimate"]
-    y = filtered_df["llm_logfc"]
+    y = filtered_df[yaxis]
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
 

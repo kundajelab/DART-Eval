@@ -11,8 +11,11 @@ if __name__ == "__main__":
 
     model_name = "sequence_baseline"
     # embeddings_h5 = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
-    embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
+    # embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
+
+    embeddings_h5 = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/embeddings/{model_name}.h5"
+    elements_tsv = "/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv"
 
     batch_size = 2048
     # batch_size = 1024
@@ -78,7 +81,8 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v30"
+    # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v30"
+    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/supervised_classifiers/{model_name}/v1" 
     os.makedirs(out_dir, exist_ok=True)
 
     # cache_dir = f"/srv/scratch/atwang/dnalm_benchmark/cache/embeddings/ccre_test_regions_350_jitter_0/{model_name}"

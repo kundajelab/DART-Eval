@@ -11,8 +11,10 @@ if __name__ == "__main__":
 
     model_name = "gena-lm-bert-large-t2t"
     # embeddings_h5 = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/DNABERT-2-117M.h5"
-    embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
+    # embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
+    embeddings_h5 = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/embeddings/{model_name}.h5"
+    elements_tsv = "/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv"
 
     batch_size = 2048
     num_workers = 4
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/DNABERT-2-117M/v0"
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v1"
+    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/supervised_classifiers/{model_name}/v1"
     os.makedirs(out_dir, exist_ok=True)
 
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train)
