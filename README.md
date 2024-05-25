@@ -47,7 +47,7 @@ python -m dnalm_bench.single.experiments.footprinting.likelihoods.$MODEL
 Using the input peaks from ENCODE, generate a consensus peakset:\
 python dnalm_bench.single.dataset_generators.multi-label_classification.make_consensus_peakset.py
 
-Then, generate individual counts matrices for each sample, using the bam files downloaded from ENCODE and the consensus peakset:\ 
+Then, generate individual counts matrices for each sample, using the bam files downloaded from ENCODE and the consensus peakset:
 python dnalm_bench.single.dataset_generators.multi-label_classification.generate_indl_counts_matrix.py
 
 Concatenate the counts matrices and generate DESeq inputs:\
