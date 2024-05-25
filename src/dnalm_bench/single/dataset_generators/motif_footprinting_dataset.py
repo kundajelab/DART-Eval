@@ -4,7 +4,7 @@ import argparse
 import pyfaidx
 import random
 np.random.seed(0)
-
+random.seed(0)
 
 def parse_args():
 	parser = argparse.ArgumentParser(description="Given a set of negative regions, ")
