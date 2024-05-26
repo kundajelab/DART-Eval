@@ -10,4 +10,4 @@ sbatch --export=ALL --requeue \
     --mem=60G \
     -o $model.$celltype.probing.log.o \
     -e $model.$celltype.probing.log.e \
-    batch_scripts/chromatin_probing/run_chromatin_probing.sh $model $celltype
+    dnalm_bench/batch_scripts/chromatin_probing/run_chromatin_probing.sh $model $celltype
