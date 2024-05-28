@@ -13,4 +13,4 @@ sbatch --export=ALL --requeue \
     --mem=60G \
     -o $model.$celltype.vscoring.log.o \
     -e $model.$celltype.vscoring.log.e \
-    batch_scripts/probed_variant_scoring/run_probed_variant_scoring.sh $model $variantsbed $countstsv $genome $celltype
+    dnalm_bench/batch_scripts/probed_variant_scoring/run_probed_variant_scoring.sh $model $variantsbed $countstsv $genome $celltype
