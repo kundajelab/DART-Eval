@@ -23,13 +23,14 @@ if __name__ == "__main__":
     genome_fa = sys.argv[3]
     cell_line = sys.argv[4]
 
-    train_log = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/train.log"
+    model_folder = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1/"
+    train_log = f"{model_folder}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
 
-    model_path = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3/checkpoint_{checkpoint_num}.pt"
+    model_path = f"{model_folder}/checkpoint_{checkpoint_num}.pt"
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/variants/probing/{model_name}/{cell_line}/"
+    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_5_variant_effect_prediction/outputs/{model_name}/"
     os.makedirs(out_dir, exist_ok=True)
 
     # variants_beds = ["/oak/stanford/groups/akundaje/anusri/variant-benchmakring/gm12878.dsqtls.benchmarking.tsv",

@@ -22,7 +22,7 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/"
+    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/embeddings/{model_name}/"
     print(out_dir)
     # out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50"
     os.makedirs(out_dir, exist_ok=True)

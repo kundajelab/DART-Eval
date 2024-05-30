@@ -70,23 +70,14 @@ if __name__ == "__main__":
 
     crop = 557
 
-    model_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114/{model_name}/{cell_line}/v3"
-    # checkpoint_nums = {
-    #     "GM12878": None,
-    #     "H1ESC": None,
-    #     "HEPG2": None,
-    #     "IMR90": None,
-    #     "K562": None
-    # }
+    model_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1/"
 
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
-
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictor_eval/cell_line_2114_probing/{model_name}/{cell_line}" 
-
+    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/outputs/{model_name}/{cell_line}" 
     os.makedirs(out_dir, exist_ok=True)
 
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
