@@ -11,7 +11,7 @@ import joblib
 from sklearn.cluster import *
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
-np.random.seed(0)
+# np.random.seed(0)
 
 class EmbeddingCluster():
 	def __init__(self, cluster_obj, embeddings, labels):
