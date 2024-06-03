@@ -294,6 +294,10 @@ class LargeCNNClassifier(torch.nn.Module):
 
         device_indicator = torch.empty(0)
         self.register_buffer("device_indicator", device_indicator)
+    
+    @property
+    def device(self):
+        return self.device_indicator.device
         
     def forward(self, x):
         x = x.to(self.device).float().swapaxes(1, 2)
