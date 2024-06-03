@@ -10,7 +10,7 @@ import pyfaidx
 # from scipy.stats import wilcoxon
 # from tqdm import tqdm
 
-from ..utils import one_hot_encode
+from ..utils import one_hot_encode, copy_if_not_exists
 
 class PairedControlDataset(Dataset):
     _elements_dtypes = {
@@ -43,10 +43,10 @@ class PairedControlDataset(Dataset):
             fa_path_hash = hashlib.sha256(fa_path_abs.encode('utf-8')).hexdigest()
             fa_cache_path = os.path.join(cache_dir, fa_path_hash + ".fa")
             fa_idx_cache_path = fa_cache_path + ".fai"
-            self._copy_if_not_exists(genome_fa, fa_cache_path)
+            copy_if_not_exists(genome_fa, fa_cache_path)
             genome_fa = fa_cache_path
             try:
-                self._copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
+                copy_if_not_exists(fa_idx_path_abs, fa_idx_cache_path)
             except FileNotFoundError:
                 pass
 
