@@ -81,8 +81,8 @@ if __name__ == "__main__":
 
     os.makedirs(out_dir, exist_ok=True)
 
-    train_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_train, seed)
-    val_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_val, seed)
+    train_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_train, seed, cache_dir=cache_dir)
+    val_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_val, seed, cache_dir=cache_dir)
 
     model = LargeCNNClassifier(4, n_filters, n_residual_convs, output_channels)
     train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, 
