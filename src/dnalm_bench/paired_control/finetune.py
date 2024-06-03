@@ -293,8 +293,7 @@ class LargeCNNClassifier(torch.nn.Module):
         self.output_layer = torch.nn.Linear(n_filters, output_channels)
         
     def forward(self, x):
-        print(x) ####
-        x = x.swapaxes(1, 2)
+        x = x.float().swapaxes(1, 2)
         
         x = self.irelu(self.iconv(x))
         
