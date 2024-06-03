@@ -291,9 +291,12 @@ class LargeCNNClassifier(torch.nn.Module):
             torch.nn.ReLU() for i in range(n_residual_convs)
         ])
         self.output_layer = torch.nn.Linear(n_filters, output_channels)
+
+        device_indicator = torch.empty(0)
+        self.register_buffer("device_indicator", device_indicator)
         
     def forward(self, x):
-        x = x.float().swapaxes(1, 2)
+        x = x.to(self.device).float().swapaxes(1, 2)
         
         x = self.irelu(self.iconv(x))
         
