@@ -274,3 +274,37 @@ class CaduceusLoRAModel(HFClassifierModel):
         logits = torch_outs.logits
 
         return logits
+
+
+class LargeCNNClassifier(torch.nn.Module):
+    def __init__(self, input_channels, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
+        super().__init__()
+        self.n_residual_convs = n_residual_convs
+        self.iconv = torch.nn.Conv1d(input_channels, n_filters, kernel_size=first_kernel_size)
+        self.irelu = torch.nn.ReLU()
+
+        self.rconvs = torch.nn.ModuleList([
+            torch.nn.Conv1d(n_filters, n_filters, kernel_size=residual_kernel_size, 
+                dilation=2**i) for i in range(n_residual_convs)
+        ])
+        self.rrelus = torch.nn.ModuleList([
+            torch.nn.ReLU() for i in range(n_residual_convs)
+        ])
+        self.output_layer = torch.nn.Linear(n_filters, output_channels)
+        
+    def forward(self, x):
+        x = x.swapaxes(1, 2)
+        
+        x = self.irelu(self.iconv(x))
+        
+        for i in range(self.n_residual_convs):
+            x_conv = self.rrelus[i](self.rconvs[i](x))
+            crop_amount = (x.shape[-1] - x_conv.shape[-1]) // 2
+            x_cropped = x[:,:,crop_amount:-crop_amount]
+            x = torch.add(x_cropped, x_conv)
+            
+        x = torch.mean(x, dim=-1)
+        
+        final_out = self.output_layer(x)
+        
+        return final_out
