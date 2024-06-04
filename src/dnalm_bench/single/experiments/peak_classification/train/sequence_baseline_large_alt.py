@@ -65,6 +65,7 @@ if __name__ == "__main__":
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
+    seq_len = 500
 
     accumulate = 1
     
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v0"    
+    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v1"    
 
     os.makedirs(out_dir, exist_ok=True)
     
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     train_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_train, classes, cache_dir=cache_dir)
     val_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_val, classes, cache_dir=cache_dir)
 
-    model = LargeCNNClassifier(4, n_filters, n_residual_convs, len(classes))
+    model = LargeCNNClassifier(4, n_filters, n_residual_convs, len(classes), seq_len)
 
 
     train_finetuned_peak_classifier(train_dataset, val_dataset, model, 

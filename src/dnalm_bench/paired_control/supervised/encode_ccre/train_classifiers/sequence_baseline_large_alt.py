@@ -73,18 +73,19 @@ if __name__ == "__main__":
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
+    seq_len = 500
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v3"   
+    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v4"   
 
     os.makedirs(out_dir, exist_ok=True)
 
     train_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_train, seed, cache_dir=cache_dir)
     val_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_val, seed, cache_dir=cache_dir)
 
-    model = LargeCNNClassifier(4, n_filters, n_residual_convs, output_channels)
+    model = LargeCNNClassifier(4, n_filters, n_residual_convs, output_channels, seq_len)
     train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, 
                                batch_size, lr, wd, accumulate, num_workers, prefetch_factor, 
                                device, progress_bar=True, resume_from=resume_checkpoint)

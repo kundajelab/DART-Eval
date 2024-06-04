@@ -770,11 +770,14 @@ class CaduceusLoRAModel(HFClassifierModel):
 
 
 class LargeCNNClassifier(torch.nn.Module):
-    def __init__(self, input_channels, n_filters, n_residual_convs, output_channels, first_kernel_size=21, residual_kernel_size=3):
+    def __init__(self, input_channels, n_filters, n_residual_convs, output_channels, seq_len, pos_channels=1, first_kernel_size=21, residual_kernel_size=3):
         super().__init__()
         self.n_residual_convs = n_residual_convs
         self.iconv = torch.nn.Conv1d(input_channels, n_filters, kernel_size=first_kernel_size)
         self.irelu = torch.nn.ReLU()
+
+        self.pos_emb = torch.nn.Parameter(torch.zeros(seq_len, pos_channels))
+        self.pos_proj = torch.nn.Linear(pos_channels, n_filters)
 
         self.rconvs = torch.nn.ModuleList([
             torch.nn.Conv1d(n_filters, n_filters, kernel_size=residual_kernel_size, 
@@ -793,9 +796,16 @@ class LargeCNNClassifier(torch.nn.Module):
         return self.device_indicator.device
         
     def forward(self, x):
-        x = x.to(self.device).float().swapaxes(1, 2)
+        x = x.to(self.device).float()
+
+        x = x.swapaxes(1, 2)
+        x = self.iconv(x)
+        x = x.swapaxes(1, 2)
+        p = self.pos_proj(self.pos_emb)
+        x = self.irelu(x + p)
+        x = x.swapaxes(1, 2)
         
-        x = self.irelu(self.iconv(x))
+        # x = self.irelu(self.iconv(x))
         
         for i in range(self.n_residual_convs):
             x_conv = self.rrelus[i](self.rconvs[i](x))
