@@ -629,7 +629,7 @@ def eval_finetuned_peak_classifier(test_dataset, model, out_path, batch_size,
 
     pred_log_probs = torch.cat(pred_log_probs, dim=0)
     log_probs_others = log1mexp(pred_log_probs)
-    pred_log_odds = pred_log_probs - log_probs_others
+    pred_log_odds = torch.nan_to_num(pred_log_probs - log_probs_others)
     labels = torch.cat(labels, dim=0)
     test_acc = (pred_log_probs.argmax(dim=1) == labels).sum().item() / len(test_dataloader.dataset)
 
