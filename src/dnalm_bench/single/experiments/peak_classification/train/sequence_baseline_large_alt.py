@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     accumulate = 1
     
-    lr = 1e-3
+    lr = 1e-2
     wd = 0
     num_epochs = 150
 
