@@ -83,7 +83,7 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
     model_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v3"    
-    checkpoint_num = 21
+    checkpoint_num = 189
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
     
     classes = {
