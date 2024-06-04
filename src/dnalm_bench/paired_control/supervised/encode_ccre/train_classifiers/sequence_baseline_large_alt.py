@@ -73,7 +73,7 @@ if __name__ == "__main__":
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
-    seq_len = 500
+    seq_len = 330
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"

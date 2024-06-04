@@ -65,7 +65,7 @@ if __name__ == "__main__":
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
-    seq_len = 500
+    seq_len = 480
 
     accumulate = 1
     
