@@ -4,7 +4,9 @@ import sys
 import torch
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-from ....finetune import PeaksEndToEndDataset, train_finetuned_peak_classifier, LargeCNNClassifier
+from ....finetune import train_finetuned_classifier, LargeCNNClassifier
+from ....components import PairedControlDataset
+
 
 
 if __name__ == "__main__":
@@ -14,7 +16,7 @@ if __name__ == "__main__":
     # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+    elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_350_jitter_0.bed"
 
     batch_size = 2048
     num_workers = 4
@@ -56,44 +58,34 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    emb_channels = 256
+    # emb_channels = 256
 
     # lora_rank = 8
     # lora_alpha = 2 * lora_rank
     # lora_dropout = 0.05
 
-    n_filters = 512
-    n_residual_convs = 7
-    output_channels = 2
-    seq_len = 460
-
     accumulate = 1
     
     lr = 1e-4
     wd = 0
-    num_epochs = 200
+    num_epochs = 150
+
+    n_filters = 512
+    n_residual_convs = 7
+    output_channels = 2
+    seq_len = 310
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v3"    
+    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v6"   
 
     os.makedirs(out_dir, exist_ok=True)
-    
-    classes = {
-        "GM12878": 0,
-        "H1ESC": 1,
-        "HEPG2": 2,
-        "IMR90": 3,
-        "K562": 4
-    } 
 
-    train_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_train, classes, cache_dir=cache_dir)
-    val_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, chroms_val, classes, cache_dir=cache_dir)
+    train_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_train, seed, cache_dir=cache_dir)
+    val_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_val, seed, cache_dir=cache_dir)
 
-    model = LargeCNNClassifier(4, n_filters, n_residual_convs, len(classes), seq_len, first_kernel_size=41)
-
-
-    train_finetuned_peak_classifier(train_dataset, val_dataset, model, 
-                                    num_epochs, out_dir, batch_size, lr, wd, accumulate,
-                                    num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    model = LargeCNNClassifier(4, n_filters, n_residual_convs, output_channels, seq_len, first_kernel_size=41)
+    train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, 
+                               batch_size, lr, wd, accumulate, num_workers, prefetch_factor, 
+                               device, progress_bar=True, resume_from=resume_checkpoint)
