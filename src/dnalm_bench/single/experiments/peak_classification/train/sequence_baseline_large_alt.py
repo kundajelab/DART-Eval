@@ -69,14 +69,14 @@ if __name__ == "__main__":
 
     accumulate = 1
     
-    lr = 1e-2
+    lr = 1e-4
     wd = 0
     num_epochs = 150
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v2"    
+    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v3"    
 
     os.makedirs(out_dir, exist_ok=True)
     
