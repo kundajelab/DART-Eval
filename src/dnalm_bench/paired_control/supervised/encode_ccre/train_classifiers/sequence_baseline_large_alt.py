@@ -71,7 +71,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     n_filters = 512
-    n_residual_convs = 7
+    n_residual_convs = 8
     output_channels = 2
     seq_len = 330
 
