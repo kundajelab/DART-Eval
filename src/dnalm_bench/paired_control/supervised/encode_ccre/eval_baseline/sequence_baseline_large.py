@@ -75,7 +75,7 @@ if __name__ == "__main__":
     checkpoint_num = 59
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/eval_ft/ccre_test_regions_350_jitter_0/{model_name}"    
+    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers/ccre_test_regions_350_jitter_0/{model_name}/v6"   
 
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
