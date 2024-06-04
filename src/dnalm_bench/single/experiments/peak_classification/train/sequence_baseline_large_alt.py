@@ -70,7 +70,7 @@ if __name__ == "__main__":
     accumulate = 1
     
     lr = 1e-3
-    wd = 0.01
+    wd = 0
     num_epochs = 150
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
