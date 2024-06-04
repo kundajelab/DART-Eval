@@ -71,7 +71,7 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0
-    num_epochs = 150
+    num_epochs = 200
 
     # cache_dir = os.environ["L_SCRATCH_JOB"]
     cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
