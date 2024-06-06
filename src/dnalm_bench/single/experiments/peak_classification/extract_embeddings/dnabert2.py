@@ -12,7 +12,7 @@ if __name__ == "__main__":
     elements_tsv = os.path.join(root_output_dir,"/task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
     chroms = None
     batch_size = 64
-    num_workers = 4
+    num_workers = 0
     seed = 0
     device = "cuda"
 
