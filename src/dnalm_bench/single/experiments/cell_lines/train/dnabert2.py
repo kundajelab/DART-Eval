@@ -4,7 +4,7 @@ import sys
 from torch.utils.data import DataLoader
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-root_output_dir = os.environ.get("OUT_DIR", "")
+root_output_dir = os.environ.get("DART_OUT_DIR", "")
 
 
 if __name__ == "__main__":
