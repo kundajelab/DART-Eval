@@ -1,9 +1,5 @@
-import glob
 import numpy as np
-import h5py
-from scipy import spatial
 import os
-from tqdm import tqdm
 from sklearn.metrics.pairwise import manhattan_distances
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 import pandas as pd
@@ -14,130 +10,6 @@ from scipy.stats import mannwhitneyu
 import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 
-def load_embeddings_and_compute_cosine_distance(embedding_dir, h5_file, progress_bar=False):
-    '''
-    Assumes embedding_dir contains ONLY embedding numpy arrays
-    Elements in each array will have the same label
-    '''
-    file = h5py.File(os.path.join(embedding_dir, h5_file))
-    cosine_distances = []
-    allele_keys = list(file['allele1'].keys())
-    if "idx_var" in allele_keys:
-        allele_keys.remove('idx_var')
-    else:
-        allele_keys.remove("idx_fix")
-    sorted_list = sorted(allele_keys, key=lambda x: int(x.split('_')[1])) # ensure that they are in the correct order
-    for key in tqdm(sorted_list, disable = (not progress_bar)):
-        split = key.split("_")
-        ind_start, ind_end = int(split[-2]), int(split[-1])
-        allele1_array = file['allele1'][key][:]
-        allele2_array = file['allele2'][key][:]
-        if "idx_var" in list(file['allele1'].keys()):
-            idx_vars = file['allele1']['idx_var'][ind_start:ind_end]
-            mins1, maxes1 = idx_vars.min(1), idx_vars.max(1) + 1
-            indices1 = [np.arange(mi, ma) for mi, ma in zip(mins1, maxes1)]
-
-            idx_vars = file['allele2']['idx_var'][ind_start:ind_end]
-            mins2, maxes2 = idx_vars.min(1), idx_vars.max(1) + 1
-            indices2 = [np.arange(mi, ma) for mi, ma in zip(mins2, maxes2)]
-            
-            for i in range(allele1_array.shape[0]):
-                a = np.mean(allele1_array[i, indices1[i], :], axis=0) # average over the tokens for each variant (result = batch_size x embedding_size)
-                b = np.mean(allele2_array[i, indices2[i], :], axis=0) 
-                cosine_distances+=[spatial.distance.cosine(a, b)]
-
-        else:
-            idx_fix = file['allele1']['idx_fix']
-            min_idx, max_idx = min(idx_fix), max(idx_fix)+1
-            for i in range(allele1_array.shape[0]):
-                a = np.mean(allele1_array[i, min_idx:max_idx, :], axis=0) # average over the tokens for each variant (result = batch_size x embedding_size)
-                b = np.mean(allele2_array[i, min_idx:max_idx, :], axis=0) 
-                cosine_distances+=[spatial.distance.cosine(a, b)]
-
-    return cosine_distances
-
-def load_embeddings_and_compute_l1_distance(embedding_dir, h5_file, progress_bar=False):
-    '''
-    Assumes embedding_dir contains ONLY embedding numpy arrays
-    Elements in each array will have the same label
-    '''
-    file = h5py.File(os.path.join(embedding_dir, h5_file))
-    l1_distances = []
-    allele_keys = list(file['allele1'].keys())
-    if "idx_var" in allele_keys:
-        allele_keys.remove('idx_var')
-    else:
-        allele_keys.remove("idx_fix")
-    sorted_list = sorted(allele_keys, key=lambda x: int(x.split('_')[1])) # ensure that they are in the correct order
-    for key in tqdm(sorted_list, disable = (not progress_bar)):
-        split = key.split("_")
-        ind_start, ind_end = int(split[-2]), int(split[-1])
-        allele1_array = file['allele1'][key][:]
-        allele2_array = file['allele2'][key][:]
-        if "idx_var" in list(file['allele1'].keys()):
-            idx_vars = file['allele1']['idx_var'][ind_start:ind_end]
-            mins1, maxes1 = idx_vars.min(1), idx_vars.max(1) + 1
-            indices1 = [np.arange(mi, ma) for mi, ma in zip(mins1, maxes1)]
-
-            idx_vars = file['allele2']['idx_var'][ind_start:ind_end]
-            mins2, maxes2 = idx_vars.min(1), idx_vars.max(1) + 1
-            indices2 = [np.arange(mi, ma) for mi, ma in zip(mins2, maxes2)]
-            
-            for i in range(allele1_array.shape[0]):
-                a = np.mean(allele1_array[i, indices1[i], :], axis=0) # average over the tokens for each variant (result = batch_size x embedding_size)
-                b = np.mean(allele2_array[i, indices2[i], :], axis=0) 
-                l1_distances+=[spatial.distance.cosine(a, b)]
-
-        else:
-            idx_fix = file['allele1']['idx_fix']
-            min_idx, max_idx = min(idx_fix), max(idx_fix)+1
-            for i in range(allele1_array.shape[0]):
-                a = np.mean(allele1_array[i, min_idx:max_idx, :], axis=0) # average over the tokens for each variant (result = batch_size x embedding_size)
-                b = np.mean(allele2_array[i, min_idx:max_idx, :], axis=0) 
-                l1_distances+=[manhattan_distances(a, b)]
-
-    return l1_distances
-
-def plot_auprc_auroc_cosine_distances():
-    scratch_dir = '/scratch/groups/akundaje/dnalm_benchmark/embeddings/variant_embeddings/'
-    model_names = ["Nucleotide-Transformer", "Mistral-DNA", "GenaLM", "HyenaDNA"]# , "DNABERT2"]
-    for model in model_names:
-        print(model)
-        path = glob.glob(os.path.join(scratch_dir, model, '*Afr.CaQTLs*cosine*.tsv'))[0]
-        Afr_caQTLs_df = pd.read_csv(path, sep="\t")
-        filtered_var_Afr_caQTLs_df = Afr_caQTLs_df[(Afr_caQTLs_df["IsUsed"]==True) & (np.log10(Afr_caQTLs_df["pval"])<3)]
-        print(np.unique(filtered_var_Afr_caQTLs_df["label"]))
-        filtered_var_Afr_caQTLs_df_true = filtered_var_Afr_caQTLs_df[filtered_var_Afr_caQTLs_df["label"]==1]
-        filtered_var_Afr_caQTLs_df_false = filtered_var_Afr_caQTLs_df[filtered_var_Afr_caQTLs_df["label"]==0]
-        print(filtered_var_Afr_caQTLs_df_true.shape)
-        print(filtered_var_Afr_caQTLs_df_false.shape)
-        print("Average Precision: ", average_precision_score(filtered_var_Afr_caQTLs_df["label"], 
-                                    filtered_var_Afr_caQTLs_df["cosine_distances"]))
-        
-        print("AUROC: ", roc_auc_score(filtered_var_Afr_caQTLs_df["label"], 
-                                    filtered_var_Afr_caQTLs_df["cosine_distances"]))
-        precision, recall, thresholds = precision_recall_curve(filtered_var_Afr_caQTLs_df["label"], 
-                                                            filtered_var_Afr_caQTLs_df["cosine_distances"])
-        
-        FPR, TPR, _ = roc_curve(filtered_var_Afr_caQTLs_df["label"], filtered_var_Afr_caQTLs_df["cosine_distances"], pos_label=1)
-        
-        plt.plot(FPR, TPR)
-        plt.show()
-        
-        auprc = auc(recall, precision)
-        print("AUPRC:", auprc)
-        plt.plot(recall, precision)
-        plt.ylabel("Precision")
-        plt.xlabel("Recall")
-        plt.title("Afr CaQTLs: Precision-Recall curve");
-        plt.show()
-        
-        plt.hist([filtered_var_Afr_caQTLs_df_true["cosine_distances"],
-                filtered_var_Afr_caQTLs_df_false["cosine_distances"]], 
-                color=['Red', 'Blue'], label=['Significant', 'Control'])
-        plt.legend()
-        plt.show()
-
 def get_precision_recall_auc(ctrl_counts, sig_counts):
     counts = np.concatenate([ctrl_counts, sig_counts])
     labels = np.concatenate([np.zeros(len(ctrl_counts)), np.ones(len(sig_counts))])
@@ -145,67 +17,50 @@ def get_precision_recall_auc(ctrl_counts, sig_counts):
     auprc = average_precision_score(labels, counts)
     return auprc, auroc
 
-def sig_ctrl_variants_Eu_CaQTLs(likelihoods_data_path):
-    eu_caqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/Eu.CaQTLS.tsv"
-    eu_caQTLs_df = pd.read_csv(eu_caqtls_data_path, sep="\t")
-    likelihood = pd.read_csv(likelihoods_data_path, sep="\t")
-    threshold = 3
-    if eu_caQTLs_df.shape[0] == likelihood.shape[0]:
-        likelihoods_data = pd.concat([eu_caQTLs_df, likelihood], axis=1)
-        filtered_var_eu_caQTLs_df = likelihoods_data[(likelihoods_data["Inside_Peak"]==True) &
-                                            (likelihoods_data["IsUsed"]==True)].copy(deep=True)
+def compute_precision_recall(labels, llm_scores):
+    labels = np.array(labels)
+    llm_scores = np.array(llm_scores)
+    
+    sorted_indices = np.argsort(llm_scores)[::-1]
+    sorted_indices = sorted_indices.astype(int) 
+    llm_scores = llm_scores[sorted_indices]
+    labels = labels[sorted_indices]
+
+    precisions = []
+    recalls = []
+    thresholds = []
+
+    tp = 0
+    fp = 0
+    fn = np.sum(labels)
+
+    for i in range(len(labels)):
+        if labels[i] == 1:
+            tp += 1
+            fn -= 1
+        else:
+            fp += 1
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 1
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
         
-        print(filtered_var_eu_caQTLs_df.shape)
-        
-        filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2_scores"] - filtered_var_eu_caQTLs_df["allele1_scores"]
+        precisions.append(precision)
+        recalls.append(recall)
+        thresholds.append(llm_scores[i])
 
-        filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
-        filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
+    precisions = np.array(precisions)
+    recalls = np.array(recalls)
 
-        ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"])
-        sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])
+    return precisions, recalls
 
-        print(len(ctrl_likelihoods), len(sig_likelihoods))
-
-        counts_ctrl, bins_ctrl = np.histogram(ctrl_likelihoods, bins=100)
-
-        counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-
-        return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
-    
-def sig_ctrl_variants_Eu_CaQTLs_probed_counts(counts_data_path, name="_scores"):
-    threshold = 3
-    
-    counts_data = pd.read_csv(counts_data_path, sep="\t")
-    # counts_data = counts_data[200000:]
-    filtered_var_eu_caQTLs_df = counts_data[(counts_data["Inside_Peak"]==True) &
-                                        (counts_data["IsUsed"]==True)].copy(deep=True)
-
-    print(filtered_var_eu_caQTLs_df.shape)      
-    print(filtered_var_eu_caQTLs_df.columns)                                  
-    
-    filtered_var_eu_caQTLs_df["llm_logfc"] = filtered_var_eu_caQTLs_df["allele2"+name] - filtered_var_eu_caQTLs_df["allele1"+name]
-
-    filtered_var_eucaqtls_df_ctrl = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]<-1].copy(deep=True)
-    filtered_var_eucaqtls_df_sig = filtered_var_eu_caQTLs_df[filtered_var_eu_caQTLs_df["Log10_BF"]>threshold].copy(deep=True)
-
-    ctrl_likelihoods = np.abs(filtered_var_eucaqtls_df_ctrl["llm_logfc"])
-    sig_likelihoods = np.abs(filtered_var_eucaqtls_df_sig["llm_logfc"])
-
-    print(len(ctrl_likelihoods), len(sig_likelihoods))
-
-    counts_ctrl, bins_ctrl = np.histogram(ctrl_likelihoods, bins=100)
-
-    counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-
-    return ctrl_likelihoods, sig_likelihoods, filtered_var_eu_caQTLs_df
-
-def compute_change(filtered_variants_df):
-    filtered_variants_df["llm_logfc"] = filtered_variants_df["allele2_scores"]-filtered_variants_df["allele1_scores"]
+def compute_change(filtered_variants_df, switch=False):
+    if switch:
+        filtered_variants_df["llm_logfc"] = filtered_variants_df["allele1_scores"]-filtered_variants_df["allele2_scores"]
+    else:
+        filtered_variants_df["llm_logfc"] = filtered_variants_df["allele2_scores"]-filtered_variants_df["allele1_scores"]
     return filtered_variants_df, np.abs(filtered_variants_df["llm_logfc"])
 
 def sig_ctrl_variants_Afr_CaQTLs(scores_data_path):
-    # afr_caqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/Afr.CaQTLS.tsv"
     afr_caqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/Afr.CaQTLS.new_filter.tsv"
     afr_caQTLs_df = pd.read_csv(afr_caqtls_data_path, sep="\t")
     likelihoods = pd.read_csv(scores_data_path, sep="\t")
@@ -226,17 +81,6 @@ def sig_ctrl_variants_Afr_CaQTLs(scores_data_path):
 
         filtered_var_afrcaqtls_df_sig = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==1)]
         filtered_var_afrcaqtls_df_ctrl = filtered_var_afr_caQTLs_df[(filtered_var_afr_caQTLs_df["label"]==0)]
-        
-        # control_likelihoods = np.abs(filtered_var_afrcaqtls_df_ctrl["llm_logfc"])
-        # sig_likelihoods = np.abs(filtered_var_afrcaqtls_df_sig["llm_logfc"]) 
-
-        # print(len(control_likelihoods), len(sig_likelihoods))
-
-        # counts_ctrl, bins_ctrl = np.histogram(control_likelihoods, bins=100)
-
-        # counts_sig, bins_sig = np.histogram(sig_likelihoods, bins=100)
-
-        # U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
         return filtered_var_afrcaqtls_df_ctrl, filtered_var_afrcaqtls_df_sig
     
@@ -287,25 +131,6 @@ def sig_ctrl_variants_Afr_CaQTLs_probed_counts(counts_data_path):
     U1, p = mannwhitneyu(counts_ctrl, counts_sig, alternative="greater")
 
     return control_counts, sig_counts, filtered_var_afr_caQTLs_df
-    
-def variants_Afr_ASB_CaQTLs(likelihood_data_path):
-    afr_caqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/Afr.ASB.CaQTLS.tsv"
-    afr_caQTLs_df = pd.read_csv(afr_caqtls_data_path, sep="\t")
-    likelihood = pd.read_csv(likelihood_data_path, sep="\t")
-    if afr_caQTLs_df.shape[0] == likelihood.shape[0]:
-        likelihoods_data = pd.concat([afr_caQTLs_df, likelihood], axis=1)
-        filtered_var_afr_caQTLs_df = likelihoods_data.copy(deep=True)
-        filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"] - filtered_var_afr_caQTLs_df["allele1_scores"]
-
-    return filtered_var_afr_caQTLs_df
-
-def variants_Afr_ASB_CaQTLs_probed_counts(counts_data_path):
-    counts_data = pd.read_csv(counts_data_path, sep="\t")
-    filtered_var_afr_caQTLs_df = counts_data.copy(deep=True)
-    print(filtered_var_afr_caQTLs_df.columns)
-    filtered_var_afr_caQTLs_df["llm_logfc"] = filtered_var_afr_caQTLs_df["allele2_scores"] - filtered_var_afr_caQTLs_df["allele1_scores"]
-
-    return filtered_var_afr_caQTLs_df
 
 def beta_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     if "Beta" in filtered_df.columns:
@@ -313,8 +138,11 @@ def beta_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     else:
         x = filtered_df["beta"]
     y = filtered_df[yaxis]
+
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
+    
+    g.fig.set_dpi(300)
 
     pearson_corr, _ = pearsonr(x, y)
     spearman_corr, _ = spearmanr(x, y)
@@ -332,8 +160,11 @@ def beta_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
 def effect_size_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     x = filtered_df["meanLog2FC"]
     y = filtered_df[yaxis]
+
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
+    
+    g.fig.set_dpi(300)
 
     pearson_corr, _ = pearsonr(x, y)
     spearman_corr, _ = spearmanr(x, y)
@@ -350,8 +181,11 @@ def effect_size_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logf
 def est_size_logfc(filtered_df, title, ylabel="LogFC Scores", yaxis="llm_logfc"):
     x = filtered_df["obs.estimate"]
     y = filtered_df[yaxis]
+
     g = sns.jointplot(x=x, y=y, 
                     kind="scatter")
+    
+    g.fig.set_dpi(300)
 
     pearson_corr, _ = pearsonr(x, y)
     spearman_corr, _ = spearmanr(x, y)
