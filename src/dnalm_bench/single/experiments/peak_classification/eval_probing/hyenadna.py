@@ -7,18 +7,18 @@ import numpy as np
 
 from ....training import PeaksEmbeddingsDataset, CNNSlicedEmbeddingsPredictor, eval_peak_classifier
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
     model_name = "hyenadna-large-1m-seqlen-hf"
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification/{model_name}.h5"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+    peaks_h5 = os.path.join(root_output_dir,f"/task_3_cell-type-specific/embeddings/{model_name}.h5")
+    elements_tsv = os.path.join(root_output_dir,"/task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 1024
     num_workers = 0
     prefetch_factor = None
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
@@ -63,11 +63,11 @@ if __name__ == "__main__":
 
     crop = 557
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/predictor_eval/peak_classification_probing/{model_name}"
+    out_dir = os.path.join(root_output_dir,f"/task_3_cell-type-specific/outputs/probed/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1"
+    model_dir = os.path.join(root_output_dir, f"/task_3_cell-type-specific/supervised_models/probed/{model_name}/v1")
     
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")

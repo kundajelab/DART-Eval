@@ -7,20 +7,18 @@ import torch
 
 from ....training import PeaksEmbeddingsDataset, CNNSequenceBaselinePredictor, eval_peak_classifier, LargeCNNSlicedEmbeddingsPredictor
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
     model_name = "sequence_baseline"
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/peak_classification_sequence_baseline/{model_name}.h5"
-    elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+    peaks_h5 = os.path.join(root_output_dir,f"/task_3_cell-type-specific/embeddings/{model_name}.h5")
+    elements_tsv = os.path.join(root_output_dir,"/task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 1024
-    # num_workers = 4
-    # prefetch_factor = 2
     num_workers = 0
     prefetch_factor = None
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
@@ -71,12 +69,11 @@ if __name__ == "__main__":
 
     crop = 557
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/predictor_eval/peak_classification_probing/{model_name}"
+    out_dir = os.path.join(root_output_dir,f"/task_3_cell-type-specific/outputs/ab_initio/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/peak_classification/{model_name}/v1/"
-    # model_dir = f"/oak/stanford/groups/akundaje/patelas/misc/probing/{model_name}/v0/"
+    model_dir = os.path.join(root_output_dir, f"/task_3_cell-type-specific/supervised_models/ab_initio/{model_name}/v1")
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
@@ -95,7 +92,6 @@ if __name__ == "__main__":
     test_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, modes[eval_mode], classes)
 
     model = CNNSequenceBaselinePredictor(emb_channels, hidden_channels, kernel_size, seq_len, init_kernel_size, pos_channels, out_channels=len(classes))
-    # model = LargeCNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, residual_convs, len(classes))
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume)
         
