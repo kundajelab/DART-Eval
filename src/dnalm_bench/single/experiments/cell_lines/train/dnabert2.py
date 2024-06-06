@@ -4,7 +4,7 @@ import sys
 from torch.utils.data import DataLoader
 
 # from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
-root_output_dir = os.environ.get("DART_OUT_DIR", "")
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 
 if __name__ == "__main__":
@@ -13,11 +13,11 @@ if __name__ == "__main__":
 
     print(root_output_dir)
     model_name = "DNABERT-2-117M"
-    peaks_h5 = f"{root_output_dir}/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    nonpeaks_h5 = f"{root_output_dir}/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
-    peaks_tsv = f"{root_output_dir}/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    nonpeaks_tsv = f"{root_output_dir}/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    assay_bw = f"{root_output_dir}/cell_line_data/{cell_line}_unstranded.bw"
+    peaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5")
+    nonpeaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5")
+    peaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    nonpeaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(root_output_dir, f"cell_line_data/{cell_line}_unstranded.bw")
 
     batch_size = 512
     num_workers = 0
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     num_epochs = 150
 
     # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"{root_output_dir}/task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1"   
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1")
     os.makedirs(out_dir, exist_ok=True)
 
     # peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)
