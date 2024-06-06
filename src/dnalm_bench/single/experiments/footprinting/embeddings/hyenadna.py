@@ -4,20 +4,19 @@ import sys
 from ....embeddings import HyenaDNAEmbeddingExtractor
 from ....components import FootprintingDataset
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"
-    #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    seq_table = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/footprinting/footprint_dataset_350_v1.txt"
-    # chroms = ["chr22"]
+    seq_table = os.path.join(root_output_dir,"/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt")
     batch_size = 64
     num_workers = 0
     seed = 0
     device = "cuda"
 
-    out_dir = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/footprinting_350/{model_name}/"
+    out_dir = os.path.join(root_output_dir,"/task_2_footprinting/outputs/embeddings/")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"embeddings.h5")
+    out_path = os.path.join(root_output_dir,f"/task_2_footprinting/outputs/embeddings/{model_name}.h5")
 
     dataset = FootprintingDataset(seq_table, seed)
     extractor = HyenaDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)
