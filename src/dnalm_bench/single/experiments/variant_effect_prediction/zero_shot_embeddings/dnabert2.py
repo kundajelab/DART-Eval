@@ -6,34 +6,28 @@ import polars as pl
 from ....evaluators import DNABERT2VariantEmbeddingEvaluator
 from ....components import VariantDataset
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
-    dataset = sys.argv[1]
-
     model_name = "DNABERT-2-117M"
     batch_size = 512
-    num_workers = 4
+    num_workers = 0
     seed = 0
     device = "cuda"
     chroms=None
 
-    genomes = {
-        "gm12878.dsqtls.benchmarking": "/home/atwang/dnalm_bench_data/male.hg19.fa", 
-        "Eu.CaQTLS": "/home/atwang/dnalm_bench_data/male.hg19.fa",
-        "Afr.ASB.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
-        "Afr.CaQTLS": "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    }
-    genome_fa = genomes[dataset]
+    variants_bed = sys.argv[1]
+    output_prefix = sys.argv[2]
+    genome_fa = sys.argv[3]
+    cell_line = "GM12878"
 
-    variants_bed = f"/home/atwang/dnalm_bench_data/variant-benchmarking/{dataset}.tsv" 
-
-    out_dir = f"/home/atwang/dnalm_bench_data/embeddings/variants/{model_name}/"
+    out_dir = os.path.join(root_output_dir, f"task_5_variant_effect_prediction/outputs/zero_shot/embeddings/{model_name}/")
     os.makedirs(out_dir, exist_ok=True)
     
-    out_path = os.path.join(out_dir, f"{dataset}.tsv")
+    out_path = os.path.join(out_dir, output_prefix + ".tsv")
 
-    allele1_embeddings_path = os.path.join(out_dir, f"{dataset}_allele1_embeddings.npy")
-    allele2_embeddings_path = os.path.join(out_dir, f"{dataset}_allele2_embeddings.npy")
+    allele1_embeddings_path = os.path.join(out_dir, f"{output_prefix}_allele1_embeddings.npy")
+    allele2_embeddings_path = os.path.join(out_dir, f"{output_prefix}_allele2_embeddings.npy")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     evaluator = DNABERT2VariantEmbeddingEvaluator(model_name, batch_size, num_workers, device)
