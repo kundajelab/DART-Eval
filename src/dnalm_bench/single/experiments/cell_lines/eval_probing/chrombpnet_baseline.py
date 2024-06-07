@@ -6,12 +6,13 @@ import pandas as pd
 
 
 from ....chrombpnet_utils import *
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 cell_line = sys.argv[1]
-genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+genome_fa = os.path.join(root_output_dir, f"refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
 
 chrombpnet_model_file = sys.argv[2]
-bigwig_file = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/bigwigs/{cell_line}_unstranded.bw"
+bigwig_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/bigwigs/{cell_line}_unstranded.bw")
 batch_size = 256
 
 
@@ -50,10 +51,10 @@ chroms_test = [
 
 
 
-peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-idr_peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"
-nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-out_file = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/evals/chrombpnet/{cell_line}_metrics.json"
+peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
+nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/outputs/chrombpnet/{cell_line}_metrics.json")
 
 print("Loading Datasets")
 pos_peak_dataset = ChromBPNetPeakDataset(peaks_tsv, bigwig_file, genome_fa, chroms_test, batch_size)

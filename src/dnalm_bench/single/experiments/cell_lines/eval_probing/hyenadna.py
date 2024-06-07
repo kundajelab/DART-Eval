@@ -8,6 +8,7 @@ import numpy as np
 from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNSlicedEmbeddingsPredictor
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
@@ -15,13 +16,13 @@ if __name__ == "__main__":
 
     model_name = "hyenadna-large-1m-seqlen-hf"
 
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    idr_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_idr.h5"
-    nonpeaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
-    peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    idr_peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"
-    nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
+    peaks_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5")
+    idr_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/cell_line_2114/{model_name}/{cell_line}_idr.h5")
+    nonpeaks_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5")
+    peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
+    nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/bigwigs/{cell_line}_unstranded.bw")
 
     batch_size = 1024
     num_workers = 0
@@ -70,14 +71,14 @@ if __name__ == "__main__":
 
     crop = 557
 
-    model_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1/"
+    model_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}/v1/")
 
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/outputs/{model_name}/{cell_line}" 
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/outputs/probed/{model_name}/{cell_line}/") 
     os.makedirs(out_dir, exist_ok=True)
 
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
