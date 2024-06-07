@@ -25,7 +25,6 @@ print(embeddings.shape)
 embeddings = PCA(n_components=60).fit_transform(embeddings)
 n_clusters = 50
 print(n_clusters)
-# cluster_obj = KMeans(n_clusters=n_clusters)
 
 print("Performing clustering")
 
@@ -35,15 +34,8 @@ scores = [emb_cluster.get_clustering_score(cluster_metric) for emb_cluster in cl
 scores_mean = np.mean(scores)
 scores_cint = np.max([np.abs(scores_mean - np.quantile(scores, 0.025)), np.abs(scores_mean - np.quantile(scores, 0.975))])
 print(scores_mean, scores_cint)
-# print(np.mean(scores), 1.96 * np.std(scores))
-
-
-# emb_cluster = EmbeddingCluster(cluster_obj, embeddings, labels)
-
-# print(emb_cluster.get_clustering_score(cluster_metric))
 
 # print("Visualizing")
 cluster_objs[0].plot_embeddings(UMAP(), f"{out_dir}cluster_plot.png", categories)
 
-# emb_cluster.save_model(f"{out_dir}cluster_obj.joblib")
 
