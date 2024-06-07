@@ -3,24 +3,24 @@ import sys
 
 import torch
 
-# from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 from ....finetune import PeaksEndToEndDataset, eval_finetuned_peak_classifier, DNABERT2LoRAModel
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
     model_name = "DNABERT-2-117M"
-    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+    elements_tsv = os.path.join(work_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 128
     num_workers = 4
     prefetch_factor = 2
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
@@ -67,19 +67,15 @@ if __name__ == "__main__":
 
     accumulate = 1
     
-    # lr = 5e-5
     lr = 1e-4
     wd = 0.01
     num_epochs = 10
 
-    # cache_dir = os.environ["L_SCRATCH_JOB"]
-    cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
-
-    out_dir = f"/home/atwang/dnalm_bench_data/predictor_eval/peak_classification_ft/{model_name}"
+    out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_model_outputs/fine_tuned/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification_ft/{model_name}/v0"
+    model_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/fine_tuned/{model_name}")    
     checkpoint_num = 6
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 

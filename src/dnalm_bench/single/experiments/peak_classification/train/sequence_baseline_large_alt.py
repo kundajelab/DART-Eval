@@ -1,25 +1,22 @@
 import os
 import sys
 
-import torch
-
-# from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 from ....finetune import PeaksEndToEndDataset, train_finetuned_peak_classifier, LargeCNNClassifier
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
 
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
-    model_name = "sequence_baseline_large"
-    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/home/atwang/dnalm_bench_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+    model_name = "chrombpnet_like"
+
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+    elements_tsv = os.path.join(work_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 2048
     num_workers = 4
     prefetch_factor = 2
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
@@ -58,10 +55,6 @@ if __name__ == "__main__":
 
     emb_channels = 256
 
-    # lora_rank = 8
-    # lora_alpha = 2 * lora_rank
-    # lora_dropout = 0.05
-
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
@@ -73,10 +66,7 @@ if __name__ == "__main__":
     wd = 0
     num_epochs = 200
 
-    # cache_dir = os.environ["L_SCRATCH_JOB"]
-    cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
-
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/peak_classification/{model_name}/v3"    
+    out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/ab_initio/{model_name}")    
 
     os.makedirs(out_dir, exist_ok=True)
     
