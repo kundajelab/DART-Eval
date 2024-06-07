@@ -14,9 +14,9 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_dir = os.path.join(root_output_dir,"/task_2_footprinting/outputs/likelihoods/")
+    out_dir = os.path.join(root_output_dir,"task_2_footprinting/outputs/likelihoods/")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(root_output_dir,f"/task_2_footprinting/outputs/likelihoods/{model_name}.tsv")
+    out_path = os.path.join(root_output_dir,f"task_2_footprinting/outputs/likelihoods/{model_name}.tsv")
 
 
     dataset = FootprintingDataset(seq_table, seed)
