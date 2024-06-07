@@ -3,17 +3,18 @@ import sys
 
 import torch
 
-# from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 from ....finetune import PeaksEndToEndDataset, eval_finetuned_peak_classifier, LargeCNNClassifier
 
-root_output_dir = os.environ.get("DART_WORK_DIR", "")
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
 
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "sequence_baseline_large"
-    genome_fa = os.path.join(root_output_dir, "/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
-    elements_tsv = os.path.join(root_output_dir,"/task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+    model_name = "chrombpnet_like"
+    
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+    elements_tsv = os.path.join(work_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 2048
     num_workers = 0
@@ -56,12 +57,6 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    # emb_channels = 256
-
-    # lora_rank = 8
-    # lora_alpha = 2 * lora_rank
-    # lora_dropout = 0.05
-
     n_filters = 512
     n_residual_convs = 7
     output_channels = 2
@@ -73,11 +68,11 @@ if __name__ == "__main__":
     wd = 0
     num_epochs = 200
 
-    out_dir = os.path.join(root_output_dir,f"/task_3_cell-type-specific/outputs/ab_initio/{model_name}")
+    out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_model_outputs/ab_initio/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = os.path.join(root_output_dir, f"/task_3_cell-type-specific/supervised_models/ab_initio/{model_name}/v1")
+    model_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/ab_initio/{model_name}")    
     checkpoint_num = 189
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
     
@@ -89,7 +84,7 @@ if __name__ == "__main__":
         "K562": 4
     } 
 
-    test_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, modes[eval_mode], classes)
+    test_dataset = PeaksEndToEndDataset(genome_fa, elements_tsv, modes[eval_mode], classes, cache_dir=cache_dir)
 
     model = LargeCNNClassifier(4, n_filters, n_residual_convs, len(classes), seq_len)
     checkpoint_resume = torch.load(checkpoint_path)
