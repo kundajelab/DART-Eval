@@ -7,14 +7,13 @@ from ....components import SimpleSequence
 
 if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
-    genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = os.path.join(root_output_dir, f"refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
     cell_line = sys.argv[1] #cell line name
     category = sys.argv[2] #peaks, nonpeaks, or idr
     if category == "idr":
-        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"
+        elements_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
     else:
-        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_{category}.bed"
+        elements_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_{category}.bed")
     # chroms = ["chr22"]
     chroms = None
     batch_size = 64
@@ -22,14 +21,10 @@ if __name__ == "__main__":
     seed = 0
     device = "cuda"
 
-    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/embeddings/{model_name}/"
-    print(out_dir)
-    # out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50"
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{cell_line}_{category}.h5")
-    print("Making dataset")
+
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
-    print("Creating extractor")
     extractor = GENALMEmbeddingExtractor(model_name, batch_size, num_workers, device)
-    print("Extracting")
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)

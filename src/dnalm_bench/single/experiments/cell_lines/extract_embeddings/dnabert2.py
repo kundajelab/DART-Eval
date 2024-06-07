@@ -3,27 +3,25 @@ import sys
 
 from ....embeddings import DNABERT2EmbeddingExtractor
 from ....components import SimpleSequence
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 
 if __name__ == "__main__":
     model_name = "DNABERT-2-117M"
-    #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/scratch/groups/akundaje/dnalm_benchmark/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    genome_fa = os.path.join(root_output_dir, f"refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
     cell_line = sys.argv[1] #cell line name
     category = sys.argv[2] #peaks, nonpeaks, or idr
     if category == "idr":
-        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_idr_peaks/{cell_line}.bed"
+        elements_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
     else:
-        elements_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_{category}.bed"
-    # chroms = ["chr22"]
+        elements_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_{category}.bed")
     chroms = None
     batch_size = 64
     num_workers = 4
     seed = 0
     device = "cuda"
 
-    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/embeddings/{model_name}/"
-    # out_dir = "/mnt/lab_data2/atwang/data/dnalm_benchmark/embeddings/ccre_test_regions_500_jitter_50"
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{cell_line}_{category}.h5")
 

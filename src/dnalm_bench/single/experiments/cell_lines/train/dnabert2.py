@@ -68,17 +68,16 @@ if __name__ == "__main__":
     lr = 2e-3
     num_epochs = 150
 
-    # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
     out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1")
     os.makedirs(out_dir, exist_ok=True)
 
-    # peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)
-    # nonpeaks_train_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_train, assay_bw, crop=crop, downsample_ratio=10)
-    # train_dataset = InterleavedIterableDataset([peaks_train_datset, nonpeaks_train_dataset])
+    peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)
+    nonpeaks_train_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_train, assay_bw, crop=crop, downsample_ratio=10)
+    train_dataset = InterleavedIterableDataset([peaks_train_datset, nonpeaks_train_dataset])
 
-    # peaks_val_dataset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_val, assay_bw, crop=crop)
-    # nonpeaks_val_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_val, assay_bw, crop=crop)
-    # val_dataset = InterleavedIterableDataset([peaks_val_dataset, nonpeaks_val_dataset])
+    peaks_val_dataset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_val, assay_bw, crop=crop)
+    nonpeaks_val_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_val, assay_bw, crop=crop)
+    val_dataset = InterleavedIterableDataset([peaks_val_dataset, nonpeaks_val_dataset])
 
-    # model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
-    # train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)

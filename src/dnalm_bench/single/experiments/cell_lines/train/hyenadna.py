@@ -11,16 +11,11 @@ if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     model_name = "hyenadna-large-1m-seqlen-hf"
-    peaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    # peaks_h5 = f"/home/atwang/dnalm_bench_data/embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5"
-    nonpeaks_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
-    # nonpeaks_h5 = f"/home/atwang/dnalm_bench_data/embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5"
-    peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    # peaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    # nonpeaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
-    # assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
+    peaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5")
+    nonpeaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5")
+    peaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    nonpeaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(root_output_dir, f"cell_line_data/{cell_line}_unstranded.bw")
 
     batch_size = 1024
     num_workers = 0
@@ -71,9 +66,7 @@ if __name__ == "__main__":
     lr = 2e-3
     num_epochs = 150
 
-    # out_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/classifiers/ccre_test_regions_500_jitter_50/DNABERT-2-117M/v0"
-    out_dir = f"/scratch/groups/akundaje/chrombench/synapse/task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1"  
-    # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114/{model_name}/{cell_line}/v3"
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1")
  
     os.makedirs(out_dir, exist_ok=True)
 
