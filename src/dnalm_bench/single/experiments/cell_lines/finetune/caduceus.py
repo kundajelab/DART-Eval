@@ -1,32 +1,27 @@
 import os
 import sys
 
-from torch.utils.data import DataLoader ####
-
 from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, CaduceusLoRAModel
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
     resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     model_name = "caduceus-ps_seqlen-131k_d_model-256_n_layer-16"
-    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # peaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    peaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    # nonpeaks_tsv = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    nonpeaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    # assay_bw = f"/scratch/groups/akundaje/dnalm_benchmark/cell_line_data/{cell_line}_unstranded.bw"
-    assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
+
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+
+    peaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    nonpeaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/bigwigs/cell_line_data/{cell_line}_unstranded.bw")
 
     batch_size = 12
     accumulate = 32
     num_workers = 4
     prefetch_factor = 2
-    # num_workers = 0 ####
-    # prefetch_factor = None
     seed = 0
     device = "cuda"
 
@@ -75,13 +70,7 @@ if __name__ == "__main__":
     wd = 0.01
     num_epochs = 45
 
-    # cache_dir = os.environ["L_SCRATCH_JOB"]
-    cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
-
-    # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v1" 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v11"
-    # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v0"        
-    # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
+    out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_models/fine_tuned/{model_name}/{cell_line}")
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -90,13 +79,7 @@ if __name__ == "__main__":
     val_pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_val, crop, cache_dir=cache_dir)
     val_neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, chroms_val, crop, cache_dir=cache_dir)
 
-    # val_pos_dataloader = DataLoader(val_pos_dataset, batch_size=batch_size, num_workers=num_workers, 
-    #                             pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True) ####
-    # for batch in val_pos_dataloader:
-    #     print(batch) ####
-
     model = CaduceusLoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
-    # model = torch.nn.Sequential(model, ChromatinPredictionHead(emb_channels))
     train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_pos_dataset, val_neg_dataset, model, 
                                     num_epochs, out_dir, batch_size, lr, wd, accumulate, num_workers, prefetch_factor, device, 
                                     progress_bar=True, resume_from=resume_checkpoint)

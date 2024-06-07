@@ -7,17 +7,21 @@ from ....finetune import ChromatinEndToEndDataset, evaluate_finetuned_chromatin_
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
+
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
     eval_mode = sys.argv[2] if len(sys.argv) > 2 else "test"
 
     model_name = "DNABERT-2-117M"
 
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    peaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_peaks.bed"
-    idr_peaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_idr_peaks/{cell_line}.bed"
-    nonpeaks_tsv = f"/home/atwang/dnalm_bench_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed"
-    assay_bw = f"/home/atwang/dnalm_bench_data/cell_line_data/{cell_line}_unstranded.bw"
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+
+    peaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    idr_peaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
+    nonpeaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/bigwigs/cell_line_data/{cell_line}_unstranded.bw")
 
     batch_size = 24
     num_workers = 4
@@ -68,10 +72,7 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    # cache_dir = os.environ["L_SCRATCH_JOB"]
-    cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
-
-    model_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v8"
+    model_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_models/fine_tuned/{model_name}/{cell_line}")
     checkpoint_nums = {
         "GM12878": 13,
         "H1ESC": 10,
@@ -80,24 +81,20 @@ if __name__ == "__main__":
         "K562": 18
     }
     checkpoint_num = checkpoint_nums[cell_line]
-    checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
+    checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt") 
 
-    # out_dir = f"/scratch/groups/akundaje/dnalm_benchmark/predictors/cell_line_2114_ft/{model_name}/{cell_line}/v1" 
-    out_dir = f"/home/atwang/dnalm_bench_data/predictor_eval/cell_line_2114_ft/{model_name}/{cell_line}"    
-    # out_dir = f"/home/atwang/dnalm_bench_data/predictors/cell_line_2114_ft/{model_name}/{cell_line}/test"    
+    out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_model_outputs/fine_tuned/{model_name}")
 
     os.makedirs(out_dir, exist_ok=True)
 
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    # chroms_test = chroms_val ####
     pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
     idr_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, idr_peaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
     neg_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, nonpeaks_tsv, modes[eval_mode], crop, cache_dir=cache_dir)
 
     model = DNABERT2LoRAModel(model_name, lora_rank, lora_alpha, lora_dropout, 1)
     checkpoint_resume = torch.load(checkpoint_path)
-    # print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
 
     metrics = evaluate_finetuned_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,
