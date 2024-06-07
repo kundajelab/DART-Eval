@@ -1,28 +1,25 @@
 import os
 import sys
 
-import torch
-
-# from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 from ....finetune import train_finetuned_classifier, MistralDNALoRAModel
 from ....components import PairedControlDataset
 
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+work_dir = os.environ.get("DART_WORK_DIR", "")
+cache_dir = os.environ.get("DART_CACHE_DIR")
 
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "Mistral-DNA-v0.1"
-    # genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_350_jitter_0.bed"
+
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+    elements_tsv = os.path.join(work_dir, f"task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
     batch_size = 128
     num_workers = 4
     prefetch_factor = 2
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
@@ -71,11 +68,7 @@ if __name__ == "__main__":
     wd = 0.01
     num_epochs = 5
 
-    # cache_dir = os.environ["L_SCRATCH_JOB"]
-    cache_dir = "/mnt/disks/ssd-0/dnalm_bench_cache"
-
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/classifiers_ft/ccre_test_regions_350_jitter_0/{model_name}/v2"      
-
+    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/fine_tuned/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
 
     train_dataset = PairedControlDataset(genome_fa, elements_tsv, chroms_train, seed)
