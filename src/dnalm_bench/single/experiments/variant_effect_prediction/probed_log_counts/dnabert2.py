@@ -20,25 +20,24 @@ if __name__ == "__main__":
     chroms=None
     
     variants_bed = sys.argv[1]
-    counts_tsv = sys.argv[2]
+    output_prefix = sys.argv[2]
     genome_fa = sys.argv[3]
     cell_line = "GM12878"
 
-    model_folder = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}/v1/")
+    model_folder = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}")
     train_log = f"{model_folder}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
+    model_path = os.path.join(model_folder, f"checkpoint_{checkpoint_num}.pt")
 
-    model_path = f"{model_folder}/checkpoint_{checkpoint_num}.pt"
-
-    out_dir = os.path.join(root_output_dir, f"task_5_variant_effect_prediction/outputs/probed/{model_name}/")
+    out_dir = os.path.join(root_output_dir, f"task_5_variant_effect_prediction/outputs/probed/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     
     input_channels = 768
     hidden_channels = 32
     kernel_size = 8
 
-    out_path = os.path.join(out_dir, f"{counts_tsv}")
+    out_path = os.path.join(out_dir, f"{output_prefix}" + ".tsv")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)

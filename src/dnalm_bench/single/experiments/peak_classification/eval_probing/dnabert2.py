@@ -13,8 +13,8 @@ if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
     model_name = "DNABERT-2-117M"
-    peaks_h5 = os.path.join(root_output_dir,f"/task_3_cell-type-specific/embeddings/{model_name}.h5")
-    elements_tsv = os.path.join(root_output_dir,"/task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+    peaks_h5 = os.path.join(root_output_dir,f"task_3_cell-type-specific/embeddings/{model_name}.h5")
+    elements_tsv = os.path.join(root_output_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 1024
     num_workers = 0
@@ -63,11 +63,11 @@ if __name__ == "__main__":
 
     crop = 557
 
-    out_dir = os.path.join(root_output_dir,f"/task_3_cell-type-specific/outputs/probed/{model_name}")
+    out_dir = os.path.join(root_output_dir,f"task_3_cell-type-specific/outputs/probed/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = os.path.join(root_output_dir, f"/task_3_cell-type-specific/supervised_models/probed/{model_name}/v1")
+    model_dir = os.path.join(root_output_dir, f"task_3_cell-type-specific/supervised_models/probed/{model_name}")
 
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")

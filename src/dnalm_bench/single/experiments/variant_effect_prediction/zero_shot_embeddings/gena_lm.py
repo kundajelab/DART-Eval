@@ -24,7 +24,7 @@ if __name__ == "__main__":
     genome_fa = sys.argv[3]
     cell_line = "GM12878"
 
-    out_dir = os.path.join(root_output_dir, f"task_5_variant_effect_prediction/outputs/zero_shot/embeddings/{model_name}/")
+    out_dir = os.path.join(root_output_dir, f"task_5_variant_effect_prediction/outputs/zero_shot/embeddings/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     
     out_path = os.path.join(out_dir, output_prefix + ".tsv")
