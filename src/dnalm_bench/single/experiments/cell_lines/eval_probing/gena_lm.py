@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     crop = 557
 
-    model_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}/v1/")
+    model_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}/")
 
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
