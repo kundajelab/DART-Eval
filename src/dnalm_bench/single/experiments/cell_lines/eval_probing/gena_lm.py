@@ -78,7 +78,7 @@ if __name__ == "__main__":
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/outputs/probed/{model_name}/{cell_line}/") 
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/probed/{model_name}/{cell_line}/") 
     os.makedirs(out_dir, exist_ok=True)
 
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
