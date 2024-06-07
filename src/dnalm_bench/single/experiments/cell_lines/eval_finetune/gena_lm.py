@@ -84,7 +84,7 @@ if __name__ == "__main__":
     checkpoint_num = checkpoint_nums[cell_line]    
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt") 
 
-    out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_model_outputs/fine_tuned/{model_name}")
+    out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_model_outputs/fine_tuned/{model_name}/{cell_line}")
 
 
     os.makedirs(out_dir, exist_ok=True)
