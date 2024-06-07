@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     crop = 557
 
-    out_dir = os.path.join(root_output_dir,f"task_3_cell-type-specific/outputs/ab_initio/{model_name}")
+    out_dir = os.path.join(root_output_dir,f"task_3_cell-type-specific/supervised_model_outputs/ab_initio/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
