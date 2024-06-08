@@ -8,6 +8,8 @@ from ...training import EmbeddingsDataset, CNNSequenceBaselineClassifier, evalua
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
+
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
