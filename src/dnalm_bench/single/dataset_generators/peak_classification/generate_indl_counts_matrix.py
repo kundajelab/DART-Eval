@@ -1,10 +1,12 @@
 import pysam
 import pandas as pd
 import sys
+import os
+
+dart_work_dir = os.environ.get("DART_WORK_DIR", "")
 
 # Load the peaks from a BED file
-# peaks_file = '/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/accepted_peaks.tsv'
-peaks_file = '/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/old_da_peaks.tsv'
+peaks_file = os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/accepted_peaks_all.tsv")
 
 data_types = {
     'chrom': 'str',
@@ -14,11 +16,9 @@ data_types = {
 
 peaks_df = pd.read_csv(peaks_file, sep='\t', header=0, names=['chrom', 'start', 'end'], dtype=data_types)
 
-# Open the BAM file
-
 cell_type = sys.argv[1]
 file_name = sys.argv[2]
-bam_path = f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/{cell_type}/{file_name}.bam"
+bam_path = os.path.join(dart_work_dir,f"task_3_cell-type-specific/input_data/{cell_type}/{file_name}.bam")
 bam_file = pysam.AlignmentFile(bam_path, "rb")
 
 # Function to count reads in a given peak
@@ -36,7 +36,8 @@ peaks_df.rename(columns={'read_count': f'{cell_type}_{file_name}'}, inplace=True
 peaks_df['peak'] = peaks_df.apply(lambda row: f"{row['chrom']}:{row['start']}-{row['end']}", axis=1)
 
 # Optionally, save the results to a new CSV file
-peaks_df[["peak", f'{cell_type}_{file_name}']].to_csv(f'/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/{cell_type}/{file_name}.csv', index=False)
+output_path = os.path.join(dart_work_dir, "task_3_cell-type-specific/input_data", f"{cell_type}/{file_name}.csv")
+peaks_df[["peak", f'{cell_type}_{file_name}']].to_csv(output_path, index=False)
 
 # Close the BAM file
 bam_file.close()

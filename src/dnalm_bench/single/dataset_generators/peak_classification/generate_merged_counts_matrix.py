@@ -1,8 +1,11 @@
 import pandas as pd
 import glob
 from collections import Counter
+import os
 
-counts_matrices = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/*/ENCF*.csv"
+dart_work_dir = os.environ.get("DART_WORK_DIR", "")
+
+counts_matrices = os.path.join(dart_work_dir, "task_3_cell-type-specific/input_data/*/ENCF*.csv")
 
 merged_df = pd.read_csv(glob.glob(counts_matrices)[0], header=0)
 for f in glob.glob(counts_matrices)[1:]:
@@ -11,7 +14,8 @@ for f in glob.glob(counts_matrices)[1:]:
     merged_df = pd.merge(merged_df, counts_df, on="peak")
     print(merged_df.shape)
 
-merged_df.to_csv("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/merged_counts_matrix.csv", index=False)
+merged_df_output_path = os.path.join(dart_work_dir, "task_3_cell-type-specific/input_data/merged_counts_matrix.csv")
+merged_df.to_csv(merged_df_output_path, index=False)
 
 sample_names = list(merged_df.columns[1:])
 print(sample_names)
@@ -35,4 +39,5 @@ def create_dataframe(samples, index):
 
 for i in range(0, len(sample_names), 3):
     df, cell_type = create_dataframe(sample_names, i)
-    df.to_csv(f"/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/{cell_type}_deseq_input_coldata.csv", index=False)
+    output_path = os.path.join(dart_work_dir, "task_3_cell-type-specific/input_data/", f"{cell_type}/{cell_type}_deseq_input_coldata.csv")
+    df.to_csv(output_path, index=False)
