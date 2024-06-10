@@ -13,9 +13,9 @@ work_dir = os.environ.get("DART_WORK_DIR", "")
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "sequence_baseline"
+    model_name = "probing_head_like"
 
-    embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
+    embeddings_h5 = f"task_1_ccre/embeddings/{model_name}.h5"
     elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
 
     batch_size = 2048
