@@ -4,17 +4,15 @@ from ..evaluators import PairedControlDataset, NTEvaluator
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"
-    #genome_fa = "/oak/stanford/groups/akundaje/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    # genome_fa = "/mnt/data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    genome_fa = "/home/atwang/dnalm_bench_data/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+    
+    genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
+    elements_tsv = os.path.join(work_dir, f"task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
-    # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_500_jitter_50.bed"
-    elements_tsv = f"/home/atwang/dnalm_bench_data/ccre_test_regions_350_jitter_0.bed"
-
-    out_dir = f"/home/atwang/dnalm_bench_data/encode_ccre/zero_shot/ccre_test_regions_350_jitter_0/{model_name}/v2"
+    out_dir = os.path.join(work_dir, f"task_1_ccre/zero_shot_outputs/likelihoods/{model_name}")
 
     chroms = [
         "chr5",
