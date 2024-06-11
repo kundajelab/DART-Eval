@@ -180,3 +180,8 @@ _Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_class
 
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
+
+#### Zero-Shot:
+
+#### Probed:
+#### Finetuned:
