@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from ...training import EmbeddingsDataset, CNNSlicedEmbeddingsClassifier, train_classifier
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     elements_tsv = "/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv"
 
     batch_size = 2048
-    num_workers = 4
+    num_workers = 0
     prefetch_factor = 2
     # num_workers = 0 ####
     seed = 0

@@ -8,7 +8,7 @@ work_dir = os.environ.get("DART_WORK_DIR", "")
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
-    model_name = "probing-head-like"
+    model_name = "probing_head_like"
     embeddings_h5 = os.path.join(work_dir, f"task_1_ccre/embeddings/{model_name}.h5")
     elements_tsv = os.path.join(work_dir, "task_1_ccre/processed_data/ENCFF420VPZ_processed.tsv")
 

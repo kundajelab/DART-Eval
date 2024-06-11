@@ -1,25 +1,20 @@
 import os
 import sys
-
 from torch.utils.data import DataLoader
-
 from ...training import EmbeddingsDataset, CNNEmbeddingsClassifier, train_classifier
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "gena-lm-bert-large-t2t"
-    # embeddings_h5 = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/DNABERT-2-117M.h5"
-    # embeddings_h5 = f"/scratch/groups/akundaje/dnalm_benchmark/embeddings/ccre_test_regions_350_jitter_0/{model_name}.h5"
-    # elements_tsv = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/regions/ccre_test_regions_350_jitter_0.bed"
     embeddings_h5 = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/embeddings/{model_name}.h5"
     elements_tsv = "/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv"
 
     batch_size = 2048
-    num_workers = 4
+    num_workers = 0
     prefetch_factor = 2
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
