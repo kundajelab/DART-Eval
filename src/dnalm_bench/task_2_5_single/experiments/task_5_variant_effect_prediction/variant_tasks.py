@@ -10,6 +10,8 @@ from scipy.stats import mannwhitneyu
 import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 
+work_dir = os.environ.get("DART_WORK_DIR", "")
+
 def get_precision_recall_auc(ctrl_counts, sig_counts):
     counts = np.concatenate([ctrl_counts, sig_counts])
     labels = np.concatenate([np.zeros(len(ctrl_counts)), np.ones(len(sig_counts))])
@@ -61,7 +63,7 @@ def compute_change(filtered_variants_df, switch=False):
     return filtered_variants_df, np.abs(filtered_variants_df["llm_logfc"])
 
 def sig_ctrl_variants_Afr_CaQTLs(scores_data_path):
-    afr_caqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/Afr.CaQTLS.new_filter.tsv"
+    afr_caqtls_data_path =  os.path.join(work_dir, "Afr.CaQTLS.tsv")
     afr_caQTLs_df = pd.read_csv(afr_caqtls_data_path, sep="\t")
     likelihoods = pd.read_csv(scores_data_path, sep="\t")
 
@@ -85,7 +87,7 @@ def sig_ctrl_variants_Afr_CaQTLs(scores_data_path):
         return filtered_var_afrcaqtls_df_ctrl, filtered_var_afrcaqtls_df_sig
     
 def variants_Yoruba_LCL_dsQTLs(scores_data_path):
-    yoruba_dsqtls_data_path =  "/oak/stanford/groups/akundaje/anusri/variant-benchmakring/gm12878.dsqtls.benchmarking.tsv"
+    yoruba_dsqtls_data_path = os.path.join(work_dir, "yoruban.dsqtls.benchmarking.tsv")
     yoruba_dsQTLs_df = pd.read_csv(yoruba_dsqtls_data_path, sep="\t")
     likelihoods = pd.read_csv(scores_data_path, sep="\t")
 
