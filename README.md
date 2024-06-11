@@ -182,6 +182,32 @@ _Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_class
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
 #### Zero-Shot:
+##### Embeddings: 
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_embeddings.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+```
+
+##### Likelihoods:
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+```
 
 #### Probed:
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.probed_log_counts.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+```
+
 #### Finetuned:
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+```
+
+#### Evaluation Notebooks
+
+Helper functions called in the evaluation notebooks: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.variant_tasks.py```
+
+Zero Shot Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.Zero_Shot_Final.ipynb```
+
+Probed Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.Probed_Final_Counts.ipynb```
+
+Finetuned Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.Finetuned_Final_Counts.ipynb```
