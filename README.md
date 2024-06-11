@@ -46,7 +46,27 @@ This script expands each element to 350 bp, centered on the midpoint of the elem
 python -m dnalm_bench.task_1_paired_control.zero_shot.encode_ccre.$MODEL
 ```
 
-#### Train probing models
+#### Ab-initio models
+
+Extract final-layer embeddings 
+
+```bash
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.extract_embeddings.probing_head_like
+```
+
+Train probing_head_like ab-initio model
+
+```bash
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.ab_initio.probing_head_like
+```
+
+Evaluate probing_head_like ab-initio model
+
+```bash
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_ab_initio.probing_head_like
+```
+
+#### Probing models
 
 Extract final-layer embeddings from each model
 
@@ -68,7 +88,7 @@ python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune
 
 where `$CHECKPOINT_NUM` is the number of the checkpoint to evaluate.
 
-#### Train finetuning models
+#### Finetuning models
 
 Train finetuning models
 
@@ -89,28 +109,31 @@ where `$CHECKPOINT_NUM` is the number of the checkpoint to evaluate
 
 #### Dataset Generation:
 
+```bash
 python -m dnalm_bench.task_2_5_single.dataset_generators.transcription_factor_binding.h5_to_seqs.py [INPUT EMBEDDING FILE]
 python -m dnalm_bench.task_2_5_single.dataset_generators.motif_footprinting_dataset --input_seqs [INPUT_SEQS] --output_file [OUTPUT_FILE] --meme_file [MEME_MOTIF_FILE]
+```
 
 #### Extracting Embeddings: 
 
+```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.embeddings.$MODEL
-
+```
 #### Likelihoods:
-
+```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.$MODEL
-
+```
 #### Eval Metrics Calculation
-
+```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs [INPUT_DATASET] --likelihoods [LIKELIHOODS] --ouput_file [OUTPUT_FILE]
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs [INPUT_DATASET] --embeddings [EMBEDDINGS] --ouput_file [OUTPUT_FILE]
-
+```
 #### Further Evaluation Notebooks
 
-src/dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood.ipynb - figure production for likelihood-based evaluation
-src/dnalm_bench/task_2_5_single/experiments/eval_footprinting_embedding.ipynb - figure production for embedding-based evaluation
-src/dnalm_bench/task_2_5_single/experiments/footprinting_pairwise.ipynb - cross-model pairwise production plots
-src/dnalm_bench/task_2_5_single/experiments/footprinting_conf_intervals.ipynb - confidence interval calculation
+```dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood.ipynb``` - figure production for likelihood-based evaluation
+```dnalm_bench/task_2_5_single/experiments/eval_footprinting_embedding.ipynb``` - figure production for embedding-based evaluation
+```dnalm_bench/task_2_5_single/experiments/footprinting_pairwise.ipynb``` - cross-model pairwise production plots
+```dnalm_bench/task_2_5_single/experiments/footprinting_conf_intervals.ipynb``` - confidence interval calculation
 
 ### Task 3: Discriminating Cell-Type-Specific Elements
 
@@ -154,5 +177,6 @@ _Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classifi
 _Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL
 
 ### Task 4: Predicting Chromatin Activity from Sequence
+
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
