@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import numpy as np
+import pandas as pd
 
 from ....finetune import PeaksEndToEndDataset, eval_finetuned_peak_classifier, GENALMLoRAModel
 
@@ -76,7 +78,9 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
     model_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/fine_tuned/{model_name}")    
-    checkpoint_num = 8
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     classes = {
