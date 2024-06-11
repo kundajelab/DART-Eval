@@ -33,13 +33,24 @@ _Finetuned_: python -m dnalm_bench.paired_control.supervised.encode_ccre.eval_fi
 ### Task 2: Transcription Factor Motif Footprinting
 
 #### Dataset Generation:
-python -m dnalm_bench.single.dataset_generators.motif_footprinting_dataset
+python -m dnalm_bench.task_2_5_single.dataset_generators.transcription_factor_binding.h5_to_seqs.py [INPUT EMBEDDING FILE]
+python -m dnalm_bench.task_2_5_single.dataset_generators.motif_footprinting_dataset --input_seqs [INPUT_SEQS] --output_file [OUTPUT_FILE] --meme_file [MEME_MOTIF_FILE]
 
 #### Extracting Embeddings: 
-python -m dnalm_bench.single.experiments.footprinting.embeddings.$MODEL
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.embeddings.$MODEL
 
 #### Likelihoods:
-python -m dnalm_bench.single.experiments.footprinting.likelihoods.$MODEL
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.$MODEL
+
+#### Eval Metrics Calculation
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs [INPUT_DATASET] --likelihoods [LIKELIHOODS] --ouput_file [OUTPUT_FILE]
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs [INPUT_DATASET] --embeddings [EMBEDDINGS] --ouput_file [OUTPUT_FILE]
+
+#### Further Evaluation Notebooks
+src/dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood.ipynb - figure production for likelihood-based evaluation
+src/dnalm_bench/task_2_5_single/experiments/eval_footprinting_embedding.ipynb - figure production for embedding-based evaluation
+src/dnalm_bench/task_2_5_single/experiments/footprinting_pairwise.ipynb - cross-model pairwise production plots
+src/dnalm_bench/task_2_5_single/experiments/footprinting_conf_intervals.ipynb - confidence interval calculation
 
 ### Task 3: Discriminating Cell-Type-Specific Elements
 
