@@ -19,8 +19,8 @@ if __name__ == "__main__":
     elements_tsv = os.path.join(work_dir, "task_1_ccre/processed_data/ENCFF420VPZ_processed.tsv")
 
     batch_size = 2048
-    num_workers = 4
-    prefetch_factor = 2
+    num_workers = 0
+    prefetch_factor = None
     seed = 0
     device = "cuda"
 
