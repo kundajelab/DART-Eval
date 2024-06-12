@@ -15,8 +15,8 @@ opt <- parse_args(opt_parser)
 cell_type = opt$cell_type
 print(cell_type)
 
-cts_unrounded_path <- file.path(DART_WORK_DIR, "task_3_cell-type-specific/input_data/merged_counts_matrix.csv")
-coldata_path <- file.path(DART_WORK_DIR, sprintf("task_3_cell-type-specific/input_data/%s/%s_deseq_input_coldata.csv", cell_type, cell_type))
+cts_unrounded_path <- file.path(DART_WORK_DIR, "task_3_peak_classification/input_data/merged_counts_matrix.csv")
+coldata_path <- file.path(DART_WORK_DIR, sprintf("task_3_peak_classification/input_data/%s/%s_deseq_input_coldata.csv", cell_type, cell_type))
 
 cts_unrounded <- as.matrix(read.csv(cts_unrounded_path, row.names="peak"))
 cts <- round(cts_unrounded)
@@ -52,7 +52,7 @@ pheatmap(assay(ntd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
 res_df <- as.data.frame(res)
 rownames(res_df) <- rownames(res)
 
-diff_acc_peaks_path <- file.path(DART_WORK_DIR, sprintf("task_3_cell-type-specific/input_data/%s/diff_acc_peaks.csv", cell_type))
+diff_acc_peaks_path <- file.path(DART_WORK_DIR, sprintf("task_3_peak_classification/input_data/%s/diff_acc_peaks.csv", cell_type))
 
 res_df$significant <- ifelse(res_df$padj < 0.001 & abs(res_df$log2FoldChange) > 1, "Significant", "Not significant")
 write.csv(res_df, file = diff_acc_peaks_path, row.names = TRUE)

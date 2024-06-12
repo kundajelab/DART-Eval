@@ -88,7 +88,6 @@ Evaluate probing models
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
 ```
 
-
 #### Finetuning models
 
 Train finetuning models
@@ -102,8 +101,6 @@ Evaluate finetuning models
 ```bash
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
 ```
-
-
 
 ### Task 2: Transcription Factor Motif Footprinting
 
@@ -157,44 +154,115 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 
 ### Task 3: Discriminating Cell-Type-Specific Elements
 
-#### Dataset Generation:
+All inputs, intermediate files, and outputs for this task are available for download at [`syn60581042`](https://www.synapse.org/Synapse:syn60581042).
 
-Using the input peaks from ENCODE, generate a consensus peakset:\
-```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.make_consensus_peakset.py```
+#### Inputs
 
-Then, generate individual counts matrices for each sample, using the bam files downloaded from ENCODE and the consensus peakset:
-```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix.py```
+This task utilizes ATAC-Seq experimental readouts from five cell lines. Input files are available at [`syn60581166`](https://www.synapse.org/Synapse:syn60756095). This directory should be cloned to `$DART_WORK_DIR/task_3_peak_classification/input_data`.
+<!-- 
+For this task, let `$CELL_TYPE` represent one of the following cell lines: `GM12878`, `H1ESC`, `HEPG2`, `IMR90`, or `K562`. -->
 
-Concatenate the counts matrices and generate DESeq inputs:\
-```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_merged_counts_matrix.py```
+#### Dataset Generation
 
-Finally, run DESeq for each cell type to obtain differentially accessible peaks for each cell type:\
-```dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeqAtac.R```
+Using the input peaks from ENCODE, generate a consensus peakset:
 
-You will end up with the file: (INSERT Synapse link)
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.make_consensus_peakset
+```
 
-#### Extracting Embeddings:
+Then, generate individual counts matrices for each sample, using input BAM files from ENCODE and the consensus peakset:
 
-python dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.extract_embeddings.$MODEL $CELL_LINE $CATEGORY
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix GM12878 TODO.bam
+```
 
-````
-CELL_LINE:
-CATEGORY:
-````
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix H1ESC TODO.bam
+```
 
-#### Clustering:
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix HEPG2 TODO.bam
+```
 
-```python dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster [EMBEDDING FILE] [LABEL FILE] [INDEX FILE] [OUT_DIR]```
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix IMR90 TODO.bam
+```
 
-#### Training:
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix K562 TODO.bam
+```
 
-_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train.$MODEL```\
-_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.finetune.$MODEL```
+Concatenate the counts matrices and generate DESeq inputs:
 
-#### Evals:
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_merged_counts_matrix
+```
 
-_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_probing.$MODEL```\
-_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL```
+Finally, run DESeq for each cell type to obtain differentially accessible peaks for each cell type:
+
+
+```bash
+Rscript dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeqAtac.R
+```
+
+The final output is TODO, also available at [`TODO`](TODO).
+
+
+#### *Ab initio* models
+
+Here, `$AB_INITIO_MODEL` is one of `sequence_baseline` (probing-head-like) or `sequence_baseline_large` (ChromBPNet-like).
+
+Extract final-layer embeddings (`probing_head_like` only)
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.extract_embeddings.sequence_baseline
+```
+
+Train *ab initio* models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.baseline.$AB_INITIO_MODEL
+```
+
+Evaluate *ab initio* models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_baseline.$AB_INITIO_MODEL 
+```
+
+#### Probing models
+
+Extract final-layer embeddings from each model
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.extract_embeddings.$MODEL
+```
+
+Train probing models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train_classifiers.$MODEL
+```
+
+Evaluate probing models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL 
+```
+
+#### Finetuning models
+
+Train finetuning models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.$MODEL
+```
+
+Evaluate finetuning models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL 
+```
 
 ### Task 4: Predicting Chromatin Activity from Sequence
 ##### Extracting Embeddings:
