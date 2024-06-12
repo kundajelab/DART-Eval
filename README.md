@@ -17,6 +17,8 @@ Prior to running analyses, set the `$DART_WORK_DIR` environment variable. This d
 
 Additionally, download the genome reference files from [`syn60581044`](https://www.synapse.org/Synapse:syn60581044) into `$DART_WORK_DIR/refs`, keeping the file names. These genome references are used across all tasks.
 
+In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`.
+
 ### Task 1: Prioritizing Known Regulatory Elements
 
 All inputs, intermediate files, and outputs for this task are available for download at [`syn60581046`](https://www.synapse.org/Synapse:syn60581043).
@@ -318,25 +320,50 @@ python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
-#### Zero-Shot:
-##### Embeddings: 
+All inputs, intermediate files, and outputs for this task are available for download at [`syn60581045`](https://www.synapse.org/Synapse:syn60581045).
+
+#### Inputs
+
+This task utilizes genomic caQTL variants from two studies [TODO: refs]. Input TSV files of variants and experimental effect sizes are available at [`syn60756043`](https://www.synapse.org/Synapse:syn60756043) and [`syn60756039`](https://www.synapse.org/Synapse:syn60756039). These files should be downloaded to `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv` and `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv` respectively.
+
+#### Zero-shot embedding-based scoring
+
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_embeddings.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_embeddings.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/zero_shot/embeddings/$MODEL/Afr.CaQTLS.tsv $DART_WORK_DIR/refs/TODO
 ```
 
-##### Likelihoods:
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_embeddings.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/zero_shot/embeddings/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/TODO
 ```
 
-#### Probed:
+#### Zero-shot likelihood-based scoring
+
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.probed_log_counts.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/zero_shot/likelihoods/$MODEL/Afr.CaQTLS.tsv $DART_WORK_DIR/refs/TODO
 ```
 
-#### Finetuned:
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $VARIANTS_BED $OUTPUT_PREFIX $GENOME_FA
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/zero_shot/likelihoods/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/TODO
+```
+
+#### Supervised probing model scoring
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.probed_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/probed/$MODEL/Afr.CaQTLS.tsv $DART_WORK_DIR/refs/TODO
+```
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.probed_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/probed/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/TODO
+```
+
+#### Supervised fine-tuned model scoring
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/finetuned/$MODEL/Afr.CaQTLS.tsv $DART_WORK_DIR/refs/TODO
+```
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/finetuned/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/TODO
 ```
 
 #### Evaluation Notebooks
