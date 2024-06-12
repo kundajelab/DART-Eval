@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import numpy as np
+import pandas as pd
 
 from ....finetune import evaluate_finetuned_classifier, NucleotideTransformerLoRAModel
 from ....components import PairedControlDataset
@@ -67,7 +69,9 @@ if __name__ == "__main__":
     lora_dropout = 0.05
 
     model_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/fine_tuned/{model_name}")
-    checkpoint_num = 2
+    train_log = os.path.join(model_dir, "train.log")
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])  
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/fine_tuned/{model_name}")

@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import numpy as np
+import pandas as pd
 
 from ....finetune import ChromatinEndToEndDataset, evaluate_finetuned_chromatin_model, MistralDNALoRAModel
 

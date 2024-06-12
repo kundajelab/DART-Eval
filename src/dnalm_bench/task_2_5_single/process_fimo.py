@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import subprocess
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
+
 def initialize_motif_table(peak_data, motif_data):
 	motif_array = np.zeros([len(peak_data), len(motif_data)])
 	table_index = [str((peak_data.loc[x, "chr"], peak_data.loc[x, "input_start"], peak_data.loc[x, "input_end"])) for x in range(len(peak_data))]
@@ -27,15 +29,15 @@ def populate_hits(hit_table, fimo_results):
 
 def main():
 	print("Loading peak data")
-	peak_file = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/peaks_by_cell_label_unique_dataloader_format.tsv"
+	peak_file = os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 	peak_data = pd.read_csv(peak_file, sep="\t")
 
 	print("Loading motif data")
-	motif_family_file = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/reference/H12CORE_motifs.tsv"
+	motif_family_file = os.path.join(root_output_dir, f"task_2_footprinting/input_data/H12CORE_motifs.tsv")
 	motif_family_data = pd.read_csv(motif_family_file, sep="\t", index_col=0)
 
 	print("Loading FIMO results")
-	fimo_base_dir = "/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/"
+	fimo_base_dir = os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/fimo/")
 	cell_line_list = ["K562", "GM12878", "HEPG2", "IMR90", "H1ESC"]
 	fimo_file_list = []
 	for cell_line in cell_line_list:
@@ -51,7 +53,7 @@ def main():
 	motif_table_filled = populate_hits(motif_table_empty, fimo_results)
 
 	print("Saving output file")
-	motif_table_filled.to_csv("/oak/stanford/groups/akundaje/projects/dnalm_benchmark/cell_line_data/motif_hits/motif_count_matrix_total_hits.tsv", sep="\t", header=True, index=True)
+	motif_table_filled.to_csv(os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/fimo/motif_count_matrix_total_hits.tsv"), sep="\t", header=True, index=True)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ import os
 import sys
 
 import torch
+import numpy as np
+import pandas as pd
 
 from ....finetune import ChromatinEndToEndDataset, evaluate_finetuned_chromatin_model, GENALMLoRAModel
 
@@ -74,14 +76,9 @@ if __name__ == "__main__":
     lora_dropout = 0.05
 
     model_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_models/fine_tuned/{model_name}/{cell_line}")
-    checkpoint_nums = {
-        "GM12878": 13,
-        "H1ESC": 7,
-        "HEPG2": 14,
-        "IMR90": 8,
-        "K562": 11
-    }  
-    checkpoint_num = checkpoint_nums[cell_line]    
+    train_log = f"{model_dir}/train.log"
+    df = pd.read_csv(train_log, sep="\t")
+    checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])  
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt") 
 
     out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_model_outputs/fine_tuned/{model_name}/{cell_line}")
