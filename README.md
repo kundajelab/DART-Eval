@@ -143,16 +143,16 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 #### Dataset Generation:
 
 Using the input peaks from ENCODE, generate a consensus peakset:\
-python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.make_consensus_peakset.py
+```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.make_consensus_peakset.py```
 
 Then, generate individual counts matrices for each sample, using the bam files downloaded from ENCODE and the consensus peakset:
-python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix.py
+```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix.py```
 
 Concatenate the counts matrices and generate DESeq inputs:\
-python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_merged_counts_matrix.py
+```python dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_merged_counts_matrix.py```
 
 Finally, run DESeq for each cell type to obtain differentially accessible peaks for each cell type:\
-dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeqAtac.R
+```dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeqAtac.R```
 
 You will end up with the file: (INSERT Synapse link)
 
@@ -167,32 +167,32 @@ CATEGORY:
 
 #### Clustering:
 
-python dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster [EMBEDDING FILE] [LABEL FILE] [INDEX FILE] [OUT_DIR]
+```python dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster [EMBEDDING FILE] [LABEL FILE] [INDEX FILE] [OUT_DIR]```
 
 #### Training:
 
-_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train.$MODEL\
-_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.finetune.$MODEL
+_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train.$MODEL```\
+_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.finetune.$MODEL```
 
 #### Evals:
 
-_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_probing.$MODEL\
-_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL
+_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_probing.$MODEL```\
+_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL```
 
 ### Task 4: Predicting Chromatin Activity from Sequence
 ##### Extracting Embeddings:
-python dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.extract_embeddings.$MODEL [CELL LINE] [CATEGORY]
+```python dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.extract_embeddings.$MODEL [CELL LINE] [CATEGORY]```
 
 #### Training:
 
-_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.train.$MODEL [CELL LINE] \
-_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.finetune.$MODEL [CELL LINE]
+_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.train.$MODEL [CELL LINE]``` \
+_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.finetune.$MODEL [CELL LINE]```
 
 #### Evals:
 
-_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_probing.$MODEL [CELL LINE]\
-_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL [CELL LINE] \
-_ChromBPNet_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline [CELL LINE][CHROMBPNET MODEL PATH]
+_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_probing.$MODEL [CELL LINE]```\
+_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL [CELL LINE]``` \
+_ChromBPNet_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline [CELL LINE][CHROMBPNET MODEL PATH]```
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
