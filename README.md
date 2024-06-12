@@ -209,6 +209,21 @@ Rscript dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeq
 
 The final output is TODO, also available at [`TODO`](TODO).
 
+#### Zero-shot baseline clustering
+Use FIMO to generate motif scores for each peak sequence. 
+
+The following notebook contains information on how to produce the zero-shot clustering results, using the motif counts from FIMO: 
+```bash
+dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.baseline.zero_shot_clustering_baseline.ipynb
+```
+
+#### Zero-shot embedding clustering
+
+This depends on the final-layer embeddings generated for the probed models.
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster.run_clustering_subset $DART_WORK_DIR/task_3_peak_classification/embeddings/$MODEL_SPECIFIC_NAME.h5 $DART_WORK_DIR/task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv $DART_WORK_DIR/task_3_peak_classification/processed_inputs/indices_of_new_peaks_in_old_file.tsv $DART_WORK_DIR/task_3_peak_classification/clustering/$MODEL_SPECIFIC_NAME/
+```
 
 #### *Ab initio* models
 
@@ -266,14 +281,6 @@ Evaluate fine-tuned models
 python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL 
 ```
 
-#### Zero-shot embedding clustering
-
-This depends on the final-layer embeddings generated for the probed models.
-
-```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster.run_clustering_subset $DART_WORK_DIR/task_3_peak_classification/embeddings/$MODEL_SPECIFIC_NAME.h5 $DART_WORK_DIR/task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv $DART_WORK_DIR/task_3_peak_classification/processed_inputs/indices_of_new_peaks_in_old_file.tsv $DART_WORK_DIR/task_3_peak_classification/clustering/$MODEL_SPECIFIC_NAME/
-```
-
 ### Task 4: Predicting Chromatin Activity from Sequence
 
 All inputs, intermediate files, and outputs for this task are available for download at [`syn60581041`](https://www.synapse.org/Synapse:syn60581041).
@@ -324,7 +331,7 @@ All inputs, intermediate files, and outputs for this task are available for down
 
 #### Inputs
 
-This task utilizes genomic caQTL variants from two studies [TODO: refs]. Input TSV files of variants and experimental effect sizes are available at [`syn60756043`](https://www.synapse.org/Synapse:syn60756043) and [`syn60756039`](https://www.synapse.org/Synapse:syn60756039). These files should be downloaded to `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv` and `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv` respectively.
+This task utilizes genomic QTL variants from two studies: African caQTLs ([Degorter et al.](http://biorxiv.org/lookup/doi/10.1101/2023.11.04.564839)) and Yoruban dsQTLs [Degner et al.](http://dx.doi.org/10.1038/nature10808). Input TSV files of variants and experimental effect sizes are available at [`syn60756043`](https://www.synapse.org/Synapse:syn60756043) and [`syn60756039`](https://www.synapse.org/Synapse:syn60756039). These files should be downloaded to `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv` and `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv` respectively.
 
 #### Zero-shot embedding-based scoring
 
