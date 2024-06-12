@@ -25,12 +25,12 @@ All inputs, intermediate files, and outputs for this task are available for down
 
 #### Inputs
 
-This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available at [`TODO`]. This file should be downloaded to `$DART_WORK_DIR/task_1_ccre/input_data/TODO`.
+This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available [`TODO`](TODO). This file should be downloaded to `$DART_WORK_DIR/task_1_ccre/input_data/ENCFF420VPZ.bed`.
 
 #### Dataset Generation
 
 ````bash
-python -m dnalm_bench.task_1_paired_control.dataset_generators.encode_ccre --ccre_bed $DART_WORK_DIR/task_1_ccre/input_data/TODO --output_file $DART_WORK_DIR/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv
+python -m dnalm_bench.task_1_paired_control.dataset_generators.encode_ccre --ccre_bed $DART_WORK_DIR/task_1_ccre/input_data/ENCFF420VPZ.bed --output_file $DART_WORK_DIR/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv
 ````
 
 This script expands each element to 350 bp, centered on the midpoint of the element. The output file is a TSV with the following columns:
@@ -131,7 +131,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/TODO
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Computing Zero-Shot Likelihoods
@@ -141,7 +141,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/TODO
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/likelihoods/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Further Evaluation Notebooks
@@ -271,7 +271,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eva
 This depends on the final-layer embeddings generated for the probed models.
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster $DART_WORK_DIR/task_3_peak_classification/embeddings/$MODEL.h5 TODO:LABEL_FILE TODO:INDEX_FILE TODO:OUT_DIR
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster.run_clustering_subset $DART_WORK_DIR/task_3_peak_classification/embeddings/$MODEL_SPECIFIC_NAME.h5 $DART_WORK_DIR/task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv $DART_WORK_DIR/task_3_peak_classification/processed_inputs/indices_of_new_peaks_in_old_file.tsv $DART_WORK_DIR/task_3_peak_classification/clustering/$MODEL_SPECIFIC_NAME/
 ```
 
 ### Task 4: Predicting Chromatin Activity from Sequence
