@@ -210,7 +210,7 @@ Rscript dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeq
 The final output is TODO, also available at [`TODO`](TODO).
 
 #### Zero-shot baseline clustering
-Use FIMO to generate motif scores for each peak sequence. 
+Use [FIMO](https://meme-suite.org/meme/tools/fimo) to generate motif scores for each peak sequence. 
 
 The following notebook contains information on how to produce the zero-shot clustering results, using the motif counts from FIMO: 
 ```bash
