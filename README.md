@@ -131,8 +131,11 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 #### Further Evaluation Notebooks
 
 ```dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood.ipynb``` - figure production for likelihood-based evaluation
+
 ```dnalm_bench/task_2_5_single/experiments/eval_footprinting_embedding.ipynb``` - figure production for embedding-based evaluation
+
 ```dnalm_bench/task_2_5_single/experiments/footprinting_pairwise.ipynb``` - cross-model pairwise production plots
+
 ```dnalm_bench/task_2_5_single/experiments/footprinting_conf_intervals.ipynb``` - confidence interval calculation
 
 ### Task 3: Discriminating Cell-Type-Specific Elements
@@ -177,7 +180,19 @@ _Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classifi
 _Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL
 
 ### Task 4: Predicting Chromatin Activity from Sequence
+##### Extracting Embeddings:
+python dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.extract_embeddings.$MODEL [CELL LINE] [CATEGORY]
 
+#### Training:
+
+_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.train.$MODEL [CELL LINE] \
+_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.finetune.$MODEL [CELL LINE]
+
+#### Evals:
+
+_Probed_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_probing.$MODEL [CELL LINE]\
+_Finetuned_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL [CELL LINE] \
+_ChromBPNet_: python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline [CELL LINE][CHROMBPNET MODEL PATH]
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
