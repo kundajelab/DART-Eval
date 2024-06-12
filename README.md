@@ -85,18 +85,18 @@ python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.train_classif
 Evaluate probing models
 
 ```bash
-python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_probing.$MODEL 
 ```
 
-#### Finetuning models
+#### Fine-tuned models
 
-Train finetuning models
+Train fine-tuned models
 
 ```bash
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.finetune.$MODEL
 ```
 
-Evaluate finetuning models
+Evaluate fine-tuned models
 
 ```bash
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
@@ -241,43 +241,80 @@ python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.ext
 Train probing models
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train_classifiers.$MODEL
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.train.$MODEL
 ```
 
 Evaluate probing models
 
 ```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_probing.$MODEL 
+```
+
+#### Fine-tuned models
+
+Train fine-tuned models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.finetune.$MODEL
+```
+
+Evaluate fine-tuned models
+
+```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL 
 ```
 
-#### Finetuning models
+#### Zero-shot embedding clustering
 
-Train finetuning models
-
-```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.$MODEL
-```
-
-Evaluate finetuning models
+This depends on the final-layer embeddings generated for the probed models.
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.eval_finetune.$MODEL 
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.cluster $DART_WORK_DIR/task_3_peak_classification/embeddings/$MODEL.h5 TODO:LABEL_FILE TODO:INDEX_FILE TODO:OUT_DIR
 ```
 
 ### Task 4: Predicting Chromatin Activity from Sequence
-##### Extracting Embeddings:
-```python dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.extract_embeddings.$MODEL [CELL LINE] [CATEGORY]```
 
-#### Training:
+All inputs, intermediate files, and outputs for this task are available for download at [`syn60581041`](https://www.synapse.org/Synapse:syn60581041).
 
-_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.train.$MODEL [CELL LINE]``` \
-_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.finetune.$MODEL [CELL LINE]```
+#### Inputs
 
-#### Evals:
+This task utilizes DNAse-Seq experimental readouts from five cell lines. Input files are available at [`syn60581050`](https://www.synapse.org/Synapse:syn60581050). This directory should be cloned to `$DART_WORK_DIR/task_4_peak_classification/input_data`.
 
-_Probed_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_probing.$MODEL [CELL LINE]```\
-_Finetuned_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL [CELL LINE]``` \
-_ChromBPNet_: ```python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline [CELL LINE][CHROMBPNET MODEL PATH]```
+For this task, let `$CELL_TYPE` represent one of the following cell lines: `GM12878`, `H1ESC`, `HEPG2`, `IMR90`, or `K562`.
+
+#### Probing models
+
+Extract final-layer embeddings from each model. This should be done for each value of `$CATEGORY` in `['peaks', 'nonpeaks', 'idr']`.
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.extract_embeddings.$MODEL $CELL_TYPE $CATEGORY
+```
+
+Train probing models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.train.$MODEL
+```
+
+Evaluate probing models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_probing.$MODEL 
+```
+
+#### Fine-tuned models
+
+Train fine-tuned models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.finetune.$MODEL
+```
+
+Evaluate fine-tuned models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL 
+```
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
