@@ -12,7 +12,7 @@ root_output_dir = os.environ.get("DART_WORK_DIR", "")
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "sequence_baseline"
+    model_name = "probing_head_like"
     peaks_h5 = os.path.join(root_output_dir,f"task_3_peak_classification/embeddings/{model_name}.h5")
     elements_tsv = os.path.join(root_output_dir,"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
