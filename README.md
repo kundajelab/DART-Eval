@@ -19,14 +19,16 @@ Additionally, download the genome reference files from [`syn60581044`](https://w
 
 ### Task 1: Prioritizing Known Regulatory Elements
 
+All inputs, intermediate files, and outputs for this task are available for download at [`syn60581046`](https://www.synapse.org/Synapse:syn60581043).
+
 #### Inputs
 
-This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available at [`TODO`]. This file should be downloaded to `TODO`.
+This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available at [`TODO`]. This file should be downloaded to `$DART_WORK_DIR/task_1_ccre/input_data/TODO`.
 
 #### Dataset Generation
 
 ````bash
-python -m dnalm_bench.task_1_paired_control.dataset_generators.encode_ccre --ccre_bed $DART_WORK_DIR/TODO --output_file $DART_WORK_DIR/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv
+python -m dnalm_bench.task_1_paired_control.dataset_generators.encode_ccre --ccre_bed $DART_WORK_DIR/task_1_ccre/input_data/TODO --output_file $DART_WORK_DIR/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv
 ````
 
 This script expands each element to 350 bp, centered on the midpoint of the element. The output file is a TSV with the following columns:
@@ -46,7 +48,7 @@ This script expands each element to 350 bp, centered on the midpoint of the elem
 python -m dnalm_bench.task_1_paired_control.zero_shot.encode_ccre.$MODEL
 ```
 
-#### Ab-initio models
+#### *Ab initio* models
 
 Extract final-layer embeddings 
 
@@ -54,13 +56,13 @@ Extract final-layer embeddings
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.extract_embeddings.probing_head_like
 ```
 
-Train probing_head_like ab-initio model
+Train probing-head-like *ab initio* model
 
 ```bash
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.ab_initio.probing_head_like
 ```
 
-Evaluate probing_head_like ab-initio model
+Evaluate probing-head-like *ab initio* model
 
 ```bash
 python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_ab_initio.probing_head_like
@@ -83,10 +85,9 @@ python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.train_classif
 Evaluate probing models
 
 ```bash
-python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL $CHECKPOINT_NUM
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
 ```
 
-where `$CHECKPOINT_NUM` is the number of the checkpoint to evaluate.
 
 #### Finetuning models
 
@@ -99,35 +100,51 @@ python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.finetune.$MOD
 Evaluate finetuning models
 
 ```bash
-python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL $CHECKPOINT_NUM
+python -m dnalm_bench.task_1_paired_control.supervised.encode_ccre.eval_finetune.$MODEL 
 ```
 
-where `$CHECKPOINT_NUM` is the number of the checkpoint to evaluate
 
 
 ### Task 2: Transcription Factor Motif Footprinting
 
-#### Dataset Generation:
+All inputs, intermediate files, and outputs for this task are available for download at [`syn60581043`](https://www.synapse.org/Synapse:syn60581043).
+
+#### Inputs
+
+This task utilizes the set of HOCOMOCO v12 transcription factor sequence motifs. A MEME-format file of motifs is available at [`syn60756095`](https://www.synapse.org/Synapse:syn60756095). This file should be downloaded to `$DART_WORK_DIR/task_2_footprinting/input_data/H12CORE_meme_format.meme`.
+
+Additionally, this task utilizes a set of sequences and shuffled negatives generated from Task 1.
+
+#### Dataset Generation
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.transcription_factor_binding.h5_to_seqs.py [INPUT EMBEDDING FILE]
-python -m dnalm_bench.task_2_5_single.dataset_generators.motif_footprinting_dataset --input_seqs [INPUT_SEQS] --output_file [OUTPUT_FILE] --meme_file [MEME_MOTIF_FILE]
+python -m dnalm_bench.task_2_5_single.dataset_generators.transcription_factor_binding.h5_to_seqs $DART_WORK_DIR/task_1_ccre/embeddings/probing_head_like.h5 $DART_WORK_DIR/task_2_footprinting/processed_data/raw_seqs_350.txt
 ```
 
-#### Extracting Embeddings: 
+```bash
+python -m dnalm_bench.task_2_5_single.dataset_generators.motif_footprinting_dataset --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/raw_seqs_350.txt --output_file $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --meme_file $DART_WORK_DIR/task_2_footprinting/input_data/H12CORE_meme_format.meme
+```
+
+#### Computing Zero-Shot Embeddings
 
 ```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.embeddings.$MODEL
 ```
-#### Likelihoods:
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/TODO
+```
+
+#### Computing Zero-Shot Likelihoods
+
 ```bash
 python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.$MODEL
 ```
-#### Eval Metrics Calculation
+
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs [INPUT_DATASET] --likelihoods [LIKELIHOODS] --ouput_file [OUTPUT_FILE]
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs [INPUT_DATASET] --embeddings [EMBEDDINGS] --ouput_file [OUTPUT_FILE]
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/TODO
 ```
+
 #### Further Evaluation Notebooks
 
 ```dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood.ipynb``` - figure production for likelihood-based evaluation
