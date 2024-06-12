@@ -331,7 +331,7 @@ All inputs, intermediate files, and outputs for this task are available for down
 
 #### Inputs
 
-This task utilizes genomic QTL variants from two studies: African caQTLs ([Degorter et al.](http://biorxiv.org/lookup/doi/10.1101/2023.11.04.564839)) and Yoruban dsQTLs [Degner et al](http://dx.doi.org/10.1038/nature10808). Input TSV files of variants and experimental effect sizes are available at [`syn60756043`](https://www.synapse.org/Synapse:syn60756043) and [`syn60756039`](https://www.synapse.org/Synapse:syn60756039). These files should be downloaded to `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv` and `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv` respectively.
+This task utilizes genomic QTL variants from two studies: African caQTLs ([Degorter et al.](http://biorxiv.org/lookup/doi/10.1101/2023.11.04.564839)) and Yoruban dsQTLs ([Degner et al.](http://dx.doi.org/10.1038/nature10808)). Input TSV files of variants and experimental effect sizes are available at [`syn60756043`](https://www.synapse.org/Synapse:syn60756043) and [`syn60756039`](https://www.synapse.org/Synapse:syn60756039). These files should be downloaded to `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv` and `$DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv` respectively.
 
 #### Zero-shot embedding-based scoring
 
