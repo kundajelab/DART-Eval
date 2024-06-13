@@ -325,6 +325,14 @@ Evaluate fine-tuned models
 python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_finetune.$MODEL 
 ```
 
+#### ChromBPNet models
+
+Evaluate ChromBPNet Models
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline $CELL_TYPE $CHROMBPNET_MODEL_FILENAME
+```
+
 ### Task 5: Chromatin Activity Variant Effect Prediction
 
 All inputs, intermediate files, and outputs for this task are available for download at [`syn60581045`](https://www.synapse.org/Synapse:syn60581045).
