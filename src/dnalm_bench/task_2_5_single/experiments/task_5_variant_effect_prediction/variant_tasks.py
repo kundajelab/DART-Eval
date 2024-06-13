@@ -11,7 +11,6 @@ import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 
 work_dir = os.environ.get("DART_WORK_DIR", "")
-work_dir = "/scratch/groups/akundaje/chrombench/synapse"
 
 def get_precision_recall_auc(ctrl_counts, sig_counts):
     counts = np.concatenate([ctrl_counts, sig_counts])
