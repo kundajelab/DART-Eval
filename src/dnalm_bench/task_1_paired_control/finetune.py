@@ -31,7 +31,6 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
 
     zero = torch.tensor(0, dtype=torch.long, device=device)[None]
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
-    # print(one.shape) ####
 
     model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)

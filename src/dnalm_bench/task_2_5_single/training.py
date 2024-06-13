@@ -131,27 +131,20 @@ class AssayEmbeddingsDataset(IterableDataset):
                     idx_seq_chunk = h5["seq/idx_var"][chunk_start:chunk_end]
 
                 for i, _, _ in chunk_range:
-                    # print(worker_info.id, i, "a") ####
                     i_rel = i - chunk_start
                     if idx_seq_fixed:
                         seq_inds = idx_seq_dset
                     else:
                         seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
 
-                    # print(worker_info.id, i, "b") ####
                     seq_emb = seq_chunk[i_rel]
 
-                    # print(df_sub[i]) ####
-                    # print(worker_info.id, i, "c") ####
                     _, chrom, region_start, region_end, _, _, _, _ = self.elements_df.row(region_idx_to_row[i])
-                    # print(chrom, region_start, region_end) ####
 
-                    # print(worker_info.id, i, "d") ####
                     track = np.nan_to_num(bw.values(chrom, region_start, region_end, numpy=True))
                     if self.crop > 0:
                         track = track[self.crop:-self.crop]
 
-                    # print(worker_info.id, i, "e") ####
                     yield torch.from_numpy(seq_emb), torch.from_numpy(seq_inds), torch.from_numpy(track)
 
         bw.close()
@@ -286,18 +279,14 @@ class PeaksEmbeddingsDataset(IterableDataset):
                     idx_seq_chunk = h5["seq/idx_var"][chunk_start:chunk_end]
 
                 for i, _, _ in chunk_range:
-                    # print(worker_info.id, i, "a") ####
                     i_rel = i - chunk_start
                     if idx_seq_fixed:
                         seq_inds = idx_seq_dset
                     else:
                         seq_inds = idx_seq_chunk[i_rel].astype(np.int64)
 
-                    # print(worker_info.id, i, "b") ####
                     seq_emb = seq_chunk[i_rel]
 
-                    # print(df_sub[i]) ####
-                    # print(worker_info.id, i, "c") ####
                     _, chrom, start, end, _, _, _, label = self.elements_df.row(region_idx_to_row[i])
                     label_ind = self.classes[label]
 
@@ -393,8 +382,6 @@ def train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batc
                 seq_inds = seq_inds.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
-
-                # print(seq_emb.shape, seq_inds.shape, track.shape, indicator.shape) ####
                 
                 optimizer.zero_grad()
                 log1p_counts = model(seq_emb, seq_inds)

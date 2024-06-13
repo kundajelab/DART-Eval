@@ -76,7 +76,6 @@ class EmbeddingsDataset(IterableDataset):
             end = min(start + per_worker, self.elements_df.height)
 
         df_sub = self.elements_df.slice(start, end - start)
-        # print(df_sub) ####
         valid_inds = df_sub.get_column('region_idx').to_numpy().astype(np.int32)
         query_struct = NCLS(valid_inds, valid_inds + 1, valid_inds)
 
@@ -165,7 +164,6 @@ def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, bat
 
     zero = torch.tensor(0, dtype=torch.long, device=device)[None]
     one = torch.tensor(1, dtype=torch.long, device=device)[None]
-    # print(one.shape) ####
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)

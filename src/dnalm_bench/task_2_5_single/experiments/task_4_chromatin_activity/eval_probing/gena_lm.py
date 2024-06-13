@@ -89,7 +89,6 @@ if __name__ == "__main__":
 
     model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     checkpoint_resume = torch.load(checkpoint_path)
-    # print(checkpoint_resume.keys()) ####
     model.load_state_dict(checkpoint_resume, strict=False)
 
     metrics = evaluate_chromatin_model(pos_dataset, idr_dataset, neg_dataset, model, batch_size, out_path,

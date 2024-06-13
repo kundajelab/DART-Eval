@@ -56,31 +56,6 @@ class SimpleEmbeddingExtractor:
         os.rename(out_path + ".tmp", out_path)
 
 
-# class HFSimpleEmbeddingExtractor(HFEmbeddingExtractor):
-#     def __init__(self, tokenizer, model, batch_size, num_workers, device):
-#         super().__init__(tokenizer, model, batch_size, num_workers, device)
-
-#     def extract_embeddings(self, dataset, out_path, progress_bar=False):
-#         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-
-#         with h5py.File(out_path, "w") as out_f:
-#             start = 0
-#             for seqs in tqdm(dataloader, disable=(not progress_bar)):
-#                 end = start + len(seqs)
-
-#                 seq_tokens, seq_offsets = self.tokenize(seqs)
-
-#                 seq_token_emb = self.model_fwd(seq_tokens)
-
-#                 seq_embeddings = self.detokenize(seqs, seq_token_emb, seq_offsets)
-#                 # print(seq_embeddings.shape) ####
-
-#                 seq_embeddings_dset = out_f.require_dataset("seq_emb", (len(dataset), seq_embeddings.shape[1], seq_embeddings.shape[2]), 
-#                                                             chunks=seq_embeddings.shape, dtype=np.float32, compression="gzip", compression_opts=1)
-#                 seq_embeddings_dset[start:end] = seq_embeddings.numpy(force=True)
-
-#                 start = end
-
 class HFVariantEmbeddingExtractor(HFEmbeddingExtractor):
     _idx_mode = "variable"
 
@@ -195,7 +170,6 @@ class NucleotideTransformerEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbedd
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
 
         return tokens, None
 
@@ -296,7 +270,6 @@ class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
 
         return tokens, None
 

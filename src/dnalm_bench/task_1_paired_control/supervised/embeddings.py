@@ -139,7 +139,6 @@ class NucleotideTransformerEmbeddingExtractor(HFEmbeddingExtractor, PairedContro
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
 
         return tokens, None
 
@@ -151,9 +150,5 @@ class NucleotideTransformerEmbeddingExtractor(HFEmbeddingExtractor, PairedContro
         for i in range(seq_len // 6):
             inds[i*6:(i+1)*6] = i + 1
         inds[(i+1)*6:] = np.arange(i+2, i+(seq_len%6)+2)
-
-        # print(inds) ####
-        # print(inds.shape) ####
-        # print(seq_len) ####
 
         return inds

@@ -619,7 +619,6 @@ class NTVariantEvaluator(VariantLikelihoodEvaluator):
         seqs_str = onehot_to_chars(seqs)
         encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
         tokens = encoded["input_ids"]
-        # print(tokens.shape) ####
         try:
             attention_mask = encoded["attention_mask"]
         except:

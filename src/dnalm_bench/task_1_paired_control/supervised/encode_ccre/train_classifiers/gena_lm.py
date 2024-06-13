@@ -65,7 +65,6 @@ if __name__ == "__main__":
     train_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_train)
     val_dataset = EmbeddingsDataset(embeddings_h5, elements_tsv, chroms_val)
     model = CNNEmbeddingsClassifier(input_channels, hidden_channels, kernel_size)
-    # train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True)
     train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, 
                      progress_bar=True, resume_from=resume_checkpoint)
     

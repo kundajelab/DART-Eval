@@ -112,8 +112,6 @@ class ChromatinEndToEndDataset(Dataset):
 
         a = start_adj - start
         b = end_adj - start
-        # print(peak_start, start_adj) ####
-        # print(a,b) ####
         seq[a:b,:] = one_hot_encode(sequence)
 
         fa.close()

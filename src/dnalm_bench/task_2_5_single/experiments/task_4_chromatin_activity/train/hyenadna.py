@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNSlicedEmbeddingsPredictor, train_predictor
 
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
@@ -20,7 +21,6 @@ if __name__ == "__main__":
     batch_size = 1024
     num_workers = 0
     prefetch_factor = None
-    # num_workers = 0 ####
     seed = 0
     device = "cuda"
 
