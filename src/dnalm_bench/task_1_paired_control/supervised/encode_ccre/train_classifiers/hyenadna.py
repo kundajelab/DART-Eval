@@ -16,12 +16,7 @@ if __name__ == "__main__":
 
     batch_size = 2048
     num_workers = 0
-<<<<<<< HEAD
-    prefetch_factor = 2
-    # num_workers = 0 ####
-=======
     prefetch_factor = None
->>>>>>> 5408709 (Further path fixes)
     seed = 0
     device = "cuda"
 

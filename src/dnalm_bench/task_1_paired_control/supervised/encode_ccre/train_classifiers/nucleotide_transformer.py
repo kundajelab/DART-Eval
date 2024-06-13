@@ -11,14 +11,6 @@ if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "nucleotide-transformer-v2-500m-multi-species"
-<<<<<<< HEAD
-    embeddings_h5 = f"/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/embeddings/{model_name}.h5"
-    elements_tsv = "/scratch/groups/akundaje/chrombench/synapse/task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv"
-
-    batch_size = 2048
-    num_workers = 0
-    prefetch_factor = 2
-=======
     embeddings_h5 = os.path.join(work_dir, f"task_1_ccre/embeddings/{model_name}.h5")
     elements_tsv = os.path.join(work_dir, f"task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
@@ -26,7 +18,6 @@ if __name__ == "__main__":
     num_workers = 0
     prefetch_factor = None
     # num_workers = 0 ####
->>>>>>> 5408709 (Further path fixes)
     seed = 0
     device = "cuda"
 
