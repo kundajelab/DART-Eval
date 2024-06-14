@@ -175,23 +175,23 @@ python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.mak
 Then, generate individual counts matrices for each sample, using input BAM files from ENCODE and the consensus peakset:
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix GM12878 TODO.bam
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix GM12878 $BAM_FILE
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix H1ESC TODO.bam
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix H1ESC $BAM_FILE
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix HEPG2 TODO.bam
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix HEPG2 $BAM_FILE
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix IMR90 TODO.bam
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix IMR90 $BAM_FILE
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix K562 TODO.bam
+python -m dnalm_bench.task_2_5_single.dataset_generators.peak_classification.generate_indl_counts_matrix K562 $BAM_FILE
 ```
 
 Concatenate the counts matrices and generate DESeq inputs:
@@ -227,12 +227,12 @@ python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.clu
 
 #### *Ab initio* models
 
-Here, `$AB_INITIO_MODEL` is one of `sequence_baseline` (probing-head-like) or `sequence_baseline_large` (ChromBPNet-like).
+Here, `$AB_INITIO_MODEL` is one of `probing_head_like` or `chrombpnet_like` (ChromBPNet-like).
 
 Extract final-layer embeddings (`probing_head_like` only)
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.extract_embeddings.sequence_baseline
+python -m dnalm_bench.task_2_5_single.experiments.task_3_peak_classification.extract_embeddings.$AB_INITIO_MODEL
 ```
 
 Train *ab initio* models
@@ -330,7 +330,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval
 Evaluate ChromBPNet Models
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_baseline.chrombpnet_baseline $CELL_TYPE $CHROMBPNET_MODEL_FILENAME
+python -m dnalm_bench.task_2_5_single.experiments.task_4_chromatin_activity.eval_ab_initio.chrombpnet_baseline $CELL_TYPE $CHROMBPNET_MODEL_FILENAME
 ```
 
 ### Task 5: Chromatin Activity Variant Effect Prediction
