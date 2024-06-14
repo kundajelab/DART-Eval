@@ -17,7 +17,7 @@ Prior to running analyses, set the `$DART_WORK_DIR` environment variable. This d
 
 Additionally, download the genome reference files from [`syn60581044`](https://www.synapse.org/Synapse:syn60581044) into `$DART_WORK_DIR/refs`, keeping the file names. These genome references are used across all tasks.
 
-In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`.
+In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, and `nucleotide-transformer-v2-500m-multi-species` .
 
 ### Task 1: Prioritizing Known Regulatory Elements
 
