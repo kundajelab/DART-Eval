@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     num_epochs = 150
 
-    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_classifiers/{model_name}/v1")
+    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/probed/{model_name}/")
     os.makedirs(out_dir, exist_ok=True)
 
     cache_dir = None
