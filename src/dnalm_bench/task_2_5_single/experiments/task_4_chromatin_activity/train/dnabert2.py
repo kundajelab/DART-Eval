@@ -67,7 +67,7 @@ if __name__ == "__main__":
     lr = 2e-3
     num_epochs = 150
 
-    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_classifiers/probed/{model_name}/{cell_line}/v1")
+    out_dir = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_models/probed/{model_name}/{cell_line}/v1")
     os.makedirs(out_dir, exist_ok=True)
 
     peaks_train_datset = AssayEmbeddingsDataset(peaks_h5, peaks_tsv, chroms_train, assay_bw, crop=crop)

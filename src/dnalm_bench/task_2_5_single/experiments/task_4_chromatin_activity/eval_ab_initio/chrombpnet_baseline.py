@@ -54,7 +54,7 @@ chroms_test = [
 peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
 idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
 nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
-out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/outputs/chrombpnet/{cell_line}_metrics.json")
+out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
 
 print("Loading Datasets")
 pos_peak_dataset = ChromBPNetPeakDataset(peaks_tsv, bigwig_file, genome_fa, chroms_test, batch_size)
