@@ -3,7 +3,7 @@ import sys
 
 from ....embeddings import NucleotideTransformerEmbeddingExtractor
 from ....components import SimpleSequence
-
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     model_name = "nucleotide-transformer-v2-500m-multi-species"

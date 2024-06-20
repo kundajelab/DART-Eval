@@ -3,7 +3,7 @@ import sys
 
 from ....embeddings import HyenaDNAEmbeddingExtractor
 from ....components import SimpleSequence
-
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"

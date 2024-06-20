@@ -3,7 +3,7 @@ import sys
 
 from ....embeddings import GENALMEmbeddingExtractor
 from ....components import SimpleSequence
-
+root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
