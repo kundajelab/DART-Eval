@@ -23,7 +23,7 @@ if __name__ == "__main__":
     peaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
     idr_peaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
     nonpeaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
-    assay_bw = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/bigwigs/cell_line_data/{cell_line}_unstranded.bw")
+    assay_bw = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/bigwigs/{cell_line}_unstranded.bw")
 
     batch_size = 24
     num_workers = 4
