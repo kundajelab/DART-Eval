@@ -17,7 +17,7 @@ if __name__ == "__main__":
         elements_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_{category}.bed")
     chroms = None
     batch_size = 64
-    num_workers = 4
+    num_workers = 0
     seed = 0
     device = "cuda"
 

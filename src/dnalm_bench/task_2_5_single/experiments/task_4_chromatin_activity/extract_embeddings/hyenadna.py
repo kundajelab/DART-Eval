@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # chroms = ["chr22"]
     chroms = None
     batch_size = 512
-    num_workers = 4
+    num_workers = 0
     seed = 0
     device = "cuda"
 
