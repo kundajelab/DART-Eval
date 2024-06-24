@@ -13,11 +13,11 @@ if __name__ == "__main__":
 
     print(root_output_dir)
     model_name = "DNABERT-2-117M"
-    peaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_peaks.h5")
-    nonpeaks_h5 = os.path.join(root_output_dir, f"embeddings/cell_line_2114/{model_name}/{cell_line}_nonpeaks.h5")
-    peaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_peaks.bed")
-    nonpeaks_tsv = os.path.join(root_output_dir, f"regions/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
-    assay_bw = os.path.join(root_output_dir, f"cell_line_data/{cell_line}_unstranded.bw")
+    peaks_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/{cell_line}_peaks.h5")
+    nonpeaks_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/{cell_line}_nonpeaks.h5")
+    peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+    nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+    assay_bw = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/bigwigs/{cell_line}_unstranded.bw")
 
     batch_size = 512
     num_workers = 0
