@@ -7,6 +7,8 @@ from ....finetune import NucleotideTransformerLoRAModel
 from ....evaluators import FinetunedVariantEvaluator
 from ....components import VariantDataset
 import polars as pl
+import pandas as pd
+import numpy as np
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
