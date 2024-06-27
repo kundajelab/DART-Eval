@@ -378,7 +378,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_predicti
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/finetuned/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/male.hg19.fa
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/fine_tuned/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/male.hg19.fa
 ```
 
 #### Evaluation Notebooks
