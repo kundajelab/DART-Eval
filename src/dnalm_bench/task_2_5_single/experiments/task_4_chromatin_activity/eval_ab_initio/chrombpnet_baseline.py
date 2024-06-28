@@ -56,6 +56,12 @@ idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/proces
 nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
 out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
 
+# chroms_test = chroms_train + chroms_val + chroms_test
+# peaks_tsv = "/users/patelas/scratch/GM12878_peaks_enformertest_dataset.bed"
+# nonpeaks_tsv = "/users/patelas/scratch/GM12878_nonpeaks_enformertest_dataset.bed"
+# idr_peaks_tsv = "/users/patelas/scratch/GM12878_idr_enformertest_dataset.bed"
+# out_file = "/users/patelas/scratch/GM12878_chrombpnet_combinedtest_metrics.json"
+
 print("Loading Datasets")
 pos_peak_dataset = ChromBPNetPeakDataset(peaks_tsv, bigwig_file, genome_fa, chroms_test, batch_size)
 neg_peak_dataset = ChromBPNetPeakDataset(nonpeaks_tsv, bigwig_file, genome_fa, chroms_test, batch_size)
