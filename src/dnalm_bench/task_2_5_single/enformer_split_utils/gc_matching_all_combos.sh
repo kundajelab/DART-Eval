@@ -1,8 +1,12 @@
 #!/bin/sh
 
-filedir=/srv/scratch/patelas/chrombpnet_enformer/GM12878/
-bigwigfile=/oak/stanford/groups/akundaje/projects/chromatin-atlas-2022/DNASE/ENCSR000EMT/preprocessing/bigWigs/ENCSR000EMT.bigWig
-biasmodel=/oak/stanford/groups/akundaje/projects/chromatin-atlas-2022/reference/HEPG2_DNASE_PE/fold_2/bias.h5
+# filedir=/srv/scratch/patelas/chrombpnet_enformer/GM12878/
+# bigwigfile=/oak/stanford/groups/akundaje/projects/chromatin-atlas-2022/DNASE/ENCSR000EMT/preprocessing/bigWigs/ENCSR000EMT.bigWig
+# biasmodel=/srv/scratch/patelas/ENCFF831SGP/fold_3/model.bias.fold_3.ENCSR149XIL.h5
+
+filedir=$1
+bigwigfile=$2
+biasmodel=$3
 taskname=chrombpnet_enformer_splits
 mkdir $filedir/$taskname/
 cd /users/patelas/lib/chrombpnet-soft-multitask/

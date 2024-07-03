@@ -140,6 +140,8 @@ def get_counts_predictions(model, peak_dataset, head):
 	print(len(true_counts), len(pred_counts))
 	return np.array(true_counts).flatten(), np.array(pred_counts)
 
+def save_predictions(pred_array, out_file):
+	np.savetxt(out_file, pred_array)
 
 
 def calc_metrics(pos_true, pos_pred, neg_true, neg_pred, idr_true, idr_pred, out_path):
