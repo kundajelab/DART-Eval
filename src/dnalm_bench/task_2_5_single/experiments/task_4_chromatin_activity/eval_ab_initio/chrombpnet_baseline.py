@@ -51,16 +51,12 @@ chroms_test = [
 
 
 
-# peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
-# idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
-# nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
-# out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
+peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
+nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
 
-chroms_test = chroms_train + chroms_val + chroms_test
-peaks_tsv = "/users/patelas/scratch/chrombpnet_enformer_splits_test_peaks.bed"
-nonpeaks_tsv = "/users/patelas/scratch/chrombpnet_enformer_splits_test_nonpeaks.bed"
-idr_peaks_tsv = "/users/patelas/scratch/GM12878_idr_enformertest_dataset.bed"
-out_file = "/users/patelas/scratch/GM12878_chrombpnet_enformer_splits_metrics.json"
+
 
 print("Loading Datasets")
 pos_peak_dataset = ChromBPNetPeakDataset(peaks_tsv, bigwig_file, genome_fa, chroms_test, batch_size)
@@ -76,6 +72,10 @@ print("Predicting on Negatives")
 true_neg, pred_neg = get_counts_predictions(model, neg_peak_dataset)
 print("Predicting on IDR Peaks")
 true_idr, pred_idr = get_counts_predictions(model, idr_peak_dataset)
+
+save_predictions(pred_pos, out_pos)
+save_predictions(pred_neg, out_neg)
+save_predictions(pred_idr, out_idr)
 
 print("Calculating Metrics")
 metrics = calc_metrics(true_pos, pred_pos, true_neg, pred_neg, true_idr, pred_idr, out_file)
