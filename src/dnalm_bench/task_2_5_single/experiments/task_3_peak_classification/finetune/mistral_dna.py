@@ -11,8 +11,7 @@ cache_dir = os.environ.get("DART_CACHE_DIR")
 if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
-    model_name = "Mistral-DNA-v1-1.6B-hg38
-"
+    model_name = "Mistral-DNA-v1-1.6B-hg38"
 
     genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
     elements_tsv = os.path.join(work_dir,"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
