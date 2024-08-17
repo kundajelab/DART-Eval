@@ -12,7 +12,7 @@ if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
     resume_checkpoint = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
-    model_name = "Mistral-DNA-v0.1"
+    model_name = "Mistral-DNA-v1-1.6B-hg38"
 
     genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
 
