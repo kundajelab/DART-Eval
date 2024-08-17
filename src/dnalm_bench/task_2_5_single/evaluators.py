@@ -256,6 +256,8 @@ class MaskedZeroShotScore(metaclass=ABCMeta):
 class CausalZeroShotScore(metaclass=ABCMeta):
     def score(self, tokens, starts, ends, attention_mask):
         tokens = tokens.to(device=self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device=self.device)
         lls = self.model_fwd(tokens, attention_mask, tokens)
         clip_mask = torch.tensor([[(i >= s) and (i < e) for i in range(lls.shape[1])] for s, e in zip(starts, ends)], 
                                  dtype=torch.float).to(device=self.device)
@@ -389,6 +391,18 @@ class MistralEvaluator(LikelihoodEvaluator, CausalZeroShotScore):
     @property
     def end_token(self):
         return 2
+    
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+                attention_mask=attention_mask,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
+
 
 class NTEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
