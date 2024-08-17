@@ -29,7 +29,7 @@ def populate_hits(hit_table, fimo_results):
 
 def main():
 	print("Loading peak data")
-	peak_file = os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+	peak_file = os.path.join(root_output_dir, f"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 	peak_data = pd.read_csv(peak_file, sep="\t")
 
 	print("Loading motif data")
@@ -37,7 +37,7 @@ def main():
 	motif_family_data = pd.read_csv(motif_family_file, sep="\t", index_col=0)
 
 	print("Loading FIMO results")
-	fimo_base_dir = os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/fimo/")
+	fimo_base_dir = os.path.join(root_output_dir, f"task_3_cell-type-specific/processed_inputs/fimo/")
 	cell_line_list = ["K562", "GM12878", "HEPG2", "IMR90", "H1ESC"]
 	fimo_file_list = []
 	for cell_line in cell_line_list:
@@ -53,7 +53,7 @@ def main():
 	motif_table_filled = populate_hits(motif_table_empty, fimo_results)
 
 	print("Saving output file")
-	motif_table_filled.to_csv(os.path.join(root_output_dir, f"task_3_peak_classification/processed_inputs/fimo/motif_count_matrix_total_hits.tsv"), sep="\t", header=True, index=True)
+	motif_table_filled.to_csv(os.path.join(root_output_dir, f"task_3_cell-type-specific/processed_inputs/fimo/motif_count_matrix_total_hits.tsv"), sep="\t", header=True, index=True)
 
 
 if __name__ == "__main__":

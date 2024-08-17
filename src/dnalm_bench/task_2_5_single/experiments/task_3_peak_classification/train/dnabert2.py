@@ -10,8 +10,8 @@ if __name__ == "__main__":
     resume_checkpoint = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     model_name = "DNABERT-2-117M"
-    peaks_h5 = os.path.join(root_output_dir, f"task_3_peak_classification/embeddings/{model_name}.h5")
-    elements_tsv = os.path.join(root_output_dir, "task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+    peaks_h5 = os.path.join(root_output_dir, f"task_3_cell-type-specific/embeddings/{model_name}.h5")
+    elements_tsv = os.path.join(root_output_dir, "task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 1024
     num_workers = 0
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     lr = 2e-3
     num_epochs = 150
 
-    out_dir = os.path.join(root_output_dir, f"task_3_peak_classification/supervised_models/probed/{model_name}")
+    out_dir = os.path.join(root_output_dir, f"task_3_cell-type-specific/supervised_models/probed/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
 
     classes = {

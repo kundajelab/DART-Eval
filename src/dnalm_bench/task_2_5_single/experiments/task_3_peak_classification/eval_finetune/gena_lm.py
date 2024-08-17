@@ -18,7 +18,7 @@ if __name__ == "__main__":
     model_name = "gena-lm-bert-large-t2t"
 
     genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
-    elements_tsv = os.path.join(work_dir,"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+    elements_tsv = os.path.join(work_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 128
     num_workers = 4
@@ -73,11 +73,11 @@ if __name__ == "__main__":
     wd = 0.01
     num_epochs = 10
 
-    out_dir = os.path.join(work_dir, f"task_3_peak_classification/supervised_model_outputs/fine_tuned/{model_name}")
+    out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_model_outputs/fine_tuned/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
-    model_dir = os.path.join(work_dir, f"task_3_peak_classification/supervised_models/fine_tuned/{model_name}")    
+    model_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/fine_tuned/{model_name}")    
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])

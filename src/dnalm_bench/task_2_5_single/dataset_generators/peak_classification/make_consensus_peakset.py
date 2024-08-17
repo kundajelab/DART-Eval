@@ -28,11 +28,11 @@ def peak_overlap(peaka, peakb):
 	return ((peakb[0] < peaka[0]) and (peakb[1] >= peaka[0])) or ((peakb[0] >= peaka[0]) and (peakb[0] < peaka[1]))
 
 
-peaks_dir = [os.path.join(dart_work_dir,"task_3_peak_classification/input_data/GM12878/ENCFF748UZH.bed"), 
-			 os.path.join(dart_work_dir,"task_3_peak_classification/input_data/HEPG2/ENCFF439EIO.bed"),
-			 os.path.join(dart_work_dir,"task_3_peak_classification/input_data/IMR90/ENCFF243NTP.bed"), 
-			 os.path.join(dart_work_dir,"task_3_peak_classification/input_data/K562/ENCFF333TAT.bed"),
-			 os.path.join(dart_work_dir,"task_3_peak_classification/input_data/H1ESC/overlap.optimal_peak.bed")]
+peaks_dir = [os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/GM12878/ENCFF748UZH.bed"), 
+			 os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/HEPG2/ENCFF439EIO.bed"),
+			 os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/IMR90/ENCFF243NTP.bed"), 
+			 os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/K562/ENCFF333TAT.bed"),
+			 os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/H1ESC/overlap.optimal_peak.bed")]
 peaks = []
 
 for f in peaks_dir:
@@ -54,7 +54,7 @@ for index, row in peaks_combined.iterrows():
 accepted_peaks_df = accepted_peaks_df.sort_values(by=["chrom", "start"], ascending=[True, True])
 accepted_peaks_df = accepted_peaks_df.reset_index(drop=True)
 
-out_loc = os.path.join(dart_work_dir,"task_3_peak_classification/input_data/accepted_peaks_all.tsv")
+out_loc = os.path.join(dart_work_dir,"task_3_cell-type-specific/input_data/accepted_peaks_all.tsv")
 
 accepted_peaks_df.to_csv(out_loc, sep="\t", index=False)
 
