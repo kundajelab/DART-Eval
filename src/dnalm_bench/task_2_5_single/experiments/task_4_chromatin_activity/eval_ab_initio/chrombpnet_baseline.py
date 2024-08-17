@@ -51,10 +51,23 @@ chroms_test = [
 
 
 
-peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
-idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
-nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
-out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
+# peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_peaks.bed")
+# idr_peaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_idr_peaks/{cell_line}.bed")
+# nonpeaks_tsv = os.path.join(root_output_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
+# out_file = os.path.join(root_output_dir, f"task_4_chromatin_activity/supervised_model_outputs/chrombpnet/{cell_line}_metrics.json")
+
+chroms_test = chroms_train + chroms_val + chroms_test
+# peaks_tsv = "/users/patelas/scratch/chrombpnet_enformer_splits_test_peaks.bed" #filtered peaks from training subsetted to test
+# nonpeaks_tsv = "/users/patelas/scratch/chrombpnet_enformer_splits_test_nonpeaks.bed"
+# idr_peaks_tsv = "/users/patelas/scratch/GM12878_idr_enformertest_dataset.bed"
+# out_file = "/users/patelas/scratch/GM12878_chrombpnet_enformer_splits_metrics.json"
+# out_pos, out_neg, out_idr = "/users/patelas/scratch/GM12878_pos_chrombpnet_preds.txt", "/users/patelas/scratch/GM12878_neg_chrombpnet_preds.txt", "/users/patelas/scratch/GM12878_idr_chrombpnet_preds.txt"
+
+peaks_tsv = "/users/patelas/scratch/HEPG2_peaks_enformertest_dataset.bed" #filtered peaks from training subsetted to test
+nonpeaks_tsv = "/users/patelas/scratch/HEPG2_nonpeaks_enformertest_dataset.bed"
+idr_peaks_tsv = "/users/patelas/scratch/HEPG2_idr_enformertest_dataset.bed"
+out_file = "/users/patelas/scratch/HEPG2_chrombpnet_enformer_splits_metrics.json"
+out_pos, out_neg, out_idr = "/users/patelas/scratch/HEPG2_pos_chrombpnet_preds.txt", "/users/patelas/scratch/HEPG2_neg_chrombpnet_preds.txt", "/users/patelas/scratch/HEPG2_idr_chrombpnet_preds.txt"
 
 
 
