@@ -13,7 +13,7 @@ import numpy as np
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
 if __name__ == "__main__":
-    model_name = "Mistral-DNA-v0.1"
+    model_name = "Mistral-DNA-v1-1.6B-hg38"
 
     batch_size = 512
     num_workers = 0
