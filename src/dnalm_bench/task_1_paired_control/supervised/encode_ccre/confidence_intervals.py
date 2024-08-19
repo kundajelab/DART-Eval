@@ -38,19 +38,35 @@ nt_table_finetuned = os.path.join(root_output_dir,"task_1_ccre/supervised_model_
 with open(nt_table_finetuned, "r") as f:
     nt_finetuned = json.load(f)
 
-def get_confidence_interval(data, num_ccres):
-    return proportion_confint(data["test_acc"]*num_ccres, num_ccres, method="normal")
+def get_confidence_interval(data, num_ccres, acc):
+    conf_int = proportion_confint(data[acc]*num_ccres, num_ccres, method="normal")
+    interval = conf_int[1] - conf_int[0]
+    error = interval / 2
+    mean = (conf_int[1] + conf_int[0]) / 2
+    return f"{mean:.3f} \pm {error:.3f}"
 
 num_ccres=(2348855-1)
 print("PROBED")
-print("Hyena DNA", get_confidence_interval(hyena_probed, num_ccres))
-print("Gena LM", get_confidence_interval(gena_probed, num_ccres))
-print("DNABert2", get_confidence_interval(dnabert_probed, num_ccres))
-print("Nucleotide Transformer", get_confidence_interval(nt_probed, num_ccres))
+print("DNABert2", get_confidence_interval(dnabert_probed, num_ccres, "test_acc"))
+print("Gena LM", get_confidence_interval(gena_probed, num_ccres, "test_acc"))
+print("Hyena DNA", get_confidence_interval(hyena_probed, num_ccres, "test_acc"))
+print("Nucleotide Transformer", get_confidence_interval(nt_probed, num_ccres, "test_acc"))
+
+print("\npaired")
+print("DNABert2", get_confidence_interval(dnabert_probed, num_ccres, "test_acc_paired"))
+print("Gena LM", get_confidence_interval(gena_probed, num_ccres, "test_acc_paired"))
+print("Hyena DNA", get_confidence_interval(hyena_probed, num_ccres, "test_acc_paired"))
+print("Nucleotide Transformer", get_confidence_interval(nt_probed, num_ccres, "test_acc_paired"))
 
 print("\nFINETUNED")
-print("Hyena DNA", get_confidence_interval(hyena_finetuned, num_ccres))
-print("Gena LM", get_confidence_interval(gena_finetuned, num_ccres))
-print("DNABert2", get_confidence_interval(dnabert_finetuned, num_ccres))
-print("Nucleotide Transformer", get_confidence_interval(nt_finetuned, num_ccres))
+print("DNABert2", get_confidence_interval(dnabert_finetuned, num_ccres, "test_acc"))
+print("Gena LM", get_confidence_interval(gena_finetuned, num_ccres, "test_acc"))
+print("Hyena DNA", get_confidence_interval(hyena_finetuned, num_ccres, "test_acc"))
+print("Nucleotide Transformer", get_confidence_interval(nt_finetuned, num_ccres, "test_acc"))
+
+print("\npaired")
+print("DNABert2", get_confidence_interval(dnabert_finetuned, num_ccres, "test_acc_paired"))
+print("Gena LM", get_confidence_interval(gena_finetuned, num_ccres, "test_acc_paired"))
+print("Hyena DNA", get_confidence_interval(hyena_finetuned, num_ccres, "test_acc_paired"))
+print("Nucleotide Transformer", get_confidence_interval(nt_finetuned, num_ccres, "test_acc_paired"))
 
