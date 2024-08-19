@@ -131,7 +131,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.tsv --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.h5 --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Computing Zero-Shot Likelihoods
