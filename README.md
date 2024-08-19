@@ -131,7 +131,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.tsv --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Computing Zero-Shot Likelihoods
@@ -141,7 +141,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/likelihoods/$MODEL_SPECIFIC_NAME.tsv
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL_SPECIFIC_NAME.tsv --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/likelihoods/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Further Evaluation Notebooks
