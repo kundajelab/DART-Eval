@@ -71,7 +71,7 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 15
+    num_epochs = 25
 
     out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_models/fine_tuned/{model_name}/{cell_line}")  
 

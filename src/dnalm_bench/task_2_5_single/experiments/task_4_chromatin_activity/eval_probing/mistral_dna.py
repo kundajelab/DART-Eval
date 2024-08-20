@@ -2,10 +2,10 @@ import os
 import sys
 
 import torch
-import numpy as np
 import pandas as pd
+import numpy as np
 
-from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNEmbeddingsPredictor
+from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNSlicedEmbeddingsPredictor
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     cell_line = sys.argv[1] #cell line name
     eval_mode = sys.argv[2] if len(sys.argv) > 2 else "test"
 
-    model_name = "gena-lm-bert-large-t2t"
+    model_name = "Mistral-DNA-v1-1.6B-hg38"
 
     peaks_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/{cell_line}_peaks.h5")
     idr_h5 = os.path.join(root_output_dir, f"task_4_chromatin_activity/embeddings/{model_name}/{cell_line}_idr.h5")
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 1024
+    input_channels = 256
     hidden_channels = 32
     kernel_size = 8
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     idr_dataset = AssayEmbeddingsDataset(idr_h5, idr_peaks_tsv, modes[eval_mode], assay_bw, crop=crop)
     neg_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, modes[eval_mode], assay_bw, crop=crop)
 
-    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
 

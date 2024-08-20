@@ -23,11 +23,15 @@ with open(nt_table, "r") as f:
     nt_data = json.load(f)
 
 def get_confidence_interval(data, num_ccres):
-    return proportion_confint(data["acc"]*num_ccres, num_ccres, method="normal")
+    conf_int = proportion_confint(data["acc"]*num_ccres, num_ccres, method="normal")
+    interval = conf_int[1] - conf_int[0]
+    error = interval / 2
+    mean = (conf_int[1] + conf_int[0]) / 2
+    return f"{mean:.3f} \pm {error:.3f}"
 
-num_ccres=(2348855-1)
-print("Hyena DNA", get_confidence_interval(hyena_data, num_ccres))
-print("Gena LM", get_confidence_interval(gena_data, num_ccres))
+num_ccres=(2348855-1)*2
 print("DNABert2", get_confidence_interval(dnabert_data, num_ccres))
+print("Gena LM", get_confidence_interval(gena_data, num_ccres))
+print("Hyena DNA", get_confidence_interval(hyena_data, num_ccres))
 print("Nuc Transformer", get_confidence_interval(nt_data, num_ccres))
 

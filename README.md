@@ -25,7 +25,7 @@ All inputs, intermediate files, and outputs for this task are available for down
 
 #### Inputs
 
-This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available [`TODO`](TODO). This file should be downloaded to `$DART_WORK_DIR/task_1_ccre/input_data/ENCFF420VPZ.bed`.
+This task utilizes the set of ENCODE v3 candidate cis-regulatory elements (cCREs). A BED-format file of cCRE genomic coordinates is available at [`syn62153306`](https://www.synapse.org/Synapse:syn62153306). This file should be downloaded to `$DART_WORK_DIR/task_1_ccre/input_data/ENCFF420VPZ.bed`.
 
 #### Dataset Generation
 
@@ -131,7 +131,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_embeddings --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --embeddings $DART_WORK_DIR/task_2_footprinting/outputs/embeddings/$MODEL_SPECIFIC_NAME.h5 --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/embeddings/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Computing Zero-Shot Likelihoods
@@ -141,7 +141,7 @@ python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_bi
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods.py --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL_SPECIFIC_NAME.tsv --ouput_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/likelihoods/$MODEL_SPECIFIC_NAME.tsv
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --likelihoods $DART_WORK_DIR/task_2_footprinting/outputs/likelihoods/$MODEL_SPECIFIC_NAME.tsv --output_file $DART_WORK_DIR/task_2_footprinting/outputs/evals/likelihoods/$MODEL_SPECIFIC_NAME.tsv
 ```
 
 #### Further Evaluation Notebooks
@@ -207,7 +207,7 @@ Finally, run DESeq for each cell type to obtain differentially accessible peaks 
 Rscript dnalm_bench.task_2_5_single.dataset_generators.peak_classification.DESeqAtac.R
 ```
 
-The final output is TODO, also available at [`TODO`](TODO).
+The final output consists of the differentially accessible peaks, available at [`syn61788656`](https://www.synapse.org/Synapse:syn61788656).
 
 #### Zero-shot baseline clustering
 Use [FIMO](https://meme-suite.org/meme/tools/fimo) to generate motif scores for each peak sequence. 
