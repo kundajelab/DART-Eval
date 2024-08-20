@@ -27,5 +27,5 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{cell_line}_{category}.h5")
 
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
-    extractor = HyenaDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)
+    extractor = MistralDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)
