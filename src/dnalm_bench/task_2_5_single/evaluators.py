@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoModelForCausalLM, BertConfig
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel, AutoModelForCausalLM, BertConfig, AutoConfig
 from scipy.spatial import distance
 from tqdm import tqdm
 from ..utils import NoModule, onehot_to_chars
@@ -376,6 +376,34 @@ class HDEvaluator(LikelihoodEvaluator, CausalZeroShotScore):
     @property
     def end_token(self):
         return 1
+
+
+class HDUntrainedEvaluator(LikelihoodEvaluator, CausalZeroShotScore):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"LongSafari/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+        model =  AutoModelForCausalLM.from_config(config, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in,
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = torch.zeros(tokens_out.shape[:2], device=self.device)
+            lls[:,1:] = -F.cross_entropy(logits[:,:,:-1], tokens_out[:,1:], reduction="none")
+        return lls
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+
 
 class MistralEvaluator(LikelihoodEvaluator, CausalZeroShotScore):
     def __init__(self, model_name, batch_size, num_workers, device):
