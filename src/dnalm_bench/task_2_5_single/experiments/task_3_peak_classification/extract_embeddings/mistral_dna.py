@@ -1,7 +1,7 @@
 import os
 import sys
 
-from ....embeddings import DNABERT2EmbeddingExtractor
+from ....embeddings import MistralDNAEmbeddingExtractor
 from ....components import SimpleSequence
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
@@ -19,5 +19,5 @@ if __name__ == "__main__":
     out_path = os.path.join(root_output_dir,f"task_3_cell-type-specific/embeddings/{model_name}.h5")
 
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
-    extractor = DNABERT2EmbeddingExtractor(model_name, batch_size, num_workers, device)
+    extractor = MistralDNAEmbeddingExtractor(model_name, batch_size, num_workers, device)
     extractor.extract_embeddings(dataset, out_path, progress_bar=True)
