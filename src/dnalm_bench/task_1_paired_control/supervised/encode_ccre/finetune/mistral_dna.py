@@ -66,7 +66,7 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 10
+    num_epochs = 15
 
     out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/fine_tuned/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
