@@ -18,7 +18,7 @@ if __name__ == "__main__":
     nonpeaks_tsv = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/cell_line_expanded_peaks/{cell_line}_nonpeaks.bed")
     assay_bw = os.path.join(work_dir, f"task_4_chromatin_activity/processed_data/bigwigs/{cell_line}_unstranded.bw")
 
-    batch_size = 24
+    batch_size = 12
     num_workers = 4
     prefetch_factor = 2
     seed = 0
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 4
+    accumulate = 8
     
     lr = 1e-4
     wd = 0.01
