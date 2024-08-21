@@ -102,7 +102,8 @@ def train_finetuned_classifier(train_dataset, val_dataset, model, num_epochs, ou
 
             checkpoint_path = os.path.join(out_dir, f"checkpoint_{epoch}.pt")
             torch.save(model.state_dict(), checkpoint_path)
-
+            optimizer_checkpoint_path = os.path.join(out_dir, f"optimizer_{epoch}.pt")
+            torch.save(optimizer.state_dict(), optimizer_checkpoint_path)
 
 
 def evaluate_finetuned_classifier(test_dataset, model, out_path, batch_size,num_workers, prefetch_factor, device, progress_bar=False):
