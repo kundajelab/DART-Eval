@@ -63,7 +63,7 @@ if __name__ == "__main__":
     
     lr = 1e-4
     wd = 0.01
-    num_epochs = 30
+    num_epochs = 40
 
     out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/fine_tuned/{model_name}")    
 
