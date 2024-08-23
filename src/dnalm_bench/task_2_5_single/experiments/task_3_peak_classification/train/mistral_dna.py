@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import PeaksEmbeddingsDataset, CNNSlicedEmbeddingsPredictor, train_predictor, train_peak_classifier
+from ....training import PeaksEmbeddingsDataset, CNNEmbeddingsPredictor, train_predictor, train_peak_classifier
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    input_channels = 256
+    input_channels = 768
     hidden_channels = 32
     kernel_size = 8
 
@@ -77,5 +77,5 @@ if __name__ == "__main__":
     train_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_train, classes)
     val_dataset = PeaksEmbeddingsDataset(peaks_h5, elements_tsv, chroms_val, classes)
 
-    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size, out_channels=len(classes))
     train_peak_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)

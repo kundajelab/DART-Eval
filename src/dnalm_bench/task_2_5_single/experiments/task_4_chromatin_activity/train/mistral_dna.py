@@ -3,7 +3,7 @@ import sys
 
 from torch.utils.data import DataLoader
 
-from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNSlicedEmbeddingsPredictor, train_predictor
+from ....training import AssayEmbeddingsDataset, InterleavedIterableDataset, CNNEmbeddingsPredictor, train_predictor
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         "chr22"
     ]
 
-    input_channels = 256
+    input_channels = 768
     hidden_channels = 32
     kernel_size = 8
 
@@ -78,5 +78,5 @@ if __name__ == "__main__":
     nonpeaks_val_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, chroms_val, assay_bw, crop=crop)
     val_dataset = InterleavedIterableDataset([peaks_val_dataset, nonpeaks_val_dataset])
 
-    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     train_predictor(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=True, resume_from=resume_checkpoint)
