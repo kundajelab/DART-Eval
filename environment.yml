@@ -7,6 +7,7 @@ channels:
 dependencies:
   - pytorch::pytorch=2.2.0
   - pytorch::pytorch-cuda=12.1
+  # - conda-forge::cudatoolkit-dev=11.7.0
   - conda-forge::python=3.10
   - conda-forge::numpy=1.26.3
   - conda-forge::scipy=1.12.0
@@ -22,5 +23,5 @@ dependencies:
   - bioconda::pybigwig=0.3.22
   - bioconda::ncls=0.0.68
   - pip:
-    - "mamba-ssm"
+    - "mamba-ssm==1.2.2"
     - "--editable=git+https://github.com/cccntu/minLoRA.git@d47a4c93df87540bb396172cfac1f3246e7db5f9#egg=minLoRA"
