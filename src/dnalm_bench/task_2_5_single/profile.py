@@ -33,34 +33,6 @@ def profile_model_resources(dataset, model, batch_size, num_batches_warmup, out_
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers,
                             pin_memory=True, prefetch_factor=prefetch_factor, drop_last=True)
 
-    model.eval()
-    with torch.no_grad():
-        fwd_mem = []
-        fwd_time = []
-        
-        for i, (seq, track) in enumerate(tqdm(dataloader, disable=(not progress_bar), desc="fwd", ncols=120)):
-            if i >= num_batches_total:
-                break
-
-            torch.cuda.reset_peak_memory_stats(device=device)
-            track = track.to(device)
-            start = time.time()
-            _ = model(seq)
-            torch.cuda.synchronize(device=device)
-            end = time.time()
-
-            mem_usage = torch.cuda.max_memory_allocated(device=device)
-            time_elapsed = end - start
-
-            if i >= num_batches_warmup:
-                fwd_mem.append(mem_usage)
-                fwd_time.append(time_elapsed)
-
-        fwd_mem_mean = np.mean(fwd_mem)
-        fwd_mem_std = np.std(fwd_mem)
-        fwd_time_mean = np.mean(fwd_time)
-        fwd_time_std = np.std(fwd_time)
-
     model.train()
     bwd_mem = []
     bwd_time = []
@@ -88,6 +60,34 @@ def profile_model_resources(dataset, model, batch_size, num_batches_warmup, out_
     bwd_mem_std = np.std(bwd_mem)
     bwd_time_mean = np.mean(bwd_time)
     bwd_time_std = np.std(bwd_time)
+    
+    model.eval()
+    with torch.no_grad():
+        fwd_mem = []
+        fwd_time = []
+        
+        for i, (seq, track) in enumerate(tqdm(dataloader, disable=(not progress_bar), desc="fwd", ncols=120)):
+            if i >= num_batches_total:
+                break
+
+            torch.cuda.reset_peak_memory_stats(device=device)
+            track = track.to(device)
+            start = time.time()
+            _ = model(seq)
+            torch.cuda.synchronize(device=device)
+            end = time.time()
+
+            mem_usage = torch.cuda.max_memory_allocated(device=device)
+            time_elapsed = end - start
+
+            if i >= num_batches_warmup:
+                fwd_mem.append(mem_usage)
+                fwd_time.append(time_elapsed)
+
+        fwd_mem_mean = np.mean(fwd_mem)
+        fwd_mem_std = np.std(fwd_mem)
+        fwd_time_mean = np.mean(fwd_time)
+        fwd_time_std = np.std(fwd_time)
 
     metrics = {
         "num_params": num_params,
