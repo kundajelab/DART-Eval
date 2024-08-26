@@ -12,7 +12,7 @@ if __name__ == "__main__":
     model_name = "chrombpnet_like"
 
     genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
-    elements_tsv = os.path.join(work_dir,"task_3_cell-type-specific/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
+    elements_tsv = os.path.join(work_dir,"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
     batch_size = 2048
     num_workers = 4
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     wd = 0
     num_epochs = 200
 
-    out_dir = os.path.join(work_dir, f"task_3_cell-type-specific/supervised_models/ab_initio/{model_name}")    
+    out_dir = os.path.join(work_dir, f"task_3_peak_classification/supervised_models/ab_initio/{model_name}")    
 
     os.makedirs(out_dir, exist_ok=True)
     

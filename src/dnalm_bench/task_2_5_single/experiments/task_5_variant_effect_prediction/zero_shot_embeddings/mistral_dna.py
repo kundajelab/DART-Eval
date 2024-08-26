@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import polars as pl
 
-from ....evaluators import HDVariantEmbeddingEvaluator
+from ....evaluators import MistralVariantEmbeddingEvaluator
 from ....components import VariantDataset
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     allele2_embeddings_path = os.path.join(out_dir, f"{output_prefix}_allele2_embeddings.npy")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    evaluator = HDVariantEmbeddingEvaluator(model_name, batch_size, num_workers, device)
+    evaluator = MistralVariantEmbeddingEvaluator(model_name, batch_size, num_workers, device)
 
     score_df, allele1_embeddings, allele2_embeddings = evaluator.evaluate(dataset, out_path, progress_bar=True)
 

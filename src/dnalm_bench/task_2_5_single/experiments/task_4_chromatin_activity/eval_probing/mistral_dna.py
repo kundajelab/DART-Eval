@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 import numpy as np
 
-from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNSlicedEmbeddingsPredictor
+from ....training import AssayEmbeddingsDataset, evaluate_chromatin_model, CNNEmbeddingsPredictor
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 256
+    input_channels = 768
     hidden_channels = 32
     kernel_size = 8
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     idr_dataset = AssayEmbeddingsDataset(idr_h5, idr_peaks_tsv, modes[eval_mode], assay_bw, crop=crop)
     neg_dataset = AssayEmbeddingsDataset(nonpeaks_h5, nonpeaks_tsv, modes[eval_mode], assay_bw, crop=crop)
 
-    model = CNNSlicedEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
+    model = CNNEmbeddingsPredictor(input_channels, hidden_channels, kernel_size)
     checkpoint_resume = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint_resume, strict=False)
 

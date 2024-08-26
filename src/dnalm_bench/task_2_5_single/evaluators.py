@@ -855,4 +855,21 @@ class DNABERT2VariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     @property
     def end_token(self):
         return 2
+
+class MistralVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "all"
+
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"RaphaelMourad/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return 1
+    
+    @property
+    def end_token(self):
+        return 2
     
