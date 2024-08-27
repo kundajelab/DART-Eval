@@ -15,7 +15,7 @@ if __name__ == "__main__":
     genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
     elements_tsv = os.path.join(work_dir, f"task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
-    batch_size = 128
+    batch_size = 64
     num_workers = 4
     prefetch_factor = 2
     seed = 0
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     lora_alpha = 2 * lora_rank
     lora_dropout = 0.05
 
-    accumulate = 1
+    accumulate = 2
     
     lr = 1e-4
     wd = 0.01
