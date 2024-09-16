@@ -31,10 +31,11 @@ class ChromatinEndToEndDataset(Dataset):
         "elem_end": pl.UInt32,
     }
 
-    def __init__(self, genome_fa, bigwig, elements_tsv, chroms, crop, downsample_ratio=None, cache_dir=None):
+    def __init__(self, genome_fa, bigwig, elements_tsv, chroms, crop, downsample_ratio=None, cache_dir=None, return_idx_orig=False):
         super().__init__()
 
         self.crop = crop
+        self.return_idx_orig = return_idx_orig
 
         self.elements_df_all = self._load_elements(elements_tsv, chroms)
 
@@ -71,7 +72,7 @@ class ChromatinEndToEndDataset(Dataset):
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
-        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes).with_row_index()
         
         if chroms is not None:
                 df = df.filter(pl.col("chr").is_in(chroms))
@@ -99,7 +100,7 @@ class ChromatinEndToEndDataset(Dataset):
         return self.elements_df.height
     
     def __getitem__(self, idx):
-        chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
+        idx_orig, chrom, start, end, elem_start, elem_end, _, _ = self.elements_df.row(idx)
 
         seq = np.zeros((end - start, 4), dtype=np.int8)
 
@@ -131,6 +132,9 @@ class ChromatinEndToEndDataset(Dataset):
         signal[c:d] = np.nan_to_num(track)
         bw.close()
 
+        if self.return_idx_orig:
+            return torch.from_numpy(seq), torch.from_numpy(signal), torch.tensor(idx_orig)
+
         return torch.from_numpy(seq), torch.from_numpy(signal)
 
 
@@ -142,11 +146,13 @@ class PeaksEndToEndDataset(Dataset):
         "label": pl.Utf8,
     }
 
-    def __init__(self, genome_fa, elements_tsv, chroms, classes, cache_dir=None):
+    def __init__(self, genome_fa, elements_tsv, chroms, classes, cache_dir=None, return_idx_orig=False):
         super().__init__()
 
         self.classes = classes
         self.elements_df = self._load_elements(elements_tsv, chroms)
+
+        self.return_idx_orig = return_idx_orig
 
         if cache_dir is not None:
             os.makedirs(cache_dir, exist_ok=True)
@@ -169,7 +175,7 @@ class PeaksEndToEndDataset(Dataset):
 
     @classmethod
     def _load_elements(cls, elements_file, chroms):
-        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes)
+        df = pl.scan_csv(elements_file, separator="\t", quote_char=None, dtypes=cls._elements_dtypes).with_row_index()
         
         if chroms is not None:
                 df = df.filter(pl.col("chr").is_in(chroms))
@@ -190,7 +196,7 @@ class PeaksEndToEndDataset(Dataset):
         return self.elements_df.height
     
     def __getitem__(self, idx):
-        chrom, start, end, _, _, _, label = self.elements_df.row(idx)
+        idx_orig, chrom, start, end, _, _, _, label = self.elements_df.row(idx)
 
         seq = np.zeros((end - start, 4), dtype=np.int8)
 
@@ -209,6 +215,9 @@ class PeaksEndToEndDataset(Dataset):
         fa.close()
 
         label_ind = self.classes[label]
+
+        if self.return_idx_orig:
+            return torch.from_numpy(seq), torch.tensor(label_ind), torch.tensor(idx_orig)
 
         return torch.from_numpy(seq), torch.tensor(label_ind)
 
