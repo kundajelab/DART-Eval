@@ -13,7 +13,7 @@ work_dir = os.environ.get("DART_WORK_DIR", "")
 if __name__ == "__main__":
     eval_mode = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    model_name = "Mistral-DNA-v1-1.6B-hg38"
+    model_name = "caduceus-ps_seqlen-131k_d_model-256_n_layer-16"
 
     embeddings_h5 = os.path.join(work_dir, f"task_1_ccre/embeddings/{model_name}.h5")
     elements_tsv = os.path.join(work_dir, "task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    input_channels = 768
+    input_channels = 1024
     hidden_channels = 32
     kernel_size = 8
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
-    
+
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
     out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/probed/{model_name}")

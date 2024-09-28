@@ -16,7 +16,7 @@ if __name__ == "__main__":
     model_name = "hyenadna-large-1m-seqlen-hf"
 
     embeddings_h5 = os.path.join(work_dir, f"task_1_ccre/embeddings/{model_name}.h5")
-    elements_tsv = os.path.join(work_dir, "task_1_ccre/processed_data/ENCFF420VPZ_processed.tsv")
+    elements_tsv = os.path.join(work_dir, "task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
     batch_size = 2048
     num_workers = 0
