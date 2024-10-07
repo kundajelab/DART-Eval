@@ -228,6 +228,28 @@ class HyenaDNAUntrainedEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingE
         slice_idx = [0, seqs.shape[1]]
         
         return np.array(slice_idx)
+    
+class CaduceusEmbeddingExtractor(HFEmbeddingExtractor, SimpleEmbeddingExtractor):
+    _idx_mode = "fixed"
+
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"kuleshov-group/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model =  AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        encoded = self.tokenizer(seqs_str, return_tensors="pt", padding=True)
+        tokens = encoded["input_ids"]
+
+        return tokens, None
+
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx)
 
 
 class DNABERT2VariantEmbeddingExtractor(HFVariantEmbeddingExtractor):

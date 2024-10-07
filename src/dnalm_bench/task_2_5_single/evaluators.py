@@ -599,7 +599,8 @@ class HDProbingVariantEvaluator(HDVariantEvaluator, ProbingScore):
         return np.array([slice_idx] * seqs.shape[0])
     
 class MistralVariantEvaluator(VariantLikelihoodEvaluator):
-    def __init__(self, tokenizer, model, batch_size, num_workers, device):
+    _hidden_states = "all"
+    def __init__(self, model_name, batch_size, num_workers, device):
         model_name = f"RaphaelMourad/{model_name}"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
@@ -612,7 +613,7 @@ class MistralVariantEvaluator(VariantLikelihoodEvaluator):
     @property
     def end_token(self):
         return 2
-    
+
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
         gather_idx = np.zeros((seqs.shape[0], seqs.shape[1]), dtype=np.int64)
@@ -873,3 +874,11 @@ class MistralVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     def end_token(self):
         return 2
     
+class CaduceusVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
+    _hidden_states = "all"
+    
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"kuleshov-group/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
