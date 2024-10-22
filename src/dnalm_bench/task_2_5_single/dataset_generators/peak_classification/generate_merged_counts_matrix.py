@@ -6,6 +6,7 @@ import os
 dart_work_dir = os.environ.get("DART_WORK_DIR", "")
 
 counts_matrices = os.path.join(dart_work_dir, "task_3_peak_classification/input_data/*/ENCF*.csv")
+print(counts_matrices)
 
 merged_df = pd.read_csv(glob.glob(counts_matrices)[0], header=0)
 for f in glob.glob(counts_matrices)[1:]:

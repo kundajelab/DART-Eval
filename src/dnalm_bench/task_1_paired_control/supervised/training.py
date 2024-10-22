@@ -153,10 +153,13 @@ def _collate_batch(batch):
 #     return seq_embeddings
 
 def train_classifier(train_dataset, val_dataset, model, num_epochs, out_dir, batch_size, lr, num_workers, prefetch_factor, device, progress_bar=False, resume_from=None):
+    persistent_workers = True
+    if num_workers == 0:
+        persistent_workers = False
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
-                                  pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+                                  pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=persistent_workers)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=_collate_batch, 
-                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=True)
+                                pin_memory=True, prefetch_factor=prefetch_factor, persistent_workers=persistent_workers)
 
     os.makedirs(out_dir, exist_ok=True)
     log_file = os.path.join(out_dir, "train.log")

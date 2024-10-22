@@ -10,6 +10,7 @@ from scipy.stats import mannwhitneyu
 import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 
+os.environ['DART_WORK_DIR'] = '/oak/stanford/groups/akundaje/arpitas/dart-eval'
 work_dir = os.environ.get("DART_WORK_DIR", "")
 
 def get_precision_recall_auc(ctrl_counts, sig_counts):

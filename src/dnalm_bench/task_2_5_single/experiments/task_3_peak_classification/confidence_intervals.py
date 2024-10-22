@@ -47,25 +47,47 @@ mistral_table_finetuned = os.path.join(root_output_dir,"task_3_peak_classificati
 with open(mistral_table_finetuned, "r") as f:
     mistral_finetuned = json.load(f)
 
+caduceus_table_probed = os.path.join(root_output_dir,"task_3_peak_classification/supervised_model_outputs/probed/caduceus-ps_seqlen-131k_d_model-256_n_layer-16/eval_test.json")
+with open(caduceus_table_probed, "r") as f:
+    caduceus_probed = json.load(f)
+
+caduceus_table_finetuned = os.path.join(root_output_dir,"task_3_peak_classification/supervised_model_outputs/fine_tuned/caduceus-ps_seqlen-131k_d_model-256_n_layer-16/eval_test.json")
+with open(caduceus_table_finetuned, "r") as f:
+    caduceus_finetuned = json.load(f)
+
+ab_initio_table_probed = os.path.join(root_output_dir,"task_3_peak_classification/supervised_model_outputs/ab_initio/probing_head_like/eval_test.json")
+with open(ab_initio_table_probed, "r") as f:
+    ab_initio_probed = json.load(f)
+
+ab_initio_table_chrombpnet = os.path.join(root_output_dir,"task_3_peak_classification/supervised_model_outputs/ab_initio/chrombpnet_like/eval_test.json")
+with open(ab_initio_table_chrombpnet, "r") as f:
+    ab_initio_chrombpnet = json.load(f)
+
 def get_confidence_interval(data, num_ccres):
     conf_int = proportion_confint(data["test_acc"]*num_ccres, num_ccres, method="normal")
     interval = conf_int[1] - conf_int[0]
     error = interval / 2
     mean = (conf_int[1] + conf_int[0]) / 2
-    return f"{mean:.3f} \pm {error:.3e}"
+    return f"{mean:.3f} $\pm$ {error:.3e}"
 
-num_ccres=(216747-1)
+num_peaks=(216747-1)
 
 print("PROBED")
-print("DNABert2", get_confidence_interval(dnabert_probed, num_ccres))
-print("Gena LM", get_confidence_interval(gena_probed, num_ccres))
-print("Hyena DNA", get_confidence_interval(hyena_probed, num_ccres))
-print("Mistral DNA", get_confidence_interval(mistral_probed, num_ccres))
-print("Nucleotide Transformer", get_confidence_interval(nt_probed, num_ccres))
+print("DNABert2", get_confidence_interval(dnabert_probed, num_peaks))
+print("Gena LM", get_confidence_interval(gena_probed, num_peaks))
+print("Hyena DNA", get_confidence_interval(hyena_probed, num_peaks))
+print("Mistral DNA", get_confidence_interval(mistral_probed, num_peaks))
+print("Nucleotide Transformer", get_confidence_interval(nt_probed, num_peaks))
+print("Caduceus", get_confidence_interval(caduceus_probed, num_peaks))
 
 print("\nFINETUNED")
-print("DNABert2", get_confidence_interval(dnabert_finetuned, num_ccres))
-print("Gena LM", get_confidence_interval(gena_finetuned, num_ccres))
-print("Hyena DNA", get_confidence_interval(hyena_finetuned, num_ccres))
-print("Mistral DNA", get_confidence_interval(mistral_finetuned, num_ccres))
-print("Nucleotide Transformer", get_confidence_interval(nt_finetuned, num_ccres))
+print("Caduceus", get_confidence_interval(caduceus_finetuned, num_peaks))
+print("DNABert2", get_confidence_interval(dnabert_finetuned, num_peaks))
+print("Gena LM", get_confidence_interval(gena_finetuned, num_peaks))
+print("Hyena DNA", get_confidence_interval(hyena_finetuned, num_peaks))
+print("Mistral DNA", get_confidence_interval(mistral_finetuned, num_peaks))
+print("Nucleotide Transformer", get_confidence_interval(nt_finetuned, num_peaks))
+
+print("\nAB INITIO")
+print("Ab Initio (probed-like)", get_confidence_interval(ab_initio_probed, num_peaks))
+print("Ab Initio (chrombpnet-like)", get_confidence_interval(ab_initio_chrombpnet, num_peaks))

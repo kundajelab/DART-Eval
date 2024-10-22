@@ -220,6 +220,7 @@ class VariantEmbeddingEvaluator(LikelihoodEvaluator):
                     attention_mask=attention_mask,
                     output_hidden_states=True
                 )
+                print("getting hidden states")
             except:
                 torch_outs = self.model(tokens, output_hidden_states=True)
 
@@ -811,6 +812,44 @@ class NTVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
         return None
 
 
+class CaduceusVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
+    def __init__(self, model_name, batch_size, num_workers, device):
+        model_name = f"kuleshov-group/{model_name}"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
+        model = AutoModelForMaskedLM.from_pretrained(model_name, trust_remote_code=True)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
+    
+    def score(self, tokens_in, tokens_out, starts, ends, attention_mask, seq):
+        tokens_in = tokens_in.to(device=self.device)
+        tokens_out = tokens_out.to(device=self.device)
+        lls = torch.zeros(tokens_in.shape[:2], device=self.device)
+        for i in range(tokens_in.shape[1]):
+            clip_mask = ((i >= starts) & (i < ends)).to(device=self.device)
+            masked_tokens = tokens_in.clone()
+            masked_tokens[:,i,...] = self.mask_token
+            lls[:,i] = self.model_fwd(masked_tokens, attention_mask, tokens_out)[:,i] * clip_mask
+
+        out = lls.sum(dim=1).numpy(force=True)
+
+        return out
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        with torch.no_grad():
+            torch_outs = self.model(
+                tokens_in
+            )
+            logits = torch_outs.logits.swapaxes(1, 2)
+            lls = -F.cross_entropy(logits, tokens_out, reduction="none")
+        return lls
+
 class NTVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     _hidden_states = "all"
 
@@ -919,3 +958,11 @@ class CaduceusVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right")
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return 1
