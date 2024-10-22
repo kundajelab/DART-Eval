@@ -2,7 +2,7 @@ import os
 import sys
 import polars as pl
 
-from ....evaluators import HDVariantSingleTokenEvaluator
+from ....evaluators import CaduceusVariantSingleTokenEvaluator
 from ....components import VariantDataset
 
 root_output_dir = os.environ.get("DART_WORK_DIR", "")
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     dataset = sys.argv[1]
 
     model_name = "caduceus-ps_seqlen-131k_d_model-256_n_layer-16"
-    batch_size = 512
+    batch_size = 256
     num_workers = 0
     seed = 0
     device = "cuda"
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     out_path = os.path.join(out_dir, f"{output_prefix}.tsv")
 
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
-    evaluator = HDVariantSingleTokenEvaluator(model_name, batch_size, num_workers, device)
+    evaluator = CaduceusVariantSingleTokenEvaluator(model_name, batch_size, num_workers, device)
     score_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
     df = dataset.elements_df

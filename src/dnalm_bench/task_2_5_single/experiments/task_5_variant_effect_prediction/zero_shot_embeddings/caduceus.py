@@ -11,7 +11,7 @@ root_output_dir = os.environ.get("DART_WORK_DIR", "")
 if __name__ == "__main__":
     dataset = sys.argv[1]
     model_name = "caduceus-ps_seqlen-131k_d_model-256_n_layer-16"
-    batch_size = 512
+    batch_size = 256
     num_workers = 0
     seed = 0
     device = "cuda"
