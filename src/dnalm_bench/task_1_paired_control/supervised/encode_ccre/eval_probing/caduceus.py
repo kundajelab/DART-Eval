@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     input_channels = 512
     hidden_channels = 32
-    kernel_size = 8
+    kernel_size = 3
 
     model_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/probed/{model_name}")
 

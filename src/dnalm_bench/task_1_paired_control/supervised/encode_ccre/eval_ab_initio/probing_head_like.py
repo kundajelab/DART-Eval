@@ -68,14 +68,13 @@ if __name__ == "__main__":
 
     seq_len = 350
 
-    model_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/{model_name}")
+    model_dir = os.path.join(work_dir, f"task_1_ccre/supervised_models/ab_initio/{model_name}")
     train_log = f"{model_dir}/train.log"
     df = pd.read_csv(train_log, sep="\t")
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
-    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/{model_name}")
-
+    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/ab_initio/{model_name}")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
