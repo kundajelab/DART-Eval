@@ -74,7 +74,12 @@ if __name__ == "__main__":
     checkpoint_num = int(df["epoch"][np.argmin(df["val_loss"])])
     checkpoint_path = os.path.join(model_dir, f"checkpoint_{checkpoint_num}.pt")
 
+<<<<<<< HEAD
     out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/ab_initio/{model_name}")
+=======
+    out_dir = os.path.join(work_dir, f"task_1_ccre/supervised_model_outputs/probed/{model_name}")
+
+>>>>>>> 870624f (Updated task 1 probing eval)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"eval_{eval_mode}.json")
 
