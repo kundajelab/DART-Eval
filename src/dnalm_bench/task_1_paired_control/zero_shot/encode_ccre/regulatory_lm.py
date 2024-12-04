@@ -67,12 +67,16 @@ class RegulatoryLMEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
         return out       
 
     def model_fwd(self, tokens_in, attention_mask, tokens_out):
-        category_tensor = torch.tensor([self.category]).to(device=self.device)
+        if self.category is not None:
+            category_tensor = torch.tensor([self.category]).to(device=self.device)
+        else:
+            category_tensor = self.category
         with torch.no_grad():
-            torch_outs = self.model(
-                tokens_in, category_tensor
-            )
-            logits = torch_outs[0].swapaxes(1, 2)
+            torch_outs = self.model(tokens_in, category_tensor)
+            if type(torch_outs) == tuple:
+                logits = torch_outs[0].swapaxes(1, 2)
+            else:
+                logits = torch_outs.swapaxes(1, 2)
             lls = -F.cross_entropy(logits, tokens_out, reduction="none")
         return lls
 
@@ -85,7 +89,11 @@ if __name__ == "__main__":
     model_dir = model_dir + "/" if model_dir[-1] != "/" else model_dir
     args = json.load(open(os.path.join(model_dir, "args.json"), "r"))
     saved_model_file = os.path.join(model_dir, f"checkpoint_{checkpoint}.pt")
-    embedder = model_str_dict[args["embedder"]](args["embedding_size"], args["num_categories"], vocab_size=args["num_real_tokens"]+2, masking=True)
+    if args["embedder"] == "InputSeqOnlyEmbedder":
+        embedder = model_str_dict[args["embedder"]](args["embedding_size"], vocab_size=args["num_real_tokens"]+2, masking=True)
+    else:
+        embedder = model_str_dict[args["embedder"]](args["embedding_size"], args["num_categories"], vocab_size=args["num_real_tokens"]+2, masking=True)
+
     encoder = model_str_dict[args["encoder"]](args["embedding_size"], args["num_encoder_layers"], n_filters=args["embedding_size"])
     decoder = model_str_dict[args["decoder"]](args["embedding_size"])
     if "classifier" in args:
@@ -118,7 +126,7 @@ if __name__ == "__main__":
 
     dataset = PairedControlDataset(genome_fa, elements_tsv, chroms, seed)
 
-    evaluator = RegulatoryLMEvaluator(model, dataset, batch_size, num_workers, device)
+    evaluator = RegulatoryLMEvaluator(model, dataset, batch_size, num_workers, device, category=None)
     
     metrics = evaluator.evaluate(out_dir, progress_bar=True)
 
