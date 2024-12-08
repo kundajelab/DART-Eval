@@ -7,6 +7,10 @@ The Dart-Eval preprint is available here:
 
 All data is available for download at Synapse project [`syn59522070`](https://www.synapse.org/Synapse:syn59522070).
 
+The Synapse file repository is organized by task. **Each task directory contains `data.h5`, an HDF5 file containing processed inputs and outputs for the task. See the Synapse project wiki for more information on the structure of the HDF5 files.**
+
+Additionally, for reproducibility, each task directory contains raw data, inputs, and final outputs for each model evaluated in the manuscript. (See the "Tasks" section for more information on each task.)
+
 ## Tasks
 
 The commands in this section reproduce the results for each task in the paper. The output files mirror the structure of the Synapse project.
@@ -17,7 +21,7 @@ Prior to running analyses, set the `$DART_WORK_DIR` environment variable. This d
 
 Additionally, download the genome reference files from [`syn60581044`](https://www.synapse.org/Synapse:syn60581044) into `$DART_WORK_DIR/refs`, keeping the file names. These genome references are used across all tasks.
 
-In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, and `nucleotide-transformer-v2-500m-multi-species` .
+In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `caduceus`, `dnabert2`, `gena_lm`, `hyenadna`, `mistral_dna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `caduceus-ps_seqlen-131k_d_model-256_n_layer-16`, `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, `Mistral-DNA-v1-1.6B-hg38`, and `nucleotide-transformer-v2-500m-multi-species`.
 
 ### Task 1: Prioritizing Known Regulatory Elements
 
