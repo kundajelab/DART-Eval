@@ -1,7 +1,7 @@
 # DART-Eval: A Comprehensive DNA Language Model Evaluation Benchmark on Regulatory DNA
 
-The Dart-Eval preprint is available here:
-(Insert Preprint Link)
+The Dart-Eval paper is available here:
+https://openreview.net/pdf?id=qR0x6H5WUX
 
 ## Data
 
