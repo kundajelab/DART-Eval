@@ -1,7 +1,9 @@
 # DART-Eval: A Comprehensive DNA Language Model Evaluation Benchmark on Regulatory DNA
 
-The Dart-Eval paper is available here:
-https://arxiv.org/pdf/2412.05430
+DART-Eval is a suite of benchmarks to assess the utility of human regulatory DNA representations learned by self-supervised DNA Language Models. DART-Eval assesses zero-shot, probed, and fine-tuned performance on five sets of biologically relevant tasks of increasing difficulty.  
+
+For more details, see the DART-Eval paper (NeurIPS 2024):
+[https://arxiv.org/pdf/2412.05430](https://arxiv.org/abs/2412.05430#)
 
 ## Data
 
