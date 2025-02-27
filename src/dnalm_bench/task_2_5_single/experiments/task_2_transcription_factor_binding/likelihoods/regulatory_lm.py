@@ -3,12 +3,13 @@ import sys
 import numpy as np
 import json
 import os
-from ..evaluators import PairedControlDataset, HFZeroShotEvaluator, MaskedZeroShotScore, onehot_to_chars
+
+from ....evaluators import LikelihoodEvaluator, MaskedZeroShotScore, onehot_to_chars
+from ....components import FootprintingDataset
 sys.path.append("/users/patelas/regulatory_lm/src/regulatory_lm")
 from modeling.model import *
 MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
-model_str_dict = {"InputEmbedder":InputEmbedder, "InputSeqOnlyEmbedder":InputSeqOnlyEmbedder, "InputBertEmbedder":InputBertEmbedder, "InputBertSeqOnlyEmbedder":InputBertSeqOnlyEmbedder, "SimpleLMDecoder":SimpleLMDecoder, 
-"TransformerLM": TransformerLM, "BicausalNet":BicausalNet, "DilatedConvNet":DilatedConvNet, "PeakClassifier":PeakClassifier, "CNNTransformerHybrid":CNNTransformerHybrid}
+model_str_dict = MODULES
 FLOAT_DTYPES = {"float32":torch.float32, "float64":torch.float64, "bfloat16":torch.bfloat16, "float16":torch.float16}
 
 work_dir = os.environ.get("DART_WORK_DIR", "")
@@ -19,25 +20,14 @@ def encode_sequence(sequence):
 
 def encode_sequence_batch(seq_batch):
    return [encode_sequence(seq) for seq in seq_batch]
-# class RegulatoryLMEmbeddingExtractor(HFEmbeddingExtractor, PairedControlEmbeddingExtractor):
-#     _idx_mode = "fixed"
-
-#     def __init__(self, model, batch_size, num_workers, device):
-#         tokenizer = None
-#         super().__init__(tokenizer, model, batch_size, num_workers, device)
-
-#     def tokenize(self, seqs):
-#         seqs_str = onehot_to_chars(seqs)
-#         tokens = torch.tensor(encode_sequence(dna_seq))
-#         return tokens, None
 
 
-class RegulatoryLMEvaluator(HFZeroShotEvaluator, MaskedZeroShotScore):
-    def __init__(self, model, dataset, batch_size, num_workers, device, category=12, mask_token=5):
+class RegulatoryLMEvaluator(LikelihoodEvaluator, MaskedZeroShotScore):
+    def __init__(self, model, batch_size, num_workers, device, category=12, mask_token=5):
         tokenizer = None
         self.category = category
         self.mask_token_override = mask_token
-        super().__init__(tokenizer, model, dataset, batch_size, num_workers, device)
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
 
     @property
     def start_token(self):
@@ -108,33 +98,14 @@ if __name__ == "__main__":
     model_info = torch.load(saved_model_file)
     model.load_state_dict(model_info["model_state"])
 
-    # genome_fa = os.path.join(work_dir, "refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta")
-    # elements_tsv = os.path.join(work_dir, f"task_1_ccre/processed_inputs/ENCFF420VPZ_processed.tsv")
 
-    genome_fa = "/mnt/lab_data2/regulatory_lm/oak_backup/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-    elements_tsv = "/mnt/lab_data2/regulatory_lm/oak_backup/ENCFF420VPZ_processed.tsv"
-
-    # out_dir = os.path.join(work_dir, f"task_1_ccre/zero_shot_outputs/likelihoods/{model_name}")
-
-    chroms = [
-        "chr5",
-        "chr10",
-        "chr14",
-        "chr18",
-        "chr20",
-        "chr22"
-    ]
-
-    batch_size = 1024
-    num_workers = 4
+    seq_table = os.path.join(work_dir, f"task_2_footprinting/processed_data/footprint_dataset_350_v1.txt")
+    batch_size = 64
+    num_workers = 0
     seed = 0
     device = "cuda"
 
-    dataset = PairedControlDataset(genome_fa, elements_tsv, chroms, seed)
 
-    evaluator = RegulatoryLMEvaluator(model, dataset, batch_size, num_workers, device, category=None)
-    
-    metrics = evaluator.evaluate(out_dir, progress_bar=True)
-
-    for k, v in metrics.items():
-        print(f"{k}: {v}")    
+    dataset = FootprintingDataset(seq_table, seed)
+    evaluator = RegulatoryLMEvaluator(model, batch_size, num_workers, device)
+    evaluator.evaluate(dataset, os.path.join(out_dir, "likelihoods.tsv"), progress_bar=True)
