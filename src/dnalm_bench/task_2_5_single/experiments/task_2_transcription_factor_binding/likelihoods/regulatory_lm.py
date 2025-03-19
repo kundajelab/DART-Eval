@@ -80,15 +80,17 @@ if __name__ == "__main__":
     model_dir = model_dir + "/" if model_dir[-1] != "/" else model_dir
     args = json.load(open(os.path.join(model_dir, "args.json"), "r"))
     saved_model_file = os.path.join(model_dir, f"checkpoint_{checkpoint}.pt")
-    if args["embedder"] == "InputSeqOnlyEmbedder":
-        embedder = model_str_dict[args["embedder"]](args["embedding_size"], vocab_size=args["num_real_tokens"]+2, masking=True)
-    elif args["embedder"] == "InputBertSeqOnlyEmbedder":
-        embedder = model_str_dict[args["embedder"]](args["embedding_size"], seq_len=args["embedder_kwargs"]["seq_len"], vocab_size=args["num_real_tokens"]+2, masking=True)
-    else:
-        embedder = model_str_dict[args["embedder"]](args["embedding_size"], args["num_categories"], vocab_size=args["num_real_tokens"]+2, masking=True)
 
-    encoder = model_str_dict[args["encoder"]](args["embedding_size"], args["num_encoder_layers"], n_filters=args["embedding_size"])
-    decoder = model_str_dict[args["decoder"]](args["embedding_size"])
+    embedder_kwargs = args.get("embedder_kwargs", {})
+    encoder_kwargs = args.get("encoder_kwargs", {})
+    decoder_kwargs = args.get("decoder_kwargs", {})
+    model_kwargs = args.get("model_kwargs", {})
+
+    embedder =  model_str_dict[args["embedder"]](args["embedding_size"], vocab_size=args["num_real_tokens"]+2, masking=True, **embedder_kwargs)
+
+
+    encoder = model_str_dict[args["encoder"]](args["embedding_size"], args["num_encoder_layers"], **encoder_kwargs)
+    decoder = model_str_dict[args["decoder"]](args["embedding_size"], **decoder_kwargs)
     if "classifier" in args:
         classifier = model_str_dict[args["classifier"]](args["embedding_size"])
         model = RegulatoryLMWithClassification(embedder, encoder, decoder, classifier)
