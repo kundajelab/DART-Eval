@@ -326,3 +326,33 @@ class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor
 
         return inds
 
+class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtractor):
+    def __init__(self, model, batch_size, num_workers, device, category=12, mask_token=5):
+        tokenizer = None
+        self.category = category
+        self.mask_token_override = mask_token
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return None
+
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        tokens = torch.tensor(encode_sequence_batch(seqs_str))
+        return tokens, torch.tensor([0] * len(seqs)), torch.tensor([len(seqs[0])] * len(seqs)), None
+
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        if self.category is not None:
+            category_tensor = torch.tensor([self.category]).to(device=self.device)
+        else:
+            category_tensor = self.category
+        with torch.no_grad():
+            _, embs = self.model.embed(tokens_in, category_tensor)
+        return embs
+

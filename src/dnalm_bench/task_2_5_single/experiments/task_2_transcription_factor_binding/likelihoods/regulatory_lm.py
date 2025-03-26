@@ -96,8 +96,11 @@ if __name__ == "__main__":
         model = RegulatoryLMWithClassification(embedder, encoder, decoder, classifier)
     else:
         model = RegulatoryLM(embedder, encoder, decoder)
-    model = torch.compile(model)
     model_info = torch.load(saved_model_file)
+    if list(model_info["model_state"].keys())[0][:7] == "module.":
+        model_info["model_state"] = {x[7:]:model_info["model_state"][x] for x in model_info["model_state"]}
+    else:
+        model = torch.compile(model)
     model.load_state_dict(model_info["model_state"])
 
 
