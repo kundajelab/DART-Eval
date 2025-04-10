@@ -383,16 +383,18 @@ class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtrac
             if self.seq_input_size == self.model_input_size:
                 embs = self.model.embed(tokens, category_tensor)
             #Else case - adapting to different input sizes
+            #We basically break up the sequence into chunks of the model input length
+            #Any remaining tokens are added by predicting the very end of the sequence and only concatenating the embeddings for previously unpredicted tokens
             else:
                 full_partitions, remainder = self.seq_input_size // self.model_input_size, self.seq_input_size % self.model_input_size
                 for part in range(full_partitions):
-                    curr_tokens = tokens[:,part * self.seq_input_size : part * self.seq_input_size + self.seq_input_size]
+                    curr_tokens = tokens[:,part * self.model_input_size : part * self.model_input_size + self.model_input_size]
                     if part == 0:
                         embs = self.model.embed(curr_tokens, category_tensor)
                     else:
                         curr_embs = self.model.embed(curr_tokens, category_tensor)
                         embs = torch.cat((embs, curr_embs), dim=1)
-                final_pred = self.model.embed(tokens[-1*self.model_input_size:], category_tensor)
-                embs = torch.cat((embs, final_pred), dim=1)
+                final_pred = self.model.embed(tokens[:,-1*self.model_input_size:], category_tensor)
+                embs = torch.cat((embs, final_pred[:,-1*remainder:]), dim=1)
         return embs
 
