@@ -326,12 +326,38 @@ class NucleotideTransformerVariantEmbeddingExtractor(HFVariantEmbeddingExtractor
 
         return inds
 
+
+def encode_sequence(sequence): 
+    encoded_sequence = [MAPPING.get(nucleotide, 4) for nucleotide in sequence]
+    return encoded_sequence
+
+def encode_sequence_batch(seq_batch):
+   return [encode_sequence(seq) for seq in seq_batch]
+
 class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtractor):
-    def __init__(self, model, batch_size, num_workers, device, category=12, mask_token=5):
+    _idx_mode = "fixed"
+    def __init__(self, model, batch_size, num_workers, device, category=12, mask_token=5, seq_input_size=350, model_input_size=350):
         tokenizer = None
         self.category = category
         self.mask_token_override = mask_token
+        self.seq_input_size = seq_input_size
+        self.model_input_size = model_input_size
+        self.mapping = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+
         super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    def encode_sequence(self, sequence): 
+        encoded_sequence = [self.mapping.get(nucleotide, 4) for nucleotide in sequence]
+        return encoded_sequence
+
+    def encode_sequence_batch(self, seq_batch):
+        return [self.encode_sequence(seq) for seq in seq_batch]
+
+    @staticmethod
+    def _offsets_to_indices(offsets, seqs):
+        slice_idx = [0, seqs.shape[1]]
+        
+        return np.array(slice_idx)
 
     @property
     def start_token(self):
@@ -343,16 +369,30 @@ class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtrac
 
     def tokenize(self, seqs):
         seqs_str = onehot_to_chars(seqs)
-        tokens = torch.tensor(encode_sequence_batch(seqs_str))
-        return tokens, torch.tensor([0] * len(seqs)), torch.tensor([len(seqs[0])] * len(seqs)), None
+        tokens = torch.tensor(self.encode_sequence_batch(seqs_str))
+        return tokens, None
 
 
-    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+    def model_fwd(self, tokens):
+        tokens = tokens.to(self.device)
         if self.category is not None:
             category_tensor = torch.tensor([self.category]).to(device=self.device)
         else:
             category_tensor = self.category
         with torch.no_grad():
-            _, embs = self.model.embed(tokens_in, category_tensor)
+            if self.seq_input_size == self.model_input_size:
+                embs = self.model.embed(tokens, category_tensor)
+            #Else case - adapting to different input sizes
+            else:
+                full_partitions, remainder = self.seq_input_size // self.model_input_size, self.seq_input_size % self.model_input_size
+                for part in range(full_partitions):
+                    curr_tokens = tokens[:,part * self.seq_input_size : part * self.seq_input_size + self.seq_input_size]
+                    if part == 0:
+                        embs = self.model.embed(curr_tokens, category_tensor)
+                    else:
+                        curr_embs = self.model.embed(curr_tokens, category_tensor)
+                        embs = torch.cat((embs, curr_embs), dim=1)
+                final_pred = self.model.embed(tokens[-1*self.model_input_size:], category_tensor)
+                embs = torch.cat((embs, final_pred), dim=1)
         return embs
 
