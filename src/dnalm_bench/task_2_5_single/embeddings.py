@@ -355,7 +355,7 @@ class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtrac
 
     @staticmethod
     def _offsets_to_indices(offsets, seqs):
-        slice_idx = [0, seqs.shape[1]]
+        slice_idx = [0, seqs.shape[1] - 1]
         
         return np.array(slice_idx)
 
@@ -394,6 +394,7 @@ class RegulatoryLMEmbeddingExtractor(SimpleEmbeddingExtractor, HFEmbeddingExtrac
                     else:
                         curr_embs = self.model.embed(curr_tokens, category_tensor)
                         embs = torch.cat((embs, curr_embs), dim=1)
+                #To account for the stragglers, we predict the very end of the sequence but only concatenate the stragglers
                 final_pred = self.model.embed(tokens[:,-1*self.model_input_size:], category_tensor)
                 embs = torch.cat((embs, final_pred[:,-1*remainder:]), dim=1)
         return embs

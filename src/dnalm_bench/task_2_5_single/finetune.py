@@ -775,6 +775,45 @@ class CaduceusLoRAModel(HFClassifierModel):
 
         return logits
 
+class RegulatoryLMLoRAModel(HFClassifierModel):
+    def __init__(self, model, lora_rank, lora_alpha, lora_dropout, num_labels, emb_size, seq_input_size=350, model_input_size=350):
+        tokenizer = None
+        model.input_embedder = LoRAModule(model.input_embedder, lora_rank, lora_alpha, lora_dropout)
+        model.encoder = LoRAModule(model.encoder, lora_rank, lora_alpha, lora_dropout)
+        self.seq_input_size = seq_input_size
+        self.model_input_size = model_input_size
+        super().__init__(tokenizer, model)
+        self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+
+    def _tokenize(self, seqs):
+        MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+        seqs_str = [list(x) for x in onehot_to_chars(seqs)]
+        encoded_sequence = [[MAPPING.get(nucleotide, 4) for nucleotide in seq] for seq in seqs_str]
+        return torch.tensor(encoded_sequence).to(self.device), None
+
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+        if self.seq_input_size == self.model_input_size:
+            embs = self.model.embed(tokens, None)
+        #Else case - adapting to different input sizes
+        #We basically break up the sequence into chunks of the model input length
+        #Any remaining tokens are added by predicting the very end of the sequence and only concatenating the embeddings for previously unpredicted tokens
+        else:
+            full_partitions, remainder = self.seq_input_size // self.model_input_size, self.seq_input_size % self.model_input_size
+            for part in range(full_partitions):
+                curr_tokens = tokens[:,part * self.model_input_size : part * self.model_input_size + self.model_input_size]
+                if part == 0:
+                    embs = self.model.embed(curr_tokens, None)
+                else:
+                    curr_embs = self.model.embed(curr_tokens, None)
+                    embs = torch.cat((embs, curr_embs), dim=1)
+            #To account for the stragglers, we predict the very end of the sequence but only concatenate the stragglers
+            final_pred = self.model.embed(tokens[:,-1*self.model_input_size:], None)
+            embs = torch.cat((embs, final_pred[:,-1*remainder:]), dim=1)
+            logits = self.classifier_layer(embs.mean(1))
+
+        return logits
+
 
 class LargeCNNClassifier(torch.nn.Module):
     def __init__(self, input_channels, n_filters, n_residual_convs, output_channels, seq_len, pos_channels=1, first_kernel_size=21, residual_kernel_size=3):

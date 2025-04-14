@@ -22,6 +22,8 @@ if __name__ == "__main__":
     cell_line = sys.argv[4]
     category = sys.argv[5]
 
+    seq_len = 500
+    model_len = 350
     chroms = None
     batch_size = 64
     num_workers = 0
@@ -59,6 +61,6 @@ if __name__ == "__main__":
     model_info = torch.load(saved_model_file)
     model.load_state_dict(model_info["model_state"])
 
-    extractor = RegulatoryLMEmbeddingExtractor(model, batch_size, num_workers, device)
+    extractor = RegulatoryLMEmbeddingExtractor(model, batch_size, num_workers, device, seq_input_size=seq_len)
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
     extractor.extract_embeddings(dataset, os.path.join(out_dir, f"task4_embeddings_{cell_line}_{category}.h5"), progress_bar=True)
