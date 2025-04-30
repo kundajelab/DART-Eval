@@ -1,11 +1,17 @@
 # DART-Eval: A Comprehensive DNA Language Model Evaluation Benchmark on Regulatory DNA
 
-The Dart-Eval preprint is available here:
-(Insert Preprint Link)
+DART-Eval is a suite of benchmarks to assess the utility of human regulatory DNA representations learned by self-supervised DNA Language Models. DART-Eval assesses zero-shot, probed, and fine-tuned performance on five sets of biologically relevant tasks of increasing difficulty.  
+
+For more details, see the DART-Eval paper (NeurIPS 2024):
+[https://arxiv.org/pdf/2412.05430](https://arxiv.org/abs/2412.05430#)
 
 ## Data
 
 All data is available for download at Synapse project [`syn59522070`](https://www.synapse.org/Synapse:syn59522070).
+
+The Synapse file repository is organized by task. **Each task directory contains `data.h5`, an HDF5 file containing processed inputs and outputs for the task. See the Synapse project wiki for more information on the structure of the HDF5 files.**
+
+Additionally, for reproducibility, each task directory contains raw data, inputs, and final outputs for each model evaluated in the manuscript. (See the "Tasks" section for more information on each task.)
 
 ## Tasks
 
@@ -17,7 +23,7 @@ Prior to running analyses, set the `$DART_WORK_DIR` environment variable. This d
 
 Additionally, download the genome reference files from [`syn60581044`](https://www.synapse.org/Synapse:syn60581044) into `$DART_WORK_DIR/refs`, keeping the file names. These genome references are used across all tasks.
 
-In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, and `nucleotide-transformer-v2-500m-multi-species` .
+In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `caduceus`, `dnabert2`, `gena_lm`, `hyenadna`, `mistral_dna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `caduceus-ps_seqlen-131k_d_model-256_n_layer-16`, `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, `Mistral-DNA-v1-1.6B-hg38`, and `nucleotide-transformer-v2-500m-multi-species`.
 
 ### Task 1: Prioritizing Known Regulatory Elements
 
