@@ -380,11 +380,11 @@ python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_predicti
 #### Supervised fine-tuned model scoring
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/finetuned/$MODEL/Afr.CaQTLS.tsv $DART_WORK_DIR/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/fine_tuned/$MODEL_FOLDER/Afr.CaQTLS $DART_WORK_DIR/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
 ```
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/fine_tuned/$MODEL/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/refs/male.hg19.fa
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.finetuned_log_counts.$MODEL $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv $DART_WORK_DIR/task_5_variant_effect_prediction/outputs/fine_tuned/$MODEL_FOLDER/yoruban.dsqtls.benchmarking $DART_WORK_DIR/refs/male.hg19.fa
 ```
 
 #### Evaluation Notebooks
