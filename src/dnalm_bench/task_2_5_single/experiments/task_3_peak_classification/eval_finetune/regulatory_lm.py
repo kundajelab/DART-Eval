@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     modes = {"train": chroms_train, "val": chroms_val, "test": chroms_test}
 
-    emb_channels = 1024
+    emb_channels = 768
 
     lora_rank = 8
     lora_alpha = 2 * lora_rank
@@ -124,10 +124,11 @@ if __name__ == "__main__":
     else:
         model = torch.compile(model)
 
+    model.load_state_dict(model_info["model_state"])
     lora_model = RegulatoryLMLoRAModel(model, lora_rank, lora_alpha, lora_dropout, len(classes), emb_channels, seq_input_size=500)
 
     checkpoint_resume = torch.load(checkpoint_path)
-    model.load_state_dict(checkpoint_resume, strict=False)
+    lora_model.load_state_dict(checkpoint_resume, strict=False)
     
     metrics = eval_finetuned_peak_classifier(test_dataset, lora_model, out_path, batch_size,
                                     num_workers, prefetch_factor, device, progress_bar=True)

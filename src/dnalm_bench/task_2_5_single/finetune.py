@@ -310,11 +310,11 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                 # seq = seq.to(device)
                 track = track.to(device)
                 true_counts = track.sum(dim=1)
-                
                 fallback = False
                 try:
                     log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts) / accumulate
+
                     loss.backward()
                 except torch.cuda.OutOfMemoryError:
                     fallback = True
@@ -335,6 +335,7 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
 
                 if ((i + 1) % accumulate == 0):
                     optimizer.step()
+                    #torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) #ADDITION
                     optimizer.zero_grad()
 
             optimizer.step()
@@ -348,10 +349,8 @@ def train_finetuned_chromatin_model(train_pos_dataset, train_neg_dataset, val_po
                     # seq = seq.to(device)
                     track = track.to(device)
                     true_counts = track.sum(dim=1)
-                    
                     log1p_counts = model(seq).squeeze(1)
                     loss = log1pMSELoss(log1p_counts, true_counts)
-
                     val_loss += loss.item()
                     val_counts_pred.append(log1p_counts)
                     val_counts_true.append(true_counts)
@@ -776,14 +775,21 @@ class CaduceusLoRAModel(HFClassifierModel):
         return logits
 
 class RegulatoryLMLoRAModel(HFClassifierModel):
-    def __init__(self, model, lora_rank, lora_alpha, lora_dropout, num_labels, emb_size, seq_input_size=350, model_input_size=350):
+    def __init__(self, model, lora_rank, lora_alpha, lora_dropout, num_labels, emb_size, seq_input_size=350, model_input_size=350, dropout=0.1):
         tokenizer = None
         model.input_embedder = LoRAModule(model.input_embedder, lora_rank, lora_alpha, lora_dropout)
         model.encoder = LoRAModule(model.encoder, lora_rank, lora_alpha, lora_dropout)
         self.seq_input_size = seq_input_size
         self.model_input_size = model_input_size
         super().__init__(tokenizer, model)
-        self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+        # self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+        self.classifier_layer = torch.nn.Sequential(
+            torch.nn.Linear(emb_size, emb_size),
+            torch.nn.Tanh(),
+            torch.nn.Dropout(p=dropout),
+            torch.nn.Linear(emb_size, num_labels)
+        )
+
 
     def _tokenize(self, seqs):
         MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
@@ -810,8 +816,109 @@ class RegulatoryLMLoRAModel(HFClassifierModel):
             #To account for the stragglers, we predict the very end of the sequence but only concatenate the stragglers
             final_pred = self.model.embed(tokens[:,-1*self.model_input_size:], None)
             embs = torch.cat((embs, final_pred[:,-1*remainder:]), dim=1)
-            logits = self.classifier_layer(embs.mean(1))
+        logits = self.classifier_layer(embs.mean(1))
 
+        return logits
+
+
+class RegulatoryLMFullFinetune(HFClassifierModel):
+    def __init__(self, model, num_labels, emb_size, seq_input_size=350, model_input_size=350, dropout=0.1):
+        tokenizer = None
+        self.seq_input_size = seq_input_size
+        self.model_input_size = model_input_size
+        super().__init__(tokenizer, model)
+
+        # self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+        self.classifier_layer = torch.nn.Sequential(
+            torch.nn.Linear(emb_size, emb_size),
+            torch.nn.Tanh(),
+            torch.nn.Dropout(p=dropout),
+            torch.nn.Linear(emb_size, num_labels)
+        )
+
+    def _tokenize(self, seqs):
+        MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+        seqs_str = [list(x) for x in onehot_to_chars(seqs)]
+        encoded_sequence = [[MAPPING.get(nucleotide, 4) for nucleotide in seq] for seq in seqs_str]
+        return torch.tensor(encoded_sequence).to(self.device), None
+
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+        if self.seq_input_size == self.model_input_size:
+            embs = self.model.embed(tokens, None)
+        #Else case - adapting to different input sizes
+        #We basically break up the sequence into chunks of the model input length
+        #Any remaining tokens are added by predicting the very end of the sequence and only concatenating the embeddings for previously unpredicted tokens
+        else:
+            full_partitions, remainder = self.seq_input_size // self.model_input_size, self.seq_input_size % self.model_input_size
+            for part in range(full_partitions):
+                curr_tokens = tokens[:,part * self.model_input_size : part * self.model_input_size + self.model_input_size]
+                if part == 0:
+                    embs = self.model.embed(curr_tokens, None)
+                else:
+                    curr_embs = self.model.embed(curr_tokens, None)
+                    embs = torch.cat((embs, curr_embs), dim=1)
+            #To account for the stragglers, we predict the very end of the sequence but only concatenate the stragglers
+            final_pred = self.model.embed(tokens[:,-1*self.model_input_size:], None)
+            embs = torch.cat((embs, final_pred[:,-1*remainder:]), dim=1)
+        logits = self.classifier_layer(embs.mean(1))
+
+        return logits
+
+class RegulatoryLMLoRAModelFullContext(HFClassifierModel):
+    def __init__(self, model, lora_rank, lora_alpha, lora_dropout, num_labels, emb_size, seq_input_size=350, model_input_size=350, dropout=0.1):
+        tokenizer = None
+        model.input_embedder = LoRAModule(model.input_embedder, lora_rank, lora_alpha, lora_dropout)
+        model.encoder = LoRAModule(model.encoder, lora_rank, lora_alpha, lora_dropout)
+        self.seq_input_size = seq_input_size
+        self.model_input_size = model_input_size
+        super().__init__(tokenizer, model)
+        # self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+        self.classifier_layer = torch.nn.Sequential(
+            torch.nn.Linear(emb_size, emb_size),
+            torch.nn.Tanh(),
+            torch.nn.Dropout(p=dropout),
+            torch.nn.Linear(emb_size, num_labels)
+        )
+
+    def _tokenize(self, seqs):
+        MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+        seqs_str = [list(x) for x in onehot_to_chars(seqs)]
+        encoded_sequence = [[MAPPING.get(nucleotide, 4) for nucleotide in seq] for seq in seqs_str]
+        return torch.tensor(encoded_sequence).to(self.device), None
+
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+        embs = self.model.embed(tokens, None)
+        logits = self.classifier_layer(embs.mean(1))
+        return logits
+
+class RegulatoryLMFullFinetuneFullContext(HFClassifierModel):
+    def __init__(self, model, num_labels, emb_size, seq_input_size=350, model_input_size=350, dropout=0.1):
+        tokenizer = None
+        self.seq_input_size = seq_input_size
+        self.model_input_size = model_input_size
+        super().__init__(tokenizer, model)
+
+        # self.classifier_layer = torch.nn.Linear(emb_size, num_labels)
+        self.classifier_layer = torch.nn.Sequential(
+            torch.nn.Linear(emb_size, emb_size),
+            torch.nn.Tanh(),
+            torch.nn.Dropout(p=dropout),
+            torch.nn.Linear(emb_size, num_labels)
+        )
+
+    def _tokenize(self, seqs):
+        MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+        seqs_str = [list(x) for x in onehot_to_chars(seqs)]
+        encoded_sequence = [[MAPPING.get(nucleotide, 4) for nucleotide in seq] for seq in seqs_str]
+        return torch.tensor(encoded_sequence).to(self.device), None
+
+    def forward(self, seqs):
+        tokens, _ = self._tokenize(seqs)
+        embs = self.model.embed(tokens, None)
+        #logits = self.classifier_layer(embs[:,557:1557,:].mean(1))#self.classifier_layer(embs.mean(1))
+        logits = self.classifier_layer(embs.mean(1))
         return logits
 
 

@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     encoder = model_str_dict[args["encoder"]](args["embedding_size"], args["num_encoder_layers"], **encoder_kwargs)
     decoder = model_str_dict[args["decoder"]](args["embedding_size"], **decoder_kwargs)
-    if "classifier" in args:
+    if args["model"] == "RegulatoryLMWithClassification":
         classifier = model_str_dict[args["classifier"]](args["embedding_size"])
         model = RegulatoryLMWithClassification(embedder, encoder, decoder, classifier)
     else:

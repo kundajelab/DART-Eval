@@ -68,11 +68,11 @@ if __name__ == "__main__":
     accumulate = 4
     
     lr = 1e-4
+    print(lr)
     wd = 0.01
     num_epochs = 45
 
     out_dir = os.path.join(work_dir, f"task_4_chromatin_activity/supervised_models/fine_tuned/{model_name}/{cell_line}")  
-
     os.makedirs(out_dir, exist_ok=True)
 
     train_pos_dataset = ChromatinEndToEndDataset(genome_fa, assay_bw, peaks_tsv, chroms_train, crop, cache_dir=cache_dir)

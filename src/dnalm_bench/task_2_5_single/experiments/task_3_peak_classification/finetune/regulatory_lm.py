@@ -21,7 +21,7 @@ if __name__ == "__main__":
     genome_fa = "/mnt/lab_data2/regulatory_lm/oak_backup/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
     elements_tsv = os.path.join(work_dir,"task_3_peak_classification/processed_inputs/peaks_by_cell_label_unique_dataloader_format.tsv")
 
-    batch_size = 128
+    batch_size = 64
     num_workers = 4
     prefetch_factor = 2
     seed = 0

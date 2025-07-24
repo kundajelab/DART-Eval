@@ -893,6 +893,64 @@ class CaduceusVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator)
             lls = -F.cross_entropy(logits, tokens_out, reduction="none")
         return lls
 
+
+class RegulatoryLMVariantSingleTokenEvaluator(VariantSingleTokenLikelihoodEvaluator):
+    def __init__(self, model, batch_size, num_workers, device, category=12, mask_token=5, seq_input_size=2114, model_input_size=350):
+        tokenizer = None
+        self.category = category
+        self.mask_token_override = mask_token
+        self.model_input_size=model_input_size
+        self.seq_input_size = seq_input_size
+        self.MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+        self.mask_token_id = mask_token
+        super().__init__(tokenizer, model, batch_size, num_workers, device)
+
+    @property
+    def mask_token(self):
+
+        return self.mask_token_id
+    def encode_sequence(self, sequence): 
+        encoded_sequence = [self.MAPPING.get(nucleotide, 4) for nucleotide in sequence]
+        return encoded_sequence
+
+    def encode_sequence_batch(self, seq_batch):
+        return [self.encode_sequence(seq) for seq in seq_batch]
+
+    @property
+    def start_token(self):
+        return None
+    
+    @property
+    def end_token(self):
+        return None
+
+    def tokenize(self, seqs):
+        seqs_str = onehot_to_chars(seqs)
+        tokens = torch.tensor(self.encode_sequence_batch(seqs_str))
+        return tokens, torch.tensor([0] * len(seqs)), torch.tensor([len(seqs[0])] * len(seqs)), None
+
+    def model_fwd(self, tokens_in, attention_mask, tokens_out):
+        midpoint = self.seq_input_size // 2
+        seq_half = self.model_input_size // 2
+        tokens_in = tokens_in[:,midpoint-seq_half : midpoint+seq_half]
+        tokens_out = tokens_out[:,midpoint-seq_half : midpoint+seq_half]
+
+        if self.category is not None:
+            category_tensor = torch.tensor([self.category]).to(device=self.device)
+        else:
+            category_tensor = self.category
+        with torch.no_grad():
+            torch_outs = self.model(tokens_in, category_tensor)
+            if type(torch_outs) == tuple:
+                logits = torch_outs[0].swapaxes(1, 2)
+            else:
+                logits = torch_outs.swapaxes(1, 2)
+            lls = -F.cross_entropy(logits, tokens_out, reduction="none")
+        return lls
+
+
+
+
 class NTVariantEmbeddingEvaluator(VariantEmbeddingEvaluator):
     _hidden_states = "all"
 
