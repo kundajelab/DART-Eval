@@ -275,8 +275,8 @@ class ProbingScore(metaclass=ABCMeta):
             attention_mask = attention_mask.to(device=self.device)
         if offsets is not None:
             offsets = offsets.to(device=self.device)
-            indices = self._offsets_to_indices(offsets, tokens)
-            indices = torch.from_numpy(indices).to(device=self.device)
+        indices = self._offsets_to_indices(offsets, tokens)
+        indices = torch.from_numpy(indices).to(device=self.device)
         with torch.no_grad():
             try:
                 torch_outs = self.model(
@@ -292,10 +292,8 @@ class ProbingScore(metaclass=ABCMeta):
                 last_hidden_state = torch_outs.hidden_states[-1]
             else:
                 last_hidden_state = torch_outs.hidden_states
-            if offsets is not None:
-                probed_outs = self.probed_model(last_hidden_state, indices)
-            else:
-                probed_outs = self.probed_model(last_hidden_state, None)
+
+            probed_outs = self.probed_model(last_hidden_state, indices)
             
         return probed_outs
 
@@ -729,6 +727,36 @@ class CaduceusProbingVariantEvaluator(CaduceusVariantEvaluator, ProbingScore):
         else:
             ends = attention_mask.sum(dim=1) 
         return tokens, starts, ends, attention_mask, None
+
+    def score(self, tokens, starts, ends, attention_mask, offsets, seq):
+        tokens = tokens.to(device=self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device=self.device)
+        if offsets is not None:
+            offsets = offsets.to(device=self.device)
+            indices = self._offsets_to_indices(offsets, tokens)
+            indices = torch.from_numpy(indices).to(device=self.device)
+        with torch.no_grad():
+            try:
+                torch_outs = self.model(
+                    tokens,
+                    attention_mask=attention_mask,
+                    encoder_attention_mask=attention_mask,
+                    output_hidden_states=True
+                )
+            except:
+                torch_outs = self.model(tokens, output_hidden_states=True)
+
+            if self._hidden_states == "all":
+                last_hidden_state = torch_outs.hidden_states[-1]
+            else:
+                last_hidden_state = torch_outs.hidden_states
+            if offsets is not None:
+                probed_outs = self.probed_model(last_hidden_state, indices)
+            else:
+                probed_outs = self.probed_model(last_hidden_state, None)
+
+        return probed_outs
 
 class NTVariantEvaluator(VariantLikelihoodEvaluator):
     _hidden_states = "all"
