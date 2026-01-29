@@ -57,6 +57,7 @@ if __name__ == "__main__":
         model = torch.compile(model)
     model.load_state_dict(model_info["model_state"])
 
+    model.eval()
     dataset = SimpleSequence(genome_fa, elements_tsv, chroms, seed)
     extractor = RegulatoryLMEmbeddingExtractor(model, batch_size, num_workers, device, seq_input_size=seq_len)
     extractor.extract_embeddings(dataset, os.path.join(out_dir, "task3_embeddings.h5"), progress_bar=True)

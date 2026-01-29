@@ -103,6 +103,8 @@ if __name__ == "__main__":
         model = torch.compile(model)
     model.load_state_dict(model_info["model_state"])
 
+    model.eval()
+
 
     seq_table = os.path.join(work_dir, f"task_2_footprinting/processed_data/footprint_dataset_350_v1.txt")
     batch_size = 64

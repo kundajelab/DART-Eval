@@ -59,6 +59,8 @@ if __name__ == "__main__":
         model = torch.compile(model)
     model.load_state_dict(model_info["model_state"])
 
+    model.eval()
+
     evaluator = RegulatoryLMVariantSingleTokenEvaluator(model, batch_size, num_workers, device, category=0)
     score_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
 
