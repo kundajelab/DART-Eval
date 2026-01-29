@@ -5,7 +5,8 @@ import torch
 import numpy as np
 
 from ....finetune import ChromatinEndToEndDataset, train_finetuned_chromatin_model, RegulatoryLMFullFinetune
-sys.path.append("/users/patelas/regulatory_lm/src/regulatory_lm")
+arsenal_dir = os.environ.get("ARSENAL_MODEL_DIR", "")
+sys.path.append(f"{arsenal_dir}/src/regulatory_lm/")
 from modeling.model import *
 MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 model_str_dict = MODULES

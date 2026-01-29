@@ -9,7 +9,8 @@ from ....finetune import RegulatoryLMFullFinetuneFullContext
 from ....evaluators import FinetunedVariantEvaluator
 from ....components import VariantDataset
 import pandas as pd
-sys.path.append("/users/patelas/regulatory_lm/src/regulatory_lm")
+arsenal_dir = os.environ.get("ARSENAL_MODEL_DIR", "")
+sys.path.append(f"{arsenal_dir}/src/regulatory_lm/")
 from modeling.model import *
 MAPPING = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 model_str_dict = MODULES
@@ -74,6 +75,7 @@ if __name__ == "__main__":
 
     checkpoint_resume = torch.load(model_path)
     finetune_model.load_state_dict(checkpoint_resume, strict=False)
+    finetune_model.eval()
     dataset = VariantDataset(genome_fa, variants_bed, chroms, seed)
     evaluator = FinetunedVariantEvaluator(finetune_model, batch_size, num_workers, device)
     counts_df = evaluator.evaluate(dataset, out_path, progress_bar=True)
