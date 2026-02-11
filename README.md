@@ -402,7 +402,7 @@ We run zero-shot evaluations for tasks 2 and 5 (both likelihood-based) in the AR
 To run task 2 using an ARSENAL model, run the following commands: 
 
 ```bash
-python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.regulatory_lm /[MODEL DIR] [CHECKPOINT_NUM] [OUTPUT_DIR]
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.regulatory_lm [MODEL_DIR] [CHECKPOINT_NUM] [OUTPUT_DIR]
 ```
 
 ```bash
