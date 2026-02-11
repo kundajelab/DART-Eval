@@ -19,6 +19,8 @@ Additionally, download the genome reference files from [`syn60581044`](https://w
 
 In the following commands, `$MODEL` represents the evaluated DNALM architecture, one of `dnabert2`, `gena_lm`, `hyenadna`, and `nucleotide_transformer`. `$MODEL_SPECIFIC_NAME` represents the specific version of each model, namely one of `DNABERT-2-117M`, `gena-lm-bert-large-t2t`, `hyenadna-large-1m-seqlen-hf`, and `nucleotide-transformer-v2-500m-multi-species` .
 
+If you are looking for commands to run these evaluations on ARSENAL models, please scroll down to the end. 
+
 ### Task 1: Prioritizing Known Regulatory Elements
 
 All inputs, intermediate files, and outputs for this task are available for download at [`syn60581046`](https://www.synapse.org/Synapse:syn60581043).
@@ -390,3 +392,34 @@ Zero Shot Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5
 Probed Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.Probed_Final_Counts.ipynb```
 
 Finetuned Evaluation Notebook: ```dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.Finetuned_Final_Counts.ipynb```
+
+
+
+
+### ARSENAL model evaluation
+We run zero-shot evaluations for tasks 2 and 5 (both likelihood-based) in the ARSENAL paper. 
+
+To run task 2 using an ARSENAL model, run the following commands: 
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.likelihoods.regulatory_lm /[MODEL DIR] [CHECKPOINT_NUM] [OUTPUT_DIR]
+```
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_2_transcription_factor_binding.footprint_eval_likelihoods --input_seqs $DART_WORK_DIR/task_2_footprinting/processed_data/footprint_dataset_350_v1.txt --likelihoods [OUTPUT_DIR]/likelihoods.tsv --output_file [OUTPUT_DIR]/regulatory_lm.tsv
+```
+
+You can use the notebook ```dnalm_bench/task_2_5_single/experiments/eval_footprinting_likelihood_regulatory_lm.ipynb``` to evaluate the results
+
+To run task 5 on the African and Yoruban variants respectively, run the following commands:
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.regulatory_lm $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/Afr.CaQTLS.tsv [MODEL_DIR] [CHECKPOINT_NUM] [OUTPUT_DIR]/african.tsv $DART_WORK_DIR/refs/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+```
+
+```bash
+python -m dnalm_bench.task_2_5_single.experiments.task_5_variant_effect_prediction.zero_shot_likelihoods.regulatory_lm $DART_WORK_DIR/task_5_variant_effect_prediction/input_data/yoruban.dsqtls.benchmarking.tsv [MODEL_DIR] [CHECKPOINT_NUM] [OUTPUT_DIR]/yoruban.tsv $DART_WORK_DIR/refs/male.hg19.fa
+```
+
+You can use the notebook ```dnalm_bench/task_2_5_single.experiments/task_5_variant_effect_prediction/Zero_Shot_RegulatoryLM.ipynb``` to evaluate the results. 
+
